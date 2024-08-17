@@ -5,7 +5,7 @@ VisualStudioVersion = 17.11.35208.52
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JuliaSynth.Controls", "JuliaSynth.Controls\JuliaSynth.Controls.csproj", "{160B3A28-6E9D-4730-9A29-BEBD7E435374}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JuliaSynth.Desktop", "JuliaSynth.Controls.Desktop\JuliaSynth.Desktop.csproj", "{EC0710A3-9823-49C9-B2B3-2600578618CE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JuliaSynth.Desktop", "JuliaSynth.Desktop\JuliaSynth.Desktop.csproj", "{6AD76956-878E-4841-85F4-3710D1C0057F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{160B3A28-6E9D-4730-9A29-BEBD7E435374}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{160B3A28-6E9D-4730-9A29-BEBD7E435374}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{160B3A28-6E9D-4730-9A29-BEBD7E435374}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EC0710A3-9823-49C9-B2B3-2600578618CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EC0710A3-9823-49C9-B2B3-2600578618CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EC0710A3-9823-49C9-B2B3-2600578618CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EC0710A3-9823-49C9-B2B3-2600578618CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6AD76956-878E-4841-85F4-3710D1C0057F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AD76956-878E-4841-85F4-3710D1C0057F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AD76956-878E-4841-85F4-3710D1C0057F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AD76956-878E-4841-85F4-3710D1C0057F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
