@@ -2,10 +2,10 @@
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 
-using JuliaSynth.Controls.ViewModels;
-using JuliaSynth.Controls.Views;
+using JuliaSynth.ViewModels;
+using JuliaSynth.Views;
 
-namespace JuliaSynth.Controls;
+namespace JuliaSynth;
 
 public partial class App : Application
 {

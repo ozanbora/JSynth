@@ -10,10 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.1.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\JuliaSynth.Controls\JuliaSynth.Controls.csproj" />
+    <ProjectReference Include="..\JuliaSynth\JuliaSynth.csproj" />
   </ItemGroup>
 </Project>

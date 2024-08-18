@@ -1,6 +1,6 @@
 ﻿using Avalonia.Controls;
 
-namespace JuliaSynth.Controls.Views;
+namespace JuliaSynth.Views;
 
 public partial class MainWindow : Window
 {

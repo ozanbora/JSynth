@@ -1,6 +1,6 @@
 ﻿using ReactiveUI;
 
-namespace JuliaSynth.Controls.ViewModels;
+namespace JuliaSynth.ViewModels;
 
 public class ViewModelBase : ReactiveObject
 {

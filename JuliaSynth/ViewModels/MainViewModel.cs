@@ -1,4 +1,4 @@
-﻿namespace JuliaSynth.Controls.ViewModels;
+﻿namespace JuliaSynth.ViewModels;
 
 public class MainViewModel : ViewModelBase
 {

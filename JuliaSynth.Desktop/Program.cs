@@ -5,7 +5,6 @@ using Avalonia.ReactiveUI;
 
 namespace JuliaSynth.Desktop;
 
-
 class Program
 {
     // Initialization code. Don't use any Avalonia, third-party APIs or any
@@ -17,7 +16,7 @@ class Program
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<JuliaSynth.Controls.App>()
+        => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace()
