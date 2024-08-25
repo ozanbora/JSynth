@@ -1,4 +1,5 @@
-﻿using System.CommandLine;
+﻿using Splat;
+using System.CommandLine;
 
 namespace JuliaSynth.Desktop
 {
@@ -28,7 +29,11 @@ namespace JuliaSynth.Desktop
 
             rootCommand.SetHandler((settings) => { parsedSettings = settings; }, binder);
 
+            LogHost.Default.Info("Parsing arguments.");
+
             _ = rootCommand.Invoke(args);
+
+            LogHost.Default.Info("Command line interface settings parsed.");
 
             return parsedSettings;
         }

@@ -4,6 +4,9 @@ using Avalonia.Dialogs;
 using Avalonia.Headless;
 using Avalonia.ReactiveUI;
 using Avalonia.Win32;
+using Serilog;
+using Splat;
+using Splat.Serilog;
 using System;
 
 namespace JuliaSynth.Desktop;
@@ -17,6 +20,12 @@ internal class Program
     public static void Main(string[] args)
     {
         Console.WriteLine("Running Julia Synth..");
+
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.File("Logs/JuliaSynth-.log", rollingInterval: RollingInterval.Day, shared: true)
+            .CreateLogger();
+        Locator.CurrentMutable.UseSerilogFullLogger();
+
         StartApp(CommandLineInterface.GetCLISettings(args), args);
     }
 
