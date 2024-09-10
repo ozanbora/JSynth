@@ -2,15 +2,57 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="clr-namespace:JuliaSynth.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+             xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
+             xmlns:jsi="clr-namespace:JuliaSynth.Interactions"
+             xmlns:jsvm="clr-namespace:JuliaSynth.ViewModels"
+             xmlns:jsc="clr-namespace:JuliaSynth.Controls"
+             xmlns:jsco="clr-namespace:JuliaSynth.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="JuliaSynth.Views.MainView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="jsvm:MainViewModel">
   <Design.DataContext>
     <!-- This only sets the DataContext for the previewer in an IDE,
          to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-    <vm:MainViewModel />
+    <jsvm:MainViewModel/>
   </Design.DataContext>
+  <Grid x:Name="MainGrid">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="30"/>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="30"/>
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="100"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <Grid.Resources>
+      <jsco:VectorFormatConverter x:Key="VectorConverter"/>
+    </Grid.Resources>
+    
+    <ScrollViewer Name="DesignerScrollViewer"
+                  Background="BlanchedAlmond"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"
+                  Grid.Row="1"
+                  Grid.Column="1" Focusable="True"
+                  AllowAutoHide="True"
+                  Offset="{ Binding Path=ScrollViewerOffset, Mode=TwoWay}"
+                  >
+      <i:Interaction.Behaviors>
+        <jsi:UserControlTriggerBehavior KeyModifiers="Control">
+          <ia:InvokeCommandAction Command="{Binding CtrlPan}" PassEventArgsToCommand="True"/>
+        </jsi:UserControlTriggerBehavior>
+      </i:Interaction.Behaviors>
+      <ScrollViewer.KeyBindings>
 
-  <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </ScrollViewer.KeyBindings>
+      <jsc:DesignerGrid ShowGridLines="True">
+
+      </jsc:DesignerGrid>
+    </ScrollViewer>
+    <TextBlock Grid.Row="2" Grid.Column="1"
+               HorizontalAlignment="Right"
+               Text="{ Binding ScrollViewerOffset, Converter={StaticResource VectorConverter} }" />
+  </Grid>
 </UserControl>
