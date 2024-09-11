@@ -31,7 +31,7 @@
     </Grid.Resources>
     
     <ScrollViewer Name="DesignerScrollViewer"
-                  Background="BlanchedAlmond"
+                  Background="White"
                   HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto"
                   Grid.Row="1"
@@ -47,8 +47,11 @@
       <ScrollViewer.KeyBindings>
 
       </ScrollViewer.KeyBindings>
-      <jsc:DesignerGrid ShowGridLines="True">
-
+      <jsc:DesignerGrid ShowGridLines="False"
+                        ShowCustomGridLines="True"
+                        GridLineBrush="DarkGray"
+                        GridLineThickness="0.5"
+                        >
       </jsc:DesignerGrid>
     </ScrollViewer>
     <TextBlock Grid.Row="2" Grid.Column="1"
