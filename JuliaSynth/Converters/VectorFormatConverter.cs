@@ -23,7 +23,7 @@ namespace JuliaSynth.Converters
 
             static string format(double d)
             {
-                return string.Format("{0:0.##}", d);
+                return string.Format(CultureInfo.InvariantCulture, "{0:0.0}", d);
             }
 
             return $"({format(vector.X)}, {format(vector.Y)})";
