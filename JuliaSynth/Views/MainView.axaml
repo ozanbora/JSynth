@@ -20,7 +20,7 @@
     <Grid.RowDefinitions>
       <RowDefinition Height="30"/>
       <RowDefinition Height="*" />
-      <RowDefinition Height="30"/>
+      <RowDefinition Height="50"/>
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="100"/>
@@ -28,6 +28,7 @@
     </Grid.ColumnDefinitions>
     <Grid.Resources>
       <jsco:VectorFormatConverter x:Key="VectorConverter"/>
+      <jsco:PercentConverter x:Key="PercentConverter"/>
     </Grid.Resources>
     
     <ScrollViewer Name="DesignerScrollViewer"
@@ -52,10 +53,42 @@
                         GridLineBrush="DarkGray"
                         GridLineThickness="0.5"
                         >
+        <jsc:DesignerGrid.RenderTransform>
+          <TransformGroup>
+            <ScaleTransform ScaleX="{Binding ElementName=ZoomSlider, Path=Value}"
+                            ScaleY="{Binding ElementName=ZoomSlider, Path=Value}"/>
+          </TransformGroup>
+        </jsc:DesignerGrid.RenderTransform>
       </jsc:DesignerGrid>
     </ScrollViewer>
-    <TextBlock Grid.Row="2" Grid.Column="1"
-               HorizontalAlignment="Right"
-               Text="{ Binding ScrollViewerOffset, Converter={StaticResource VectorConverter} }" />
+    <Grid Grid.Row="2" Grid.Column="1" HorizontalAlignment="Right" ShowGridLines="True">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock Grid.Column="1"
+                 VerticalAlignment="Center"
+                 Text="{ Binding ScrollViewerOffset, Converter={StaticResource VectorConverter} }" />
+      <Slider Name="ZoomSlider"
+              Value="1.0"
+              Minimum="0.50"
+              Maximum="5.00"
+              IsSnapToTickEnabled="True"
+              Ticks="0.50, 1.00, 1.25, 1.50, 2.00, 3.00, 4.00, 5.00, 8.00, 10.00"
+              TickPlacement="TopLeft"
+              Width="200"
+              Margin="0 0 10 0"
+              >
+        <Slider.Styles>
+          <Style Selector="Slider/template/Thumb">
+            <Setter Property="ToolTip.Tip" Value="{Binding $parent[Slider].Value, Mode=OneWay, Converter={StaticResource PercentConverter}}" />
+            <Setter Property="ToolTip.Placement" Value="Top" />
+            <Setter Property="ToolTip.ShowDelay" Value="0"/>
+            <Setter Property="ToolTip.VerticalOffset" Value="-10" />
+            <Setter Property="ToolTip.HorizontalOffset" Value="0" />
+          </Style>
+        </Slider.Styles>
+      </Slider>
+    </Grid>
   </Grid>
 </UserControl>

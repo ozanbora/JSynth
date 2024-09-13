@@ -21,12 +21,12 @@ namespace JuliaSynth.Converters
 
             Vector vector = (Vector)value;
 
-            static string format(double d)
+            static string format(double d, CultureInfo culture)
             {
-                return string.Format(CultureInfo.InvariantCulture, "{0:0.0}", d);
+                return string.Format(culture, "{0:0.0}", d);
             }
 
-            return $"({format(vector.X)}, {format(vector.Y)})";
+            return $"({format(vector.X, culture)}, {format(vector.Y, culture)})";
         }
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
