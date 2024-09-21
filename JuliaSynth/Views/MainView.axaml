@@ -30,54 +30,78 @@
       <jsco:VectorFormatConverter x:Key="VectorConverter"/>
       <jsco:PercentConverter x:Key="PercentConverter"/>
     </Grid.Resources>
-    
-    <ScrollViewer Name="DesignerScrollViewer"
-                  Background="White"
-                  HorizontalScrollBarVisibility="Auto"
-                  VerticalScrollBarVisibility="Auto"
-                  Grid.Row="1"
-                  Grid.Column="1" Focusable="True"
-                  AllowAutoHide="True"
-                  Offset="{ Binding Path=ScrollViewerOffset, Mode=TwoWay}"
-                  >
-      <i:Interaction.Behaviors>
-        <jsi:UserControlTriggerBehavior KeyModifiers="Control">
-          <ia:InvokeCommandAction Command="{Binding CtrlPan}" PassEventArgsToCommand="True"/>
-        </jsi:UserControlTriggerBehavior>
-      </i:Interaction.Behaviors>
-      <ScrollViewer.KeyBindings>
 
-      </ScrollViewer.KeyBindings>
-      <jsc:DesignerGrid ShowGridLines="False"
-                        ShowCustomGridLines="True"
-                        GridLineBrush="DarkGray"
-                        GridLineThickness="0.5"
-                        >
-        <jsc:DesignerGrid.RenderTransform>
-          <TransformGroup>
+    <Border Grid.Row="1"
+            Grid.Column="1"
+            >
+      <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto"
+                    Offset="{ Binding Path=ScrollViewerOffset, Mode=TwoWay}"
+                    AllowAutoHide="True"
+                    >
+        <i:Interaction.Behaviors>
+          <jsi:UserControlTriggerBehavior KeyModifiers="Control">
+            <ia:InvokeCommandAction Command="{Binding CtrlPan}" PassEventArgsToCommand="True"/>
+          </jsi:UserControlTriggerBehavior>
+        </i:Interaction.Behaviors>
+
+        <LayoutTransformControl>
+          <LayoutTransformControl.LayoutTransform>
             <ScaleTransform ScaleX="{Binding ElementName=ZoomSlider, Path=Value}"
                             ScaleY="{Binding ElementName=ZoomSlider, Path=Value}"/>
-          </TransformGroup>
-        </jsc:DesignerGrid.RenderTransform>
-      </jsc:DesignerGrid>
-    </ScrollViewer>
-    <Grid Grid.Row="2" Grid.Column="1" HorizontalAlignment="Right" ShowGridLines="True">
+          </LayoutTransformControl.LayoutTransform>
+          <jsc:DesignerGrid ShowGridLines="False"
+                            ShowCustomGridLines="True"
+                            GridLineBrush="DarkGray"
+                            GridLineThickness="0.5"
+                            Focusable="True"
+                            IsHitTestVisible="True"
+                            Background="White"
+                            >
+
+            <i:Interaction.Behaviors>
+              <jsi:UserControlMouseWheelEventTriggerBehavior KeyModifiers="Control">
+                <ia:InvokeCommandAction Command="{Binding CtrlZoom}" PassEventArgsToCommand="True"/>
+              </jsi:UserControlMouseWheelEventTriggerBehavior>
+            </i:Interaction.Behaviors>
+
+          </jsc:DesignerGrid>
+
+        </LayoutTransformControl>
+        
+        
+      </ScrollViewer>
+    </Border>
+    
+    <Grid Grid.Row="2" 
+          Grid.Column="1" 
+          HorizontalAlignment="Right"
+          VerticalAlignment="Bottom"
+          >
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
+      <Grid.RenderTransform>
+        <TransformGroup>
+          <ScaleTransform ScaleX="0.8" ScaleY="0.8"/>
+        </TransformGroup>
+      </Grid.RenderTransform>
       <TextBlock Grid.Column="1"
-                 VerticalAlignment="Center"
+                 VerticalAlignment="Bottom"
+                 HorizontalAlignment="Center"
+                 TextAlignment="Right"
+                 Width="120"
                  Text="{ Binding ScrollViewerOffset, Converter={StaticResource VectorConverter} }" />
       <Slider Name="ZoomSlider"
-              Value="1.0"
-              Minimum="0.50"
-              Maximum="5.00"
+              Value="{Binding SelectedZoomLevel, Mode=TwoWay}"
+              Minimum="{Binding MinZoom}"
+              Maximum="{Binding MaxZoom}"
               IsSnapToTickEnabled="True"
-              Ticks="0.50, 1.00, 1.25, 1.50, 2.00, 3.00, 4.00, 5.00, 8.00, 10.00"
+              Ticks="{Binding ZoomLevels}"
               TickPlacement="TopLeft"
               Width="200"
-              Margin="0 0 10 0"
+              Margin="0 10 10 0"
               >
         <Slider.Styles>
           <Style Selector="Slider/template/Thumb">
