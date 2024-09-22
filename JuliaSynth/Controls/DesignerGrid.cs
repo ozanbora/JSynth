@@ -28,14 +28,14 @@ namespace JuliaSynth.Controls
         public static readonly StyledProperty<bool> ShowCustomGridLinesProperty =
             AvaloniaProperty.Register<DesignerGrid, bool>(nameof(ShowCustomGridLines), false);
 
-        public IBrush GridLineBrush
+        public IBrush? GridLineBrush
         {
             get => GetValue(GridLineBrushProperty);
             set => SetValue(GridLineBrushProperty, value);
         }
 
-        public static readonly StyledProperty<IBrush> GridLineBrushProperty =
-            AvaloniaProperty.Register<DesignerGrid, IBrush>(nameof(GridLineBrush), Brushes.Black);
+        public static readonly StyledProperty<IBrush?> GridLineBrushProperty =
+            Border.BorderBrushProperty.AddOwner<Grid>();
 
         public double GridLineThickness
         {

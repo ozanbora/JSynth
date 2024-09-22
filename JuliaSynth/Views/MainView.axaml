@@ -51,7 +51,6 @@
                             GridLineThickness="0.5"
                             Focusable="True"
                             IsHitTestVisible="True"
-                            Background="White"
                             >
 
             <i:Interaction.Behaviors>
