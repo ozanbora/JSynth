@@ -7,8 +7,6 @@ namespace JuliaSynth.Interactions
 {
     public class UserControlMouseWheelEventTriggerBehavior : Trigger<Control>
     {
-        private readonly KeyModifiers _savedKeyModifiers = KeyModifiers.None;
-
         /// <summary>
         /// Identifies the <seealso cref="KeyModifiers"/> avalonia property.
         /// </summary>
@@ -34,9 +32,6 @@ namespace JuliaSynth.Interactions
             if (AssociatedObject is { })
             {
                 AssociatedObject.PointerWheelChanged += AssociatedObject_PointerWheelChanged;
-
-                //AssociatedObject.AddHandler(InputElement.KeyDownEvent, Button_OnKeyDown, RoutingStrategies.Tunnel);
-                //AssociatedObject.AddHandler(InputElement.KeyUpEvent, Button_OnKeyUp, RoutingStrategies.Tunnel);
             }
         }
 
@@ -58,20 +53,7 @@ namespace JuliaSynth.Interactions
             if (AssociatedObject is { })
             {
                 AssociatedObject.PointerWheelChanged -= AssociatedObject_PointerWheelChanged;
-
-                //AssociatedObject.RemoveHandler(InputElement.KeyDownEvent, Button_OnKeyDown);
-                //AssociatedObject.RemoveHandler(InputElement.KeyUpEvent, Button_OnKeyUp);
             }
         }
-
-        //private void Button_OnKeyDown(object? sender, KeyEventArgs e)
-        //{
-        //    _savedKeyModifiers = e.KeyModifiers;
-        //}
-
-        //private void Button_OnKeyUp(object? sender, KeyEventArgs e)
-        //{
-        //    _savedKeyModifiers = KeyModifiers.None;
-        //}
     }
 }
