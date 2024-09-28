@@ -103,7 +103,7 @@ namespace JuliaSynth.Controls
             /// <summary>
             /// Static initialization
             /// </summary>
-            internal GridLinesRenderer(IBrush brush, double thickness)
+            internal GridLinesRenderer(IBrush? brush, double thickness)
             {
                 List<double> dashArray = [_dashLength, _dashLength];
 

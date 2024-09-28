@@ -47,10 +47,11 @@
           </LayoutTransformControl.LayoutTransform>
           <jsc:DesignerGrid ShowGridLines="False"
                             ShowCustomGridLines="True"
-                            GridLineBrush="DarkGray"
+                            GridLineBrush="White"
                             GridLineThickness="0.5"
                             Focusable="True"
                             IsHitTestVisible="True"
+                            Background="DarkGray"
                             >
 
             <i:Interaction.Behaviors>

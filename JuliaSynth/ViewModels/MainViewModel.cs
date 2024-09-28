@@ -1,7 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Collections;
 using ReactiveUI;
-using System;
 using System.Linq;
 using System.Reactive;
 
@@ -54,7 +53,6 @@ public class MainViewModel : ViewModelBase
         int index = ZoomLevels.IndexOf(SelectedZoomLevel);
 
         index = delta.Y == 1 ? index < ZoomLevels.Count - 1 ? index + 1 : index : index > 0 ? index - 1 : index;
-        Console.WriteLine($"Delta: {delta}");
         SelectedZoomLevel = ZoomLevels[index];
     }
 }
