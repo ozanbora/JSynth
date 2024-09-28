@@ -39,8 +39,8 @@ public class MainViewModel : ViewModelBase
         CtrlPan = ReactiveCommand.Create<Vector>(CtrlPanMove);
         CtrlZoom = ReactiveCommand.Create<Vector>(CtrlZoomMove);
 
-        ZoomLevels = new AvaloniaList<double>([1.00, 1.25, 1.50, 2.00, 3.00, 4.00, 5.00, 8.00, 10.00]);
-        SelectedZoomLevel = ZoomLevels[1];
+        ZoomLevels = new AvaloniaList<double>([0.25, 0.50, 0.80, 1.00, 1.25, 1.50, 2.00, 3.00, 4.00, 5.00, 8.00, 10.00]);
+        SelectedZoomLevel = 1.00;
     }
 
     private void CtrlPanMove(Vector offset)
