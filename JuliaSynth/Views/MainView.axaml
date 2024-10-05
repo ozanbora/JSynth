@@ -45,8 +45,8 @@
 
         <LayoutTransformControl>
           <LayoutTransformControl.LayoutTransform>
-            <ScaleTransform ScaleX="{Binding ElementName=ZoomSlider, Path=Value}"
-                            ScaleY="{Binding ElementName=ZoomSlider, Path=Value}"/>
+            <ScaleTransform ScaleX="{Binding Path=SelectedZoomLevel, Mode=OneWay}"
+                            ScaleY="{Binding Path=SelectedZoomLevel, Mode=OneWay}"/>
           </LayoutTransformControl.LayoutTransform>
           
           <jsc:DesignerGrid ShowGridLines="False"
@@ -96,10 +96,10 @@
                  Text="{ Binding ScrollViewerOffset, Converter={StaticResource VectorConverter} }" />
       <Slider Name="ZoomSlider"
               Value="{Binding Path=SelectedZoomLevel, Mode=TwoWay}"
-              Minimum="{Binding MinZoom}"
-              Maximum="{Binding MaxZoom}"
+              Minimum="{Binding Path=MinZoom, Mode=OneTime}"
+              Maximum="{Binding Path=MaxZoom, Mode=OneTime}"
               IsSnapToTickEnabled="True"
-              Ticks="{Binding ZoomLevels}"
+              Ticks="{Binding Path=ZoomLevels, Mode=OneTime}"
               TickPlacement="TopLeft"
               Width="200"
               Margin="0 10 10 0"

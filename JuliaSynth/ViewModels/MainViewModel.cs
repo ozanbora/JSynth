@@ -1,7 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Collections;
 using ReactiveUI;
-using System.Linq;
 using System.Reactive;
 
 namespace JuliaSynth.ViewModels;
@@ -15,11 +14,13 @@ public class MainViewModel : ReactiveObject
 
     public ReactiveCommand<Vector, Unit> CtrlZoom { get; }
 
-    public AvaloniaList<double> ZoomLevels { get; }
+    public AvaloniaList<double> ZoomLevels { get; } = new([
+        0.25, 0.50, 0.80, 1.00, 1.25, 1.50, 2.00, 3.00, 4.00, 5.00, 8.00, 10.00
+        ]);
 
-    public double MinZoom => ZoomLevels.Min();
+    public double MinZoom { get; } = 0.25;
 
-    public double MaxZoom => ZoomLevels.Max();
+    public double MaxZoom { get; } = 10.00;
 
     public double SelectedZoomLevel
     {
@@ -38,9 +39,6 @@ public class MainViewModel : ReactiveObject
     {
         CtrlPan = ReactiveCommand.Create<Vector>(CtrlPanMove);
         CtrlZoom = ReactiveCommand.Create<Vector>(CtrlZoomMove);
-
-        ZoomLevels = new AvaloniaList<double>([0.25, 0.50, 0.80, 1.00, 1.25, 1.50, 2.00, 3.00, 4.00, 5.00, 8.00, 10.00]);
-        SelectedZoomLevel = 1.00;
     }
 
     private void CtrlPanMove(Vector offset)
