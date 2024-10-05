@@ -4,7 +4,12 @@
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
-    <Application.Styles>
-        <FluentTheme DensityStyle="Compact"/>
-    </Application.Styles>
+  <Application.Styles>
+    <FluentTheme DensityStyle="Compact"/>
+    <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
+    <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Simple/Simple.xaml" />
+  </Application.Styles>
+  <Application.Resources>
+    <FontFamily x:Key="NotoSansMath">avares://JuliaSynth/Assets/Fonts#Noto Sans Math</FontFamily>
+  </Application.Resources>
 </Application>

@@ -7,8 +7,11 @@
              xmlns:jsi="clr-namespace:JuliaSynth.Interactions"
              xmlns:jsvm="clr-namespace:JuliaSynth.ViewModels"
              xmlns:jsc="clr-namespace:JuliaSynth.Controls"
+             xmlns:jsinputs="clr-namespace:JuliaSynth.Views.Inputs"
              xmlns:jsco="clr-namespace:JuliaSynth.Converters"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             mc:Ignorable="d"
+             d:DesignWidth="800" 
+             d:DesignHeight="600"
              x:Class="JuliaSynth.Views.MainView"
              x:DataType="jsvm:MainViewModel">
   <Grid x:Name="MainGrid">
@@ -45,13 +48,14 @@
             <ScaleTransform ScaleX="{Binding ElementName=ZoomSlider, Path=Value}"
                             ScaleY="{Binding ElementName=ZoomSlider, Path=Value}"/>
           </LayoutTransformControl.LayoutTransform>
+          
           <jsc:DesignerGrid ShowGridLines="False"
                             ShowCustomGridLines="True"
                             GridLineBrush="White"
                             GridLineThickness="0.5"
                             Focusable="True"
-                            IsHitTestVisible="True"
                             Background="DarkGray"
+                            Opacity="1.0"
                             >
 
             <i:Interaction.Behaviors>
@@ -60,6 +64,8 @@
               </jsi:UserControlMouseWheelEventTriggerBehavior>
             </i:Interaction.Behaviors>
 
+            <jsinputs:UnsignedInteger Grid.Row="3"
+                                      Grid.Column="4"/>
           </jsc:DesignerGrid>
 
         </LayoutTransformControl>
@@ -89,7 +95,7 @@
                  Width="120"
                  Text="{ Binding ScrollViewerOffset, Converter={StaticResource VectorConverter} }" />
       <Slider Name="ZoomSlider"
-              Value="{Binding SelectedZoomLevel, Mode=TwoWay}"
+              Value="{Binding Path=SelectedZoomLevel, Mode=TwoWay}"
               Minimum="{Binding MinZoom}"
               Maximum="{Binding MaxZoom}"
               IsSnapToTickEnabled="True"

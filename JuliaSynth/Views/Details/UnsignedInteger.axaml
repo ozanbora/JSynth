@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:jsvmi="clr-namespace:JuliaSynth.ViewModels.Inputs"
+             xmlns:jsconverters="clr-namespace:JuliaSynth.Converters"
+             x:DataType="jsvmi:UnsignedIntegerViewModel"
+             mc:Ignorable="d"
+             Width="400" 
+             d:DesignHeight="300"
+             x:Class="JuliaSynth.Views.Details.UnsignedInteger">
+  
+  <Grid RowDefinitions="auto,auto,auto,auto"
+        ColumnDefinitions="auto,*"
+        >
+    <Grid.Resources>
+      <jsconverters:DecimalConverter x:Key="DecimalConverter"/>
+    </Grid.Resources>
+
+
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           VerticalAlignment="Bottom"
+           Content="Bitness"
+           />
+    <StackPanel Grid.Row="0" 
+                Grid.Column="1"
+                Orientation="Horizontal"
+                >
+      <ComboBox SelectedValue="{Binding Path=SelectedType}"
+                ItemsSource="{Binding Path=PossibleTypes}"
+                VerticalAlignment="Bottom"
+                ToolTip.Tip="Select the number of bits you want to represent this variable."
+              />
+      
+      <Label Content="Color" VerticalAlignment="Bottom"/>
+      <ColorPicker Color="{Binding Path=Color}"
+                   HorizontalAlignment="Left"
+                   ToolTip.Tip="Select the color you want to display this node."
+                   />
+      
+    </StackPanel>
+    
+    <Label Grid.Row="1"
+           Grid.Column="0"
+           Content="Value" />
+
+    <NumericUpDown Grid.Row="1"
+                   Grid.Column="1"
+                   Increment="1"
+                   ClipValueToMinMax="True"
+                   ButtonSpinnerLocation="Left"
+                   HorizontalAlignment="Stretch"
+                   FormatString="\{0:N0\}"
+                   Minimum="{Binding Path=Min}"
+                   Maximum="{Binding Path=Max}"
+                   Value="{Binding Path=Value, Converter={StaticResource DecimalConverter}}"
+                   ToolTip.Tip="This is the initial value when the application is launched. You can always update it later on from the user interface."
+                   />
+    
+    <Label Grid.Row="2"
+           Grid.Column="0"
+           Content="Minimum"
+           />
+
+    <NumericUpDown Grid.Row="2" 
+                   Grid.Column="1"
+                   Increment="1"
+                   ClipValueToMinMax="True"
+                   ButtonSpinnerLocation="Left"
+                   HorizontalAlignment="Stretch"
+                   FormatString="\{0:N0\}"
+                   Minimum="{Binding HardMin}"
+                   Maximum="{Binding Max}"
+                   Value="{Binding Min, Converter={StaticResource DecimalConverter}}"
+                   ToolTip.Tip="Minimum value will be used for validation in the user interface. By default, it is set to minimum value of bitness representation."
+                   />
+    
+    <Label Grid.Row="3"
+           Grid.Column="0"
+           Content="Maximum"
+           />
+
+    <NumericUpDown Grid.Row="3"
+                   Grid.Column="1"
+                   Increment="1"
+                   ClipValueToMinMax="True"
+                   ButtonSpinnerLocation="Left"
+                   HorizontalAlignment="Stretch"
+                   FormatString="\{0:N0\}"
+                   Minimum="{Binding Min}"
+                   Maximum="{Binding HardMax}"
+                   Value="{Binding Path=Max, Converter={StaticResource DecimalConverter}}"
+                   ToolTip.Tip="Maximum value will be used for validation in the user interface. By default, it is set to maximum value of bitness representation."
+                   />
+  </Grid>
+ 
+</UserControl>

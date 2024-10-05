@@ -6,7 +6,7 @@ using System.Reactive;
 
 namespace JuliaSynth.ViewModels;
 
-public class MainViewModel : ViewModelBase
+public class MainViewModel : ReactiveObject
 {
     private Vector _scrollViewerOffset = Vector.Zero;
     private double _selectedZoomLevel = 1.0;
