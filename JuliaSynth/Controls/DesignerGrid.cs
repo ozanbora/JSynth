@@ -10,11 +10,11 @@ namespace JuliaSynth.Controls
 {
     public class DesignerGrid : Grid
     {
-        private readonly int NumberOfRows = 100;
-        private readonly int NumberOfColumns = 100;
+        private readonly int NumberOfRows = 400;
+        private readonly int NumberOfColumns = 400;
 
-        private new readonly GridLength Height = new(60);
-        private new readonly GridLength Width = new(60);
+        private new readonly GridLength Height = new(20);
+        private new readonly GridLength Width = new(20);
 
         private GridLinesRenderer? _gridLinesRenderer;
 

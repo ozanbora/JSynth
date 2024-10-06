@@ -2,26 +2,14 @@
 using ReactiveUI;
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
 
-namespace JuliaSynth.ViewModels.Inputs
+namespace JuliaSynth.Model
 {
-    public class UnsignedIntegerViewModel : ReactiveObject
+    public class UnsignedInteger : NumericInput<UInt128>
     {
         #region Private Properties
-        private Color _color;
-
         private string _selectedType;
 
-        private UInt128 _min;
-
-        private UInt128 _max;
-
-        private UInt128 _hardMax;
-
-        private UInt128 _hardMin;
-
-        private UInt128 _value;
         #endregion
 
         #region Public Properties
@@ -38,49 +26,8 @@ namespace JuliaSynth.ViewModels.Inputs
             "64-bit",
         ]);
 
-        [Required]
-        public UInt128 HardMax
-        {
-            get => _hardMax;
-            set => this.RaiseAndSetIfChanged(ref _hardMax, value);
-        }
-
-        [Required]
-        public UInt128 HardMin
-        {
-            get => _hardMin;
-            set => this.RaiseAndSetIfChanged(ref _hardMin, value);
-        }
-
-        [Required]
-        public UInt128 Min
-        {
-            get => _min;
-            set => this.RaiseAndSetIfChanged(ref _min, value);
-        }
-
-        [Required]
-        public UInt128 Max
-        {
-            get => _max;
-            set => this.RaiseAndSetIfChanged(ref _max, value);
-        }
-
-        [Required]
-        public UInt128 Value
-        {
-            get => _value;
-            set => this.RaiseAndSetIfChanged(ref _value, value);
-        }
-
-        public Color Color
-        {
-            get => _color;
-            set => this.RaiseAndSetIfChanged(ref _color, value);
-        }
-
         #endregion
-        public UnsignedIntegerViewModel()
+        public UnsignedInteger() : base()
         {
             _selectedType = "32-bit";
             Color = Colors.DarkBlue;
@@ -89,7 +36,6 @@ namespace JuliaSynth.ViewModels.Inputs
             Min = HardMin;
             Max = HardMax;
             Value = Min;
-
             _ = this.WhenAnyValue(x => x.SelectedType).Subscribe(SelectionChanged);
         }
 
@@ -121,6 +67,5 @@ namespace JuliaSynth.ViewModels.Inputs
             Min = HardMin;
             Max = HardMax;
         }
-
     }
 }

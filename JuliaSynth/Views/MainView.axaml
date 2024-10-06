@@ -64,8 +64,8 @@
               </jsi:UserControlMouseWheelEventTriggerBehavior>
             </i:Interaction.Behaviors>
 
-            <jsinputs:UnsignedInteger Grid.Row="3"
-                                      Grid.Column="4"/>
+            <jsinputs:Float Grid.Row="10"
+                                      Grid.Column="10"/>
           </jsc:DesignerGrid>
 
         </LayoutTransformControl>

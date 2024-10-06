@@ -2,19 +2,27 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:jsvmi="clr-namespace:JuliaSynth.ViewModels.Inputs"
-             xmlns:jsconverters="clr-namespace:JuliaSynth.Converters"
-             x:DataType="jsvmi:UnsignedIntegerViewModel"
+             
+             x:Class="JuliaSynth.Views.Details.UnsignedInteger"
+             
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+             xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"
+             
+             x:DataType="jsModel:UnsignedInteger"
+             Width="400"
+             
              mc:Ignorable="d"
-             Width="400" 
              d:DesignHeight="300"
-             x:Class="JuliaSynth.Views.Details.UnsignedInteger">
-  
+             >
+
+  <Design.DataContext>
+    <jsModel:UnsignedInteger />
+  </Design.DataContext>
   <Grid RowDefinitions="auto,auto,auto,auto"
         ColumnDefinitions="auto,*"
         >
     <Grid.Resources>
-      <jsconverters:DecimalConverter x:Key="DecimalConverter"/>
+      <jsConverters:DecimalToUInt128Converter x:Key="DecimalConverter"/>
     </Grid.Resources>
 
 
@@ -70,9 +78,9 @@
                    ButtonSpinnerLocation="Left"
                    HorizontalAlignment="Stretch"
                    FormatString="\{0:N0\}"
-                   Minimum="{Binding HardMin}"
-                   Maximum="{Binding Max}"
-                   Value="{Binding Min, Converter={StaticResource DecimalConverter}}"
+                   Minimum="{Binding Path=HardMin}"
+                   Maximum="{Binding Path=Max}"
+                   Value="{Binding Path=Min, Converter={StaticResource DecimalConverter}}"
                    ToolTip.Tip="Minimum value will be used for validation in the user interface. By default, it is set to minimum value of bitness representation."
                    />
     
@@ -88,8 +96,8 @@
                    ButtonSpinnerLocation="Left"
                    HorizontalAlignment="Stretch"
                    FormatString="\{0:N0\}"
-                   Minimum="{Binding Min}"
-                   Maximum="{Binding HardMax}"
+                   Minimum="{Binding Path=Min}"
+                   Maximum="{Binding Path=HardMax}"
                    Value="{Binding Path=Max, Converter={StaticResource DecimalConverter}}"
                    ToolTip.Tip="Maximum value will be used for validation in the user interface. By default, it is set to maximum value of bitness representation."
                    />

@@ -4,16 +4,16 @@ using System.Globalization;
 
 namespace JuliaSynth.Converters
 {
-    internal class DecimalConverter : IValueConverter
+    internal class DecimalToLongConverter : IValueConverter
     {
         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            return value == null ? null : value is not UInt128 ? throw new InvalidCastException() : (object)(decimal)(UInt128)value;
+            return value == null ? null : value is not long ? throw new InvalidCastException() : (object)(decimal)(long)value;
         }
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            return value == null ? null : value is not decimal ? throw new InvalidOperationException() : (object)(UInt128)(decimal)value;
+            return value == null ? null : value is not decimal ? throw new InvalidOperationException() : (object)(long)(decimal)value;
         }
 
     }

@@ -3,19 +3,23 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              x:Class="JuliaSynth.Views.Inputs.UnsignedInteger"
+             
              xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
-             xmlns:jsvmi="clr-namespace:JuliaSynth.ViewModels.Inputs"
-             xmlns:jsc="clr-namespace:JuliaSynth.Controls"
-             xmlns:jsdetails="clr-namespace:JuliaSynth.Views.Details"
-             x:DataType="jsvmi:UnsignedIntegerViewModel"
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+             xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
+             xmlns:jsDetails="clr-namespace:JuliaSynth.Views.Details"
+             
+             x:DataType="jsModel:UnsignedInteger"
+             
              ZIndex="1"
              Width="180"
              Height="120"
              ClipToBounds="False"
              >
-  <UserControl.DataContext>
-    <jsvmi:UnsignedIntegerViewModel/>
-  </UserControl.DataContext>
+  
+  <Design.DataContext>
+    <jsModel:UnsignedInteger/>
+  </Design.DataContext>
   
   <UserControl.Resources>
     <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
@@ -23,7 +27,7 @@
 
   <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
           CornerRadius="8"
-          BoxShadow="100 100 400 0 Black"
+          BoxShadow="10 10 40 0 Black"
           BorderBrush="Black"
           BorderThickness="1"
           >
@@ -84,7 +88,7 @@
             <Flyout Placement="Top"
                     ShowMode="Transient"
                     >
-              <jsdetails:UnsignedInteger/>
+              <jsDetails:UnsignedInteger/>
             </Flyout>
           </Button.Flyout>
         </Button>
@@ -99,7 +103,7 @@
         
       </StackPanel>
       
-      <jsc:Connector Grid.Row="1"
+      <jsControls:Connector Grid.Row="1"
                      Grid.Column="1"
                      HorizontalAlignment="Right"
                      VerticalAlignment="Top"
@@ -110,7 +114,7 @@
                  Grid.Column="1"
                  HorizontalAlignment="Right"
                  VerticalAlignment="Bottom"
-                 FontSize="24"
+                 FontSize="18"
                  Text="{Binding Path=Value, StringFormat=\{0:N0\}}"
                  ToolTip.Tip="{Binding Path=Value, StringFormat=\{0:N0\}}"
                  />
