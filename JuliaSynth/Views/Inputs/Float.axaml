@@ -22,9 +22,6 @@
     <jsModel:Float/>
   </Design.DataContext>
 
-  <UserControl.DataContext>
-    <jsModel:Float/>
-  </UserControl.DataContext>
   <UserControl.Resources>
     <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
   </UserControl.Resources>

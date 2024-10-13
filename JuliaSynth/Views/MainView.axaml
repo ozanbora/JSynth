@@ -4,16 +4,16 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
              xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
-             xmlns:jsi="clr-namespace:JuliaSynth.Interactions"
-             xmlns:jsvm="clr-namespace:JuliaSynth.ViewModels"
-             xmlns:jsc="clr-namespace:JuliaSynth.Controls"
-             xmlns:jsinputs="clr-namespace:JuliaSynth.Views.Inputs"
-             xmlns:jsco="clr-namespace:JuliaSynth.Converters"
+             xmlns:jsInteractions="clr-namespace:JuliaSynth.Interactions"
+             xmlns:jsViewModels="clr-namespace:JuliaSynth.ViewModels"
+             xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
+             xmlns:jsInputs="clr-namespace:JuliaSynth.Views.Inputs"
+             xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"
              mc:Ignorable="d"
              d:DesignWidth="800" 
              d:DesignHeight="600"
              x:Class="JuliaSynth.Views.MainView"
-             x:DataType="jsvm:MainViewModel">
+             x:DataType="jsViewModels:MainViewModel">
   <Grid x:Name="MainGrid">
     <Grid.RowDefinitions>
       <RowDefinition Height="30"/>
@@ -25,8 +25,8 @@
       <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
     <Grid.Resources>
-      <jsco:VectorFormatConverter x:Key="VectorConverter"/>
-      <jsco:PercentConverter x:Key="PercentConverter"/>
+      <jsConverters:VectorFormatConverter x:Key="VectorConverter"/>
+      <jsConverters:PercentConverter x:Key="PercentConverter"/>
     </Grid.Resources>
 
     <Border Grid.Row="1"
@@ -38,9 +38,9 @@
                     AllowAutoHide="True"
                     >
         <i:Interaction.Behaviors>
-          <jsi:UserControlTriggerBehavior KeyModifiers="Control">
+          <jsInteractions:UserControlTriggerBehavior KeyModifiers="Control">
             <ia:InvokeCommandAction Command="{Binding CtrlPan}" PassEventArgsToCommand="True"/>
-          </jsi:UserControlTriggerBehavior>
+          </jsInteractions:UserControlTriggerBehavior>
         </i:Interaction.Behaviors>
 
         <LayoutTransformControl>
@@ -48,8 +48,8 @@
             <ScaleTransform ScaleX="{Binding Path=SelectedZoomLevel, Mode=OneWay}"
                             ScaleY="{Binding Path=SelectedZoomLevel, Mode=OneWay}"/>
           </LayoutTransformControl.LayoutTransform>
-          
-          <jsc:DesignerGrid ShowGridLines="False"
+
+          <jsControls:DesignerGrid ShowGridLines="False"
                             ShowCustomGridLines="True"
                             GridLineBrush="White"
                             GridLineThickness="0.5"
@@ -59,14 +59,14 @@
                             >
 
             <i:Interaction.Behaviors>
-              <jsi:UserControlMouseWheelEventTriggerBehavior KeyModifiers="Control">
+              <jsInteractions:UserControlMouseWheelEventTriggerBehavior KeyModifiers="Control">
                 <ia:InvokeCommandAction Command="{Binding CtrlZoom}" PassEventArgsToCommand="True"/>
-              </jsi:UserControlMouseWheelEventTriggerBehavior>
+              </jsInteractions:UserControlMouseWheelEventTriggerBehavior>
             </i:Interaction.Behaviors>
 
-            <jsinputs:Float Grid.Row="10"
-                                      Grid.Column="10"/>
-          </jsc:DesignerGrid>
+            <jsInputs:Float Grid.Row="3"
+                            Grid.Column="4"/>
+          </jsControls:DesignerGrid>
 
         </LayoutTransformControl>
         
