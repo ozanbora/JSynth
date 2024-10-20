@@ -15,6 +15,11 @@
              d:DesignHeight="600"
              x:Class="JuliaSynth.Views.MainView"
              x:DataType="jsViewModels:MainViewModel">
+  
+  <Design.DataContext>
+    <jsViewModels:MainViewModel/>
+  </Design.DataContext>
+  
   <Grid x:Name="MainGrid">
     <Grid.RowDefinitions>
       <RowDefinition Height="30"/>
