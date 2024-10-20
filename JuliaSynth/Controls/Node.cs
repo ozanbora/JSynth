@@ -11,7 +11,16 @@ namespace JuliaSynth.Controls
         private Point _positionInBlock;
         private Point _initialPosition;
         private TranslateTransform _transform = null!;
+        private Control? ContentContainer = null;
 
+        public Node() : base()
+        {
+            RenderOptions.SetRequiresFullOpacityHandling(this, true);
+            ClipToBounds = false;
+            Width = 180;
+            Height = 120;
+
+        }
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {
             _isPressed = true;
@@ -36,8 +45,23 @@ namespace JuliaSynth.Controls
             double offsetX = currentPosition.X - _initialPosition.X;
             double offsetY = currentPosition.Y - _initialPosition.Y;
 
-            Grid.SetRow(this, Grid.GetRow(this) + ((int)offsetY / 20));
-            Grid.SetColumn(this, Grid.GetColumn(this) + ((int)offsetX / 20));
+
+            ContentContainer = Parent as Control;
+
+            if (ContentContainer is not null)
+            {
+                int currentRow = Grid.GetRow(ContentContainer);
+                int currentColumn = Grid.GetColumn(ContentContainer);
+
+                int nextRow = currentRow + ((int)offsetY / Constants.WIDTH);
+                int nextColumn = currentColumn + ((int)offsetX / Constants.HEIGHT);
+
+                nextRow = nextRow < 0 ? 0 : nextRow;
+                nextColumn = nextColumn < 0 ? 0 : nextColumn;
+
+                Grid.SetRow(ContentContainer, nextRow);
+                Grid.SetColumn(ContentContainer, nextColumn);
+            }
 
             base.OnPointerReleased(e);
         }

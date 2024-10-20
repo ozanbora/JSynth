@@ -4,7 +4,7 @@ namespace JuliaSynth.Views.Inputs;
 
 public partial class Float : Node
 {
-    public Float()
+    public Float() : base()
     {
         InitializeComponent();
     }

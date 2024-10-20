@@ -12,11 +12,6 @@
              
              x:DataType="jsModel:Float"
              
-             ZIndex="1"
-             Width="180"
-             Height="120"
-             ClipToBounds="False"
-             
              >
   <Design.DataContext>
     <jsModel:Float/>

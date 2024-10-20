@@ -10,11 +10,11 @@ namespace JuliaSynth.Controls
 {
     public class DesignerGrid : Grid
     {
-        private readonly int NumberOfRows = 400;
-        private readonly int NumberOfColumns = 400;
+        private readonly int NumberOfRows = Constants.ROWS;
+        private readonly int NumberOfColumns = Constants.COLUMNS;
 
-        private new readonly GridLength Height = new(20);
-        private new readonly GridLength Width = new(20);
+        private new readonly GridLength Height = new(Constants.HEIGHT);
+        private new readonly GridLength Width = new(Constants.WIDTH);
 
         private GridLinesRenderer? _gridLinesRenderer;
 
@@ -63,6 +63,7 @@ namespace JuliaSynth.Controls
 
             MinWidth = NumberOfColumns * Width.Value;
             MaxHeight = NumberOfRows * Height.Value;
+            RenderOptions.SetRequiresFullOpacityHandling(this, true);
         }
 
         protected override Size ArrangeOverride(Size arrangeSize)

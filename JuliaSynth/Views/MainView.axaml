@@ -9,6 +9,7 @@
              xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
              xmlns:jsInputs="clr-namespace:JuliaSynth.Views.Inputs"
              xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"
+             xmlns:jsModel="clr-namespace:JuliaSynth.Model"
              mc:Ignorable="d"
              d:DesignWidth="800" 
              d:DesignHeight="600"
@@ -49,24 +50,53 @@
                             ScaleY="{Binding Path=SelectedZoomLevel, Mode=OneWay}"/>
           </LayoutTransformControl.LayoutTransform>
 
-          <jsControls:DesignerGrid ShowGridLines="False"
+          <ItemsControl ItemsSource="{Binding Path=Nodes}">
+
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <jsControls:DesignerGrid ShowGridLines="False"
                             ShowCustomGridLines="True"
                             GridLineBrush="White"
                             GridLineThickness="0.5"
                             Focusable="True"
                             Background="DarkGray"
-                            Opacity="1.0"
                             >
 
-            <i:Interaction.Behaviors>
-              <jsInteractions:UserControlMouseWheelEventTriggerBehavior KeyModifiers="Control">
-                <ia:InvokeCommandAction Command="{Binding CtrlZoom}" PassEventArgsToCommand="True"/>
-              </jsInteractions:UserControlMouseWheelEventTriggerBehavior>
-            </i:Interaction.Behaviors>
+                  <i:Interaction.Behaviors>
+                    <jsInteractions:UserControlMouseWheelEventTriggerBehavior KeyModifiers="Control">
+                      <ia:InvokeCommandAction Command="{Binding CtrlZoom}" PassEventArgsToCommand="True"/>
+                    </jsInteractions:UserControlMouseWheelEventTriggerBehavior>
+                  </i:Interaction.Behaviors>
 
-            <jsInputs:Float Grid.Row="3"
-                            Grid.Column="4"/>
-          </jsControls:DesignerGrid>
+                </jsControls:DesignerGrid>
+                
+              </ItemsPanelTemplate>
+              
+            </ItemsControl.ItemsPanel>
+
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter" x:DataType="jsModel:Node">
+                <Setter Property="Grid.Row" Value="{Binding Path=Row}"/>
+                <Setter Property="Grid.Column" Value="{Binding Path=Column}"/>
+                <Setter Property="ClipToBounds" Value="False"/>
+                <Setter Property="ZIndex" Value="1"/>
+
+              </Style>
+            </ItemsControl.Styles>
+            
+            <ItemsControl.DataTemplates>
+              <DataTemplate DataType="jsModel:Float">
+                <jsInputs:Float DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:Integer">
+                <jsInputs:Integer DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:UnsignedInteger">
+                <jsInputs:UnsignedInteger DataContext="{Binding}"/>
+              </DataTemplate>
+            </ItemsControl.DataTemplates>
+          </ItemsControl>
+          
 
         </LayoutTransformControl>
         

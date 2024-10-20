@@ -4,7 +4,7 @@ namespace JuliaSynth.Views.Inputs;
 
 public partial class Integer : Node
 {
-    public Integer()
+    public Integer() : base()
     {
         InitializeComponent();
     }

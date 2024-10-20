@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Collections;
+using JuliaSynth.Model;
 using ReactiveUI;
 using System.Reactive;
 
@@ -18,6 +19,11 @@ public class MainViewModel : ReactiveObject
         0.25, 0.50, 0.80, 1.00, 1.25, 1.50, 2.00, 3.00, 4.00, 5.00, 8.00, 10.00
         ]);
 
+    public AvaloniaList<Node> Nodes { get; } = new([
+        new Float() { Row = 5, Column = 10, Value = 0.0 },
+        new UnsignedInteger() { Row = 3, Column = 4, Value = 0 },
+        new Integer() { Row = 3, Column = 4, Value = 0 },
+        ]);
     public double MinZoom { get; } = 0.25;
 
     public double MaxZoom { get; } = 10.00;

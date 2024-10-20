@@ -11,10 +11,6 @@
              
              x:DataType="jsModel:UnsignedInteger"
              
-             ZIndex="1"
-             Width="180"
-             Height="120"
-             ClipToBounds="False"
              >
   
   <Design.DataContext>
