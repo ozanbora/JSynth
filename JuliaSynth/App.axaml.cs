@@ -22,6 +22,12 @@ public partial class App : Application
             {
                 DataContext = new MainViewModel()
             };
+
+            MainViewModel.OnStartup();
+            desktop.ShutdownRequested += (sender, e) =>
+            {
+                MainViewModel.OnShutdown();
+            };
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
@@ -31,6 +37,9 @@ public partial class App : Application
             };
         }
 
+
         base.OnFrameworkInitializationCompleted();
     }
+
+
 }

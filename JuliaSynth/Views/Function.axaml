@@ -1,0 +1,145 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             
+             x:Class="JuliaSynth.Views.Function"
+             
+             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+             xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
+             
+             x:DataType="jsModel:Function"
+             >
+  <Design.DataContext>
+    <jsModel:Function />
+  </Design.DataContext>
+  
+  <UserControl.Resources>
+    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
+  </UserControl.Resources>
+
+  <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+          CornerRadius="8"
+          BoxShadow="10 10 40 0 Black"
+          BorderBrush="Black"
+          BorderThickness="1"
+          >
+    <Grid ShowGridLines="False">
+
+      <Grid.RowDefinitions>
+        <RowDefinition Height="30"/>
+        <RowDefinition Height="50"/>
+        <RowDefinition Height="20"/>
+        <RowDefinition Height="20"/>
+      </Grid.RowDefinitions>
+
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="40"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <TextBlock Grid.Column="0"
+                 Grid.Row="0"
+                 Grid.RowSpan="4"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Top"
+                 FontFamily="{StaticResource NotoSansMath}"
+                 FontSize="64"
+                 Text="𝒇"
+                 />
+
+      <TextBlock Grid.Column="0"
+                 Grid.Row="2"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Center"
+                 FontFamily="{StaticResource NotoSansMath}"
+                 FontStyle="Italic"
+                 FontSize="12"
+                 Text="Min"
+                 />
+
+      <TextBlock Grid.Column="0"
+                 Grid.Row="3"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Center"
+                 FontFamily="{StaticResource NotoSansMath}"
+                 FontStyle="Italic"
+                 FontSize="12"
+                 Text="Max"
+                 />
+
+      <StackPanel Grid.Row="0"
+                  Grid.Column="1"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center">
+
+        <Button Content="Ξ"
+                FontFamily="{StaticResource NotoSansMath}"
+              >
+          <Button.Flyout>
+            <Flyout Placement="Top"
+                    ShowMode="Transient"
+                    >
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+
+        <Button Content="𝑖"
+                FontFamily="{StaticResource NotoSansMath}"
+              />
+
+        <Button Content="X"
+                FontFamily="{StaticResource NotoSansMath}"
+                />
+
+      </StackPanel>
+
+      <jsControls:Connector Grid.Row="1"
+                     Grid.Column="0"
+                     HorizontalAlignment="Left"
+                     VerticalAlignment="Top"
+                     ZIndex="3"
+                     Margin="-12 0 0 0"/>
+
+      <jsControls:Connector Grid.Row="2"
+                     Grid.Column="1"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Top"
+                     ZIndex="3"
+                     Margin="0 0 -12 0"/>
+
+      <jsControls:Connector Grid.Row="3"
+                     Grid.Column="1"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Top"
+                     ZIndex="3"
+                     Margin="0 0 -12 0"/>
+
+      <TextBlock Grid.Row="1"
+                 Grid.Column="1"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Bottom"
+                 FontSize="18"
+                 
+                 />
+
+      <TextBlock Grid.Row="2"
+                 Grid.Column="1"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Bottom"
+                 
+                 />
+
+      <TextBlock Grid.Row="3"
+                 Grid.Column="1"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Bottom"
+                 
+                 />
+
+    </Grid>
+  </Border>
+  
+</UserControl>

@@ -8,6 +8,7 @@
              xmlns:jsViewModels="clr-namespace:JuliaSynth.ViewModels"
              xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
              xmlns:jsInputs="clr-namespace:JuliaSynth.Views.Inputs"
+             xmlns:jsViews="clr-namespace:JuliaSynth.Views"
              xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"
              xmlns:jsModel="clr-namespace:JuliaSynth.Model"
              mc:Ignorable="d"
@@ -81,8 +82,8 @@
 
             <ItemsControl.Styles>
               <Style Selector="ContentPresenter" x:DataType="jsModel:Node">
-                <Setter Property="Grid.Row" Value="{Binding Path=Row}"/>
-                <Setter Property="Grid.Column" Value="{Binding Path=Column}"/>
+                <Setter Property="Grid.Row" Value="{Binding Path=Row, Mode=TwoWay}"/>
+                <Setter Property="Grid.Column" Value="{Binding Path=Column, Mode=TwoWay}"/>
                 <Setter Property="ClipToBounds" Value="False"/>
                 <Setter Property="ZIndex" Value="1"/>
 
@@ -98,6 +99,9 @@
               </DataTemplate>
               <DataTemplate DataType="jsModel:UnsignedInteger">
                 <jsInputs:UnsignedInteger DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:Function">
+                <jsViews:Function DataContext="{Binding}"/>
               </DataTemplate>
             </ItemsControl.DataTemplates>
           </ItemsControl>

@@ -1,7 +1,9 @@
 ﻿using Avalonia;
 using Avalonia.Collections;
 using JuliaSynth.Model;
+using Newtonsoft.Json;
 using ReactiveUI;
+using System.IO;
 using System.Reactive;
 
 namespace JuliaSynth.ViewModels;
@@ -19,10 +21,11 @@ public class MainViewModel : ReactiveObject
         0.25, 0.50, 0.80, 1.00, 1.25, 1.50, 2.00, 3.00, 4.00, 5.00, 8.00, 10.00
         ]);
 
-    public AvaloniaList<Node> Nodes { get; } = new([
+    public static AvaloniaList<Node> Nodes { get; } = new([
         new Float() { Row = 5, Column = 10, Value = 0.0 },
         new UnsignedInteger() { Row = 3, Column = 4, Value = 0 },
         new Integer() { Row = 3, Column = 4, Value = 0 },
+        new Function() { Row = 6, Column = 9},
         ]);
     public double MinZoom { get; } = 0.25;
 
@@ -58,5 +61,35 @@ public class MainViewModel : ReactiveObject
 
         index = delta.Y == 1 ? index < ZoomLevels.Count - 1 ? index + 1 : index : index > 0 ? index - 1 : index;
         SelectedZoomLevel = ZoomLevels[index];
+    }
+
+    private static readonly JsonSerializerSettings settings = new()
+    {
+        TypeNameHandling = TypeNameHandling.All,
+        Formatting = Formatting.Indented,
+        NullValueHandling = NullValueHandling.Include,
+        DefaultValueHandling = DefaultValueHandling.Include
+    };
+    public static void OnShutdown()
+    {
+        string json = JsonConvert.SerializeObject(Nodes, settings);
+
+        using StreamWriter writer = new("nodes.json");
+        writer.Write(json);
+    }
+
+    public static void OnStartup()
+    {
+        if (!File.Exists("nodes.json"))
+        {
+            return;
+        }
+        Nodes.Clear();
+        using StreamReader reader = new("nodes.json");
+        AvaloniaList<Node>? nodes = JsonConvert.DeserializeObject<AvaloniaList<Node>>(reader.ReadToEnd(), settings);
+        if (nodes is not null)
+        {
+            Nodes.AddRange(nodes);
+        }
     }
 }

@@ -1,9 +1,11 @@
 ﻿using Avalonia.Media;
+using Newtonsoft.Json;
 using ReactiveUI;
 using System;
 
 namespace JuliaSynth.Model
 {
+    [JsonObject(MemberSerialization.OptIn)]
     public class Node : ReactiveObject
     {
         #region Private Members
@@ -14,20 +16,24 @@ namespace JuliaSynth.Model
         #endregion
 
         #region Public Properties
+        [JsonProperty]
         public string ID { get; private set; }
 
+        [JsonProperty]
         public int Column
         {
             get => _column;
             set => this.RaiseAndSetIfChanged(ref _column, value);
         }
 
+        [JsonProperty]
         public int Row
         {
             get => _row;
             set => this.RaiseAndSetIfChanged(ref _row, value);
         }
 
+        [JsonProperty]
         public Color Color
         {
             get => _color;
