@@ -101,6 +101,12 @@ namespace JuliaSynth.Controls
         /// </summary>
         internal class GridLinesRenderer : Control
         {
+            #region Private Fields
+            private Size _lastArrangeSize;
+            private const double _dashLength = 4.0;
+            private readonly Pen _dashPen;
+            #endregion
+
             /// <summary>
             /// Static initialization
             /// </summary>
@@ -170,9 +176,6 @@ namespace JuliaSynth.Controls
                 InvalidateVisual();
             }
 
-            private Size _lastArrangeSize;
-            private const double _dashLength = 4.0;
-            private readonly Pen _dashPen;
         }
     }
 }
