@@ -2,19 +2,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             
+
              x:Class="JuliaSynth.Views.Function"
-             
+
              xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
              xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
-             
+             xmlns:jsDetails="clr-namespace:JuliaSynth.Views.Details"
+
              x:DataType="jsModel:Function"
              >
   <Design.DataContext>
     <jsModel:Function />
   </Design.DataContext>
-  
+
   <UserControl.Resources>
     <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
   </UserControl.Resources>
@@ -30,8 +31,7 @@
       <Grid.RowDefinitions>
         <RowDefinition Height="30"/>
         <RowDefinition Height="50"/>
-        <RowDefinition Height="20"/>
-        <RowDefinition Height="20"/>
+        <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
 
       <Grid.ColumnDefinitions>
@@ -41,32 +41,12 @@
 
       <TextBlock Grid.Column="0"
                  Grid.Row="0"
-                 Grid.RowSpan="4"
+                 Grid.RowSpan="2"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Top"
                  FontFamily="{StaticResource NotoSansMath}"
                  FontSize="64"
                  Text="𝒇"
-                 />
-
-      <TextBlock Grid.Column="0"
-                 Grid.Row="2"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Center"
-                 FontFamily="{StaticResource NotoSansMath}"
-                 FontStyle="Italic"
-                 FontSize="12"
-                 Text="Min"
-                 />
-
-      <TextBlock Grid.Column="0"
-                 Grid.Row="3"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Center"
-                 FontFamily="{StaticResource NotoSansMath}"
-                 FontStyle="Italic"
-                 FontSize="12"
-                 Text="Max"
                  />
 
       <StackPanel Grid.Row="0"
@@ -75,6 +55,14 @@
                   HorizontalAlignment="Right"
                   VerticalAlignment="Center">
 
+        <TextBlock Text="⚠"
+                   VerticalAlignment="Center"
+                   Margin="0 0 4 0"
+                   Foreground="Gold"
+                   IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                   ToolTip.Tip="{Binding Path=Error}"
+                   />
+
         <Button Content="Ξ"
                 FontFamily="{StaticResource NotoSansMath}"
               >
@@ -82,6 +70,7 @@
             <Flyout Placement="Top"
                     ShowMode="Transient"
                     >
+              <jsDetails:Function/>
             </Flyout>
           </Button.Flyout>
         </Button>
@@ -96,50 +85,63 @@
 
       </StackPanel>
 
+      <!-- Output -->
       <jsControls:Connector Grid.Row="1"
-                     Grid.Column="0"
-                     HorizontalAlignment="Left"
-                     VerticalAlignment="Top"
-                     ZIndex="3"
-                     Margin="-12 0 0 0"/>
-
-      <jsControls:Connector Grid.Row="2"
                      Grid.Column="1"
                      HorizontalAlignment="Right"
                      VerticalAlignment="Top"
                      ZIndex="3"
                      Margin="0 0 -12 0"/>
 
-      <jsControls:Connector Grid.Row="3"
-                     Grid.Column="1"
-                     HorizontalAlignment="Right"
-                     VerticalAlignment="Top"
-                     ZIndex="3"
-                     Margin="0 0 -12 0"/>
+      <StackPanel Grid.Row="1"
+                  Grid.Column="1"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  ToolTip.Tip="{Binding Path=Code}"
+                  >
+        <TextBlock FontSize="18"
+                   Text="{Binding Path=Name}"
+                   />
+        <TextBlock FontFamily="{StaticResource NotoSansMath}"
+                   FontStyle="Italic"
+                   FontSize="12"
+                   VerticalAlignment="Bottom"
+                   Margin="2 0 0 2"
+                   Text="{Binding Path=ReturnType, StringFormat=::\{0\}}"
+                   />
+      </StackPanel>
 
-      <TextBlock Grid.Row="1"
-                 Grid.Column="1"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Bottom"
-                 FontSize="18"
-                 
-                 />
-
-      <TextBlock Grid.Row="2"
-                 Grid.Column="1"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Bottom"
-                 
-                 />
-
-      <TextBlock Grid.Row="3"
-                 Grid.Column="1"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Bottom"
-                 
-                 />
+      <!-- Inputs, one per parameter -->
+      <ItemsControl Grid.Row="2"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    ItemsSource="{Binding Path=Parameters}"
+                    ClipToBounds="False"
+                    >
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="jsModel:Parameter">
+            <Grid Height="20">
+              <jsControls:Connector HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    ZIndex="3"
+                                    Margin="-12 0 0 0"/>
+              <TextBlock HorizontalAlignment="Left"
+                         VerticalAlignment="Center"
+                         Margin="16 0 8 0"
+                         FontFamily="{StaticResource NotoSansMath}"
+                         FontStyle="Italic"
+                         FontSize="12"
+                         TextTrimming="CharacterEllipsis"
+                         Text="{Binding Path=Signature}"
+                         ToolTip.Tip="{Binding Path=Signature}"
+                         />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
 
     </Grid>
   </Border>
-  
+
 </UserControl>
