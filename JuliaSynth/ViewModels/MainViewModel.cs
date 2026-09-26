@@ -1,8 +1,10 @@
 ﻿using Avalonia;
 using Avalonia.Collections;
+using JuliaSynth.Converters;
 using JuliaSynth.Model;
 using Newtonsoft.Json;
 using ReactiveUI;
+using System;
 using System.IO;
 using System.Reactive;
 
@@ -57,9 +59,24 @@ public class MainViewModel : ReactiveObject
 
     private void CtrlZoomMove(Vector delta)
     {
-        int index = ZoomLevels.IndexOf(SelectedZoomLevel);
+        if (delta.Y == 0)
+        {
+            return;
+        }
 
-        index = delta.Y == 1 ? index < ZoomLevels.Count - 1 ? index + 1 : index : index > 0 ? index - 1 : index;
+        // Use the nearest level instead of IndexOf, which returns -1 for values not in the list.
+        int index = 0;
+        for (int i = 1; i < ZoomLevels.Count; i++)
+        {
+            if (Math.Abs(ZoomLevels[i] - SelectedZoomLevel) < Math.Abs(ZoomLevels[index] - SelectedZoomLevel))
+            {
+                index = i;
+            }
+        }
+
+        index = delta.Y > 0
+            ? Math.Min(index + 1, ZoomLevels.Count - 1)
+            : Math.Max(index - 1, 0);
         SelectedZoomLevel = ZoomLevels[index];
     }
 
@@ -68,7 +85,8 @@ public class MainViewModel : ReactiveObject
         TypeNameHandling = TypeNameHandling.All,
         Formatting = Formatting.Indented,
         NullValueHandling = NullValueHandling.Include,
-        DefaultValueHandling = DefaultValueHandling.Include
+        DefaultValueHandling = DefaultValueHandling.Include,
+        Converters = { new UInt128JsonConverter() }
     };
     public static void OnShutdown()
     {

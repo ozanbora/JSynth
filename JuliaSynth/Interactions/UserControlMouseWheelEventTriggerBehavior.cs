@@ -40,6 +40,9 @@ namespace JuliaSynth.Interactions
             if (e.KeyModifiers == KeyModifiers)
             {
                 _ = Interaction.ExecuteActions(AssociatedObject, Actions, parameter: e.Delta);
+
+                // Stop the ScrollViewer from also scrolling while zooming.
+                e.Handled = true;
             }
         }
 
