@@ -3,9 +3,13 @@ using Avalonia.Collections;
 using JuliaSynth.Converters;
 using JuliaSynth.Model;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReactiveUI;
 using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Reactive;
 
 namespace JuliaSynth.ViewModels;
@@ -45,6 +49,77 @@ public class MainViewModel : ReactiveObject
             Parameters = { new Parameter("x", "Float64"), new Parameter("y", "Float64") },
         },
         ]);
+    /// <summary>
+    /// Wires between node outputs and function parameters.
+    /// </summary>
+    public static AvaloniaList<Connection> Connections { get; } = [];
+
+    static MainViewModel()
+    {
+        Nodes.CollectionChanged += NodesChanged;
+        foreach (Function function in Nodes.OfType<Function>())
+        {
+            function.Parameters.CollectionChanged += ParametersChanged;
+        }
+    }
+
+    /// <summary>
+    /// Wires <paramref name="source"/>'s output to <paramref name="parameter"/> of
+    /// <paramref name="target"/>, replacing the wire already on that parameter.
+    /// </summary>
+    /// <returns>Why the connection isn't allowed, or null when it was made.</returns>
+    public static string? Connect(Node source, Function target, Parameter parameter)
+    {
+        List<Connection> replaced = Connections.Where(c => c.ParameterID == parameter.ID).ToList();
+        string? error = Wiring.Validate(Connections.Except(replaced), source, target, parameter);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        Connections.RemoveAll(replaced);
+        Connections.Add(new Connection(source.ID, target.ID, parameter.ID));
+        return null;
+    }
+
+    public static Connection? ConnectionTo(Parameter parameter)
+    {
+        return Connections.FirstOrDefault(c => c.ParameterID == parameter.ID);
+    }
+
+    public static void Disconnect(Connection connection)
+    {
+        _ = Connections.Remove(connection);
+    }
+
+    private static void NodesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        foreach (Function function in e.OldItems?.OfType<Function>() ?? [])
+        {
+            function.Parameters.CollectionChanged -= ParametersChanged;
+        }
+
+        foreach (Function function in e.NewItems?.OfType<Function>() ?? [])
+        {
+            function.Parameters.CollectionChanged += ParametersChanged;
+        }
+
+        PruneConnections();
+    }
+
+    private static void ParametersChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        PruneConnections();
+    }
+
+    /// <summary>
+    /// Drops the wires whose node or parameter was deleted.
+    /// </summary>
+    private static void PruneConnections()
+    {
+        Connections.RemoveAll(Connections.Where(c => !Wiring.IsAttached(Nodes, c)).ToList());
+    }
+
     public double MinZoom { get; } = 0.25;
 
     public double MaxZoom { get; } = 3.00;
@@ -124,9 +199,19 @@ public class MainViewModel : ReactiveObject
         DefaultValueHandling = DefaultValueHandling.Include,
         Converters = { new UInt128JsonConverter() }
     };
+    /// <summary>
+    /// What nodes.json holds.
+    /// </summary>
+    public sealed class DesignDocument
+    {
+        public AvaloniaList<Node> Nodes { get; set; } = [];
+
+        public AvaloniaList<Connection> Connections { get; set; } = [];
+    }
+
     public static void OnShutdown()
     {
-        string json = JsonConvert.SerializeObject(Nodes, settings);
+        string json = JsonConvert.SerializeObject(new DesignDocument { Nodes = Nodes, Connections = Connections }, settings);
 
         using StreamWriter writer = new("nodes.json");
         writer.Write(json);
@@ -138,12 +223,27 @@ public class MainViewModel : ReactiveObject
         {
             return;
         }
-        Nodes.Clear();
-        using StreamReader reader = new("nodes.json");
-        AvaloniaList<Node>? nodes = JsonConvert.DeserializeObject<AvaloniaList<Node>>(reader.ReadToEnd(), settings);
-        if (nodes is not null)
+
+        string json;
+        using (StreamReader reader = new("nodes.json"))
         {
-            Nodes.AddRange(nodes);
+            json = reader.ReadToEnd();
         }
+
+        // nodes.json used to hold just the node list (serialized as {"$type": ..., "$values": [...]}).
+        DesignDocument? document = JObject.Parse(json).ContainsKey("$values")
+            ? new DesignDocument { Nodes = JsonConvert.DeserializeObject<AvaloniaList<Node>>(json, settings) ?? [] }
+            : JsonConvert.DeserializeObject<DesignDocument>(json, settings);
+
+        if (document is null)
+        {
+            return;
+        }
+
+        Nodes.Clear();
+        Connections.Clear();
+        Nodes.AddRange(document.Nodes);
+        Connections.AddRange(document.Connections);
+        PruneConnections();
     }
 }

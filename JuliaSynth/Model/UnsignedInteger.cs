@@ -21,6 +21,11 @@ namespace JuliaSynth.Model
             set => this.RaiseAndSetIfChanged(ref _selectedType, value);
         }
 
+        /// <summary>
+        /// Julia type for the selected bitness, e.g. <c>UInt32</c> for "32-bit".
+        /// </summary>
+        public override string OutputType => "UInt" + SelectedType.Replace("-bit", string.Empty);
+
         public ReadOnlyObservableCollection<string> PossibleTypes { get; } = new([
             "8-bit",
             "16-bit",
@@ -67,6 +72,7 @@ namespace JuliaSynth.Model
             }
 
             ResetRange();
+            this.RaisePropertyChanged(nameof(OutputType));
         }
     }
 }
