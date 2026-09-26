@@ -2,16 +2,14 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using System;
 
 namespace JuliaSynth.Controls
 {
     public partial class Node : UserControl
     {
-        private bool _isPressed;
-        private Point _positionInBlock;
-        private Point _initialPosition;
-        private TranslateTransform _transform = null!;
-        private Control? ContentContainer = null;
+        private bool _isDragging;
+        private Point _dragStart;
 
         public Node() : base()
         {
@@ -19,75 +17,81 @@ namespace JuliaSynth.Controls
             ClipToBounds = false;
             Width = 180;
             Height = 120;
-
         }
+
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {
-            _isPressed = true;
-            _positionInBlock = e.GetPosition((Visual?)Parent);
-            _initialPosition = new Point(_positionInBlock.X, _positionInBlock.Y);
-            if (_transform != null!)
-            {
-                _positionInBlock = new Point(
-                    _positionInBlock.X - _transform.X,
-                    _positionInBlock.Y - _transform.Y);
-            }
-
             base.OnPointerPressed(e);
-        }
 
-        protected override void OnPointerReleased(PointerReleasedEventArgs e)
-        {
-            _isPressed = false;
-
-            // Snap to grid
-            Point currentPosition = e.GetPosition((Visual?)Parent);
-            double offsetX = currentPosition.X - _initialPosition.X;
-            double offsetY = currentPosition.Y - _initialPosition.Y;
-
-
-            ContentContainer = Parent as Control;
-
-            if (ContentContainer is not null)
+            if (Parent is not Visual parent || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             {
-                int currentRow = Grid.GetRow(ContentContainer);
-                int currentColumn = Grid.GetColumn(ContentContainer);
-
-                int nextRow = currentRow + ((int)offsetY / Constants.WIDTH);
-                int nextColumn = currentColumn + ((int)offsetX / Constants.HEIGHT);
-
-                nextRow = nextRow < 0 ? 0 : nextRow;
-                nextColumn = nextColumn < 0 ? 0 : nextColumn;
-
-                Grid.SetRow(ContentContainer, nextRow);
-                Grid.SetColumn(ContentContainer, nextColumn);
+                return;
             }
 
-            base.OnPointerReleased(e);
+            // Capture first: taking capture from the child that was implicitly captured must not
+            // be mistaken for losing it mid-drag in OnPointerCaptureLost.
+            e.Pointer.Capture(this);
+            _dragStart = e.GetPosition(parent);
+            _isDragging = true;
+
+            // Don't let the canvas start panning while a node is being dragged.
+            e.Handled = true;
         }
 
         protected override void OnPointerMoved(PointerEventArgs e)
         {
-            if (!_isPressed)
-            {
-                return;
-            }
-
-            if (Parent == null)
-            {
-                return;
-            }
-
-            Point currentPosition = e.GetPosition((Visual?)Parent);
-
-            double offsetX = currentPosition.X - _positionInBlock.X;
-            double offsetY = currentPosition.Y - _positionInBlock.Y;
-
-            _transform = new TranslateTransform(offsetX, offsetY);
-            RenderTransform = _transform;
-
             base.OnPointerMoved(e);
 
+            if (!_isDragging || Parent is not Visual parent)
+            {
+                return;
+            }
+
+            Vector offset = e.GetPosition(parent) - _dragStart;
+            RenderTransform = new TranslateTransform(offset.X, offset.Y);
+        }
+
+        protected override void OnPointerReleased(PointerReleasedEventArgs e)
+        {
+            base.OnPointerReleased(e);
+
+            if (!_isDragging || Parent is not Visual parent)
+            {
+                return;
+            }
+
+            Vector offset = e.GetPosition(parent) - _dragStart;
+            EndDrag();
+            e.Pointer.Capture(null);
+
+            // Snap to the nearest grid cell by updating the model; the ItemsControl container
+            // binds Grid.Row/Grid.Column to it. Setting Grid.Row directly on the container would
+            // override that binding and the model (and nodes.json) would never see the new position.
+            if (DataContext is Model.Node node)
+            {
+                int rowDelta = (int)Math.Round(offset.Y / Constants.HEIGHT);
+                int columnDelta = (int)Math.Round(offset.X / Constants.WIDTH);
+
+                node.Row = Math.Clamp(node.Row + rowDelta, 0, Constants.ROWS - 1);
+                node.Column = Math.Clamp(node.Column + columnDelta, 0, Constants.COLUMNS - 1);
+            }
+        }
+
+        protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+        {
+            base.OnPointerCaptureLost(e);
+
+            // Capture taken away mid-drag (e.g. window lost focus): cancel and snap back.
+            if (_isDragging)
+            {
+                EndDrag();
+            }
+        }
+
+        private void EndDrag()
+        {
+            _isDragging = false;
+            RenderTransform = null;
         }
     }
 }

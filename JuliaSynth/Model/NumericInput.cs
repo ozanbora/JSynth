@@ -1,4 +1,5 @@
-﻿using ReactiveUI;
+﻿using Newtonsoft.Json;
+using ReactiveUI;
 using System.Numerics;
 
 namespace JuliaSynth.Model
@@ -14,12 +15,16 @@ namespace JuliaSynth.Model
         #endregion
 
         #region Public Properties
+        // Serialization order matters: derived classes serialize SelectedType with Order = 1,
+        // whose setter resets Min/Max to the hard limits. Min/Max/Value must be applied after it.
+        [JsonProperty(Order = 3)]
         public T Value
         {
             get => _value;
             set => this.RaiseAndSetIfChanged(ref _value, value);
         }
 
+        // HardMin/HardMax are derived from the selected bitness, so they are not serialized.
         public T HardMin
         {
             get => _hardMin;
@@ -32,12 +37,14 @@ namespace JuliaSynth.Model
             set => this.RaiseAndSetIfChanged(ref _hardMax, value);
         }
 
+        [JsonProperty(Order = 2)]
         public T Min
         {
             get => _min;
             set => this.RaiseAndSetIfChanged(ref _min, value);
         }
 
+        [JsonProperty(Order = 2)]
         public T Max
         {
             get => _max;
@@ -46,6 +53,17 @@ namespace JuliaSynth.Model
         #endregion
         public NumericInput() : base()
         {
+        }
+
+        /// <summary>
+        /// Resets Min/Max to the hard limits and clamps Value into the new range.
+        /// Called by derived classes when the bitness changes.
+        /// </summary>
+        protected void ResetRange()
+        {
+            Min = HardMin;
+            Max = HardMax;
+            Value = T.Clamp(Value, Min, Max);
         }
     }
 }

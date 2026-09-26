@@ -83,7 +83,7 @@
             <Flyout Placement="Top"
                     ShowMode="Transient"
                     >
-              <jsDetails:UnsignedInteger/>
+              <jsDetails:Integer/>
             </Flyout>
           </Button.Flyout>
         </Button>

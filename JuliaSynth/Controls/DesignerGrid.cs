@@ -35,7 +35,7 @@ namespace JuliaSynth.Controls
         }
 
         public static readonly StyledProperty<IBrush?> GridLineBrushProperty =
-            Border.BorderBrushProperty.AddOwner<Grid>();
+            Border.BorderBrushProperty.AddOwner<DesignerGrid>();
 
         public double GridLineThickness
         {
@@ -62,7 +62,7 @@ namespace JuliaSynth.Controls
             }
 
             MinWidth = NumberOfColumns * Width.Value;
-            MaxHeight = NumberOfRows * Height.Value;
+            MinHeight = NumberOfRows * Height.Value;
             RenderOptions.SetRequiresFullOpacityHandling(this, true);
         }
 

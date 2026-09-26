@@ -1,4 +1,5 @@
 ﻿using Avalonia.Media;
+using Newtonsoft.Json;
 using ReactiveUI;
 using System;
 using System.Collections.ObjectModel;
@@ -12,6 +13,7 @@ namespace JuliaSynth.Model
         #endregion
 
         #region Public Properties
+        [JsonProperty(Order = 1)]
         public string SelectedType
         {
             get => _selectedType;
@@ -64,8 +66,7 @@ namespace JuliaSynth.Model
                     break;
             }
 
-            Min = HardMin;
-            Max = HardMax;
+            ResetRange();
         }
 
     }
