@@ -19,8 +19,9 @@ public class MainViewModel : ReactiveObject
 
     public ReactiveCommand<Vector, Unit> CtrlZoom { get; }
 
+    // Capped at 3x: a node is 180x120, so beyond that a single node no longer fits on screen.
     public AvaloniaList<double> ZoomLevels { get; } = new([
-        0.25, 0.50, 0.80, 1.00, 1.25, 1.50, 2.00, 3.00, 4.00, 5.00, 8.00, 10.00
+        0.25, 0.33, 0.50, 0.67, 0.75, 0.90, 1.00, 1.10, 1.25, 1.50, 1.75, 2.00, 2.50, 3.00
         ]);
 
     public static AvaloniaList<Node> Nodes { get; } = new([
@@ -39,7 +40,7 @@ public class MainViewModel : ReactiveObject
         ]);
     public double MinZoom { get; } = 0.25;
 
-    public double MaxZoom { get; } = 10.00;
+    public double MaxZoom { get; } = 3.00;
 
     public double SelectedZoomLevel
     {
