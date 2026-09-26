@@ -18,15 +18,13 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            MainViewModel viewModel = new();
+            viewModel.StartUp();
+
+            // Saving is explicit now; the window asks about unsaved changes when it closes.
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainViewModel()
-            };
-
-            MainViewModel.OnStartup();
-            desktop.ShutdownRequested += (sender, e) =>
-            {
-                MainViewModel.OnShutdown();
+                DataContext = viewModel
             };
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)

@@ -8,7 +8,7 @@
         x:Class="JuliaSynth.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="JuliaSynth"
+        Title="{Binding Path=Title}"
         MinWidth="640"
         MinHeight="400"
         WindowStartupLocation="CenterScreen"
@@ -28,5 +28,30 @@
           <KeyBinding Gesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
           <KeyBinding Gesture="Escape" Command="{Binding Path=ClearSelection}"/>
         </Window.KeyBindings>
-        <views:MainView />
+
+        <DockPanel>
+          <Border DockPanel.Dock="Top"
+                  Background="{DynamicResource StatusBarBackgroundBrush}"
+                  BorderBrush="{DynamicResource StatusBarBorderBrush}"
+                  BorderThickness="0 0 0 1">
+          <Menu>
+            <MenuItem Header="_File">
+              <MenuItem Header="_New" InputGesture="Ctrl+N" HotKey="Ctrl+N" Click="New_Click"/>
+              <MenuItem Header="_Open…" InputGesture="Ctrl+O" HotKey="Ctrl+O" Click="Open_Click"/>
+              <MenuItem Header="_Save" InputGesture="Ctrl+S" HotKey="Ctrl+S" Click="Save_Click"/>
+              <MenuItem Header="Save _As…" InputGesture="Ctrl+Shift+S" HotKey="Ctrl+Shift+S" Click="SaveAs_Click"/>
+              <Separator/>
+              <MenuItem Header="E_xit" Click="Exit_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Edit">
+              <MenuItem Header="_Undo" InputGesture="Ctrl+Z" Command="{Binding Path=Undo}"/>
+              <MenuItem Header="_Redo" InputGesture="Ctrl+Y" Command="{Binding Path=Redo}"/>
+              <Separator/>
+              <MenuItem Header="_Delete" InputGesture="Delete" Command="{Binding Path=DeleteSelected}"/>
+              <MenuItem Header="Select _all" InputGesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
+            </MenuItem>
+          </Menu>
+          </Border>
+          <views:MainView />
+        </DockPanel>
 </Window>

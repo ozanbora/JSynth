@@ -355,6 +355,12 @@ public class MainViewModel : ReactiveObject
         DeleteSelected = ReactiveCommand.Create(DeleteSelectedNodes);
         SelectAll = ReactiveCommand.Create(() => { foreach (Node node in Nodes) { node.IsSelected = true; } });
         ClearSelection = ReactiveCommand.Create(() => SelectOnly(null));
+
+        History.Changed += (_, _) =>
+        {
+            this.RaisePropertyChanged(nameof(IsDirty));
+            this.RaisePropertyChanged(nameof(Title));
+        };
     }
 
     public ReactiveCommand<Unit, Unit> Undo { get; }
@@ -407,10 +413,14 @@ public class MainViewModel : ReactiveObject
         Formatting = Formatting.Indented,
         NullValueHandling = NullValueHandling.Include,
         DefaultValueHandling = DefaultValueHandling.Include,
-        Converters = { new UInt128JsonConverter() }
+        Converters = { new UInt128JsonConverter() },
+        // Design files name the types to create; only allow the design's own.
+        SerializationBinder = new DesignSerializationBinder(),
     };
+
+    #region Files
     /// <summary>
-    /// What nodes.json holds.
+    /// What a design file holds.
     /// </summary>
     public sealed class DesignDocument
     {
@@ -419,38 +429,100 @@ public class MainViewModel : ReactiveObject
         public AvaloniaList<Connection> Connections { get; set; } = [];
     }
 
-    public static void OnShutdown()
-    {
-        string json = JsonConvert.SerializeObject(new DesignDocument { Nodes = Nodes, Connections = Connections }, settings);
+    public const string FileExtension = ".jsynth";
 
-        using StreamWriter writer = new("nodes.json");
-        writer.Write(json);
+    // Before design files existed, the design was always saved here, next to the program.
+    private const string LegacyFile = "nodes.json";
+
+    private string? _filePath;
+
+    /// <summary>
+    /// The open design file, or null for a design that was never saved.
+    /// </summary>
+    public string? FilePath
+    {
+        get => _filePath;
+        private set
+        {
+            _ = this.RaiseAndSetIfChanged(ref _filePath, value);
+            this.RaisePropertyChanged(nameof(Title));
+        }
     }
 
-    public static void OnStartup()
-    {
-        if (!File.Exists("nodes.json"))
-        {
-            return;
-        }
+    public bool IsDirty => History.IsDirty;
 
-        string json;
-        using (StreamReader reader = new("nodes.json"))
+    public string Title => $"{(FilePath is null ? "Untitled" : Path.GetFileName(FilePath))}{(IsDirty ? " •" : string.Empty)} - JuliaSynth";
+
+    /// <summary>
+    /// Opens the last design, else a nodes.json from before design files, else keeps the starting design.
+    /// </summary>
+    public void StartUp()
+    {
+        foreach (string? path in new[] { AppSettings.Load().LastFile, LegacyFile })
         {
-            json = reader.ReadToEnd();
+            if (path is not null && File.Exists(path))
+            {
+                try
+                {
+                    OpenDesign(path);
+                    return;
+                }
+                catch (Exception e) when (IsFileError(e))
+                {
+                    // Unreadable: try the next one, and fall back to the starting design.
+                }
+            }
         }
+    }
+
+    public void NewDesign()
+    {
+        Load(new DesignDocument());
+        History.Reset();
+        FilePath = null;
+    }
+
+    /// <exception cref="IOException">The file can't be read.</exception>
+    /// <exception cref="JsonException">The file isn't a design.</exception>
+    public void OpenDesign(string path)
+    {
+        string json = File.ReadAllText(path);
 
         // nodes.json used to hold just the node list (serialized as {"$type": ..., "$values": [...]}).
-        DesignDocument? document = JObject.Parse(json).ContainsKey("$values")
+        DesignDocument document = (JObject.Parse(json).ContainsKey("$values")
             ? new DesignDocument { Nodes = JsonConvert.DeserializeObject<AvaloniaList<Node>>(json, settings) ?? [] }
-            : JsonConvert.DeserializeObject<DesignDocument>(json, settings);
-
-        if (document is null)
-        {
-            return;
-        }
+            : JsonConvert.DeserializeObject<DesignDocument>(json, settings))
+            ?? throw new JsonSerializationException("The file holds no design.");
 
         Load(document);
         History.Reset();
+        FilePath = Path.GetFullPath(path);
+        Remember(FilePath);
     }
+
+    /// <exception cref="IOException">The file can't be written.</exception>
+    public void SaveDesign(string path)
+    {
+        History.Commit();
+        File.WriteAllText(path, CaptureDesign());
+        History.MarkSaved();
+        FilePath = Path.GetFullPath(path);
+        Remember(FilePath);
+    }
+
+    /// <summary>
+    /// Errors that mean "this file can't be used", as opposed to bugs.
+    /// </summary>
+    public static bool IsFileError(Exception e)
+    {
+        return e is IOException or UnauthorizedAccessException or JsonException;
+    }
+
+    private static void Remember(string path)
+    {
+        AppSettings settings = AppSettings.Load();
+        settings.LastFile = path;
+        settings.Save();
+    }
+    #endregion
 }

@@ -36,10 +36,17 @@ namespace JuliaSynth.ViewModels
 
         public bool CanRedo => _index < _states.Count - 1 && !IsPending;
 
+        /// <summary>
+        /// The design differs from the one last saved (or loaded). Undoing back to it clears this.
+        /// </summary>
+        public bool IsDirty => IsPending || (_index >= 0 && _states[_index] != _savedState);
+
         private bool IsPending => _timer.IsEnabled;
 
+        private string? _savedState;
+
         /// <summary>
-        /// Forgets all steps; the current design becomes the starting point.
+        /// Forgets all steps; the current design becomes the starting point, counted as saved.
         /// </summary>
         public void Reset()
         {
@@ -47,6 +54,17 @@ namespace JuliaSynth.ViewModels
             _states.Clear();
             _states.Add(_capture());
             _index = 0;
+            _savedState = _states[0];
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// The current design was just saved.
+        /// </summary>
+        public void MarkSaved()
+        {
+            Commit();
+            _savedState = _index >= 0 ? _states[_index] : null;
             Changed?.Invoke(this, EventArgs.Empty);
         }
 
@@ -83,6 +101,7 @@ namespace JuliaSynth.ViewModels
                 _states.Add(state);
                 if (_states.Count > MaxSteps)
                 {
+                    // The saved state may be the one dropped; it still compares by content.
                     _states.RemoveAt(0);
                 }
 
