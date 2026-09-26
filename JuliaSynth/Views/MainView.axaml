@@ -56,12 +56,12 @@
                             ScaleY="{Binding Path=SelectedZoomLevel, Mode=OneWay}"/>
           </LayoutTransformControl.LayoutTransform>
 
-          <ItemsControl ItemsSource="{Binding Path=Nodes}">
+          <ItemsControl ItemsSource="{Binding Path=Nodes}"
+                        Classes.shadows="{Binding Path=ShowShadows}">
 
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <jsControls:DesignerGrid ShowGridLines="False"
-                            ShowCustomGridLines="True"
+                <jsControls:DesignerGrid ShowCustomGridLines="True"
                             GridLineBrush="White"
                             GridLineThickness="0.5"
                             Focusable="True"
@@ -87,6 +87,9 @@
                 <Setter Property="ClipToBounds" Value="False"/>
                 <Setter Property="ZIndex" Value="1"/>
 
+              </Style>
+              <Style Selector="ItemsControl.shadows Border.node">
+                <Setter Property="BoxShadow" Value="10 10 40 0 Black"/>
               </Style>
             </ItemsControl.Styles>
             
