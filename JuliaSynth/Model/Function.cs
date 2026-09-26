@@ -50,7 +50,11 @@ namespace JuliaSynth.Model
         {
             get => _returnType;
             // Ignore the null a ComboBox writes back when its selection is cleared.
-            set => this.RaiseAndSetIfChanged(ref _returnType, value ?? _returnType);
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _returnType, value ?? _returnType);
+                this.RaisePropertyChanged(nameof(OutputType));
+            }
         }
 
         [JsonProperty]
@@ -64,6 +68,8 @@ namespace JuliaSynth.Model
         // populating this existing collection doesn't produce duplicates.
         [JsonProperty]
         public ObservableCollection<Parameter> Parameters { get; } = [];
+
+        public override string OutputType => ReturnType;
 
         public ReadOnlyObservableCollection<string> PossibleTypes => Types;
 

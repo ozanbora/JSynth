@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using ReactiveUI;
+using System;
 using System.Collections.ObjectModel;
 
 namespace JuliaSynth.Model
@@ -16,6 +17,13 @@ namespace JuliaSynth.Model
         #endregion
 
         #region Public Properties
+        /// <summary>
+        /// Stable identity, so a <see cref="Connection"/> keeps pointing at this parameter
+        /// when it is renamed or reordered.
+        /// </summary>
+        [JsonProperty]
+        public string ID { get; private set; } = Guid.NewGuid().ToString("N");
+
         [JsonProperty]
         public string Name
         {

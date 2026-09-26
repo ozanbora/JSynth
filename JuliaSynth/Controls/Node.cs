@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using JuliaSynth.ViewModels;
 using System;
 
@@ -50,6 +51,9 @@ namespace JuliaSynth.Controls
 
             Vector offset = e.GetPosition(parent) - _dragStart;
             RenderTransform = new TranslateTransform(offset.X, offset.Y);
+
+            // Moving by render transform doesn't go through layout; keep the wires attached.
+            this.FindAncestorOfType<DesignerGrid>()?.InvalidateWires();
         }
 
         protected override void OnPointerReleased(PointerReleasedEventArgs e)
@@ -104,6 +108,7 @@ namespace JuliaSynth.Controls
         {
             _isDragging = false;
             RenderTransform = null;
+            this.FindAncestorOfType<DesignerGrid>()?.InvalidateWires();
         }
     }
 }

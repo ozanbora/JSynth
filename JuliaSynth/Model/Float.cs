@@ -28,6 +28,11 @@ namespace JuliaSynth.Model
             set => this.RaiseAndSetIfChanged(ref _epsilon, value);
         }
 
+        /// <summary>
+        /// Julia type for the selected bitness, e.g. <c>Float32</c> for "32-bit".
+        /// </summary>
+        public override string OutputType => "Float" + SelectedType.Replace("-bit", string.Empty);
+
         public ReadOnlyObservableCollection<string> PossibleTypes { get; } = new([
             "16-bit",
             "32-bit",
@@ -73,6 +78,7 @@ namespace JuliaSynth.Model
             }
 
             ResetRange();
+            this.RaisePropertyChanged(nameof(OutputType));
         }
     }
 }

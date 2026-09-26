@@ -13,7 +13,7 @@ namespace JuliaSynth.Controls
     /// This is deliberately not a <see cref="Grid"/>: with hundreds of row and column definitions every
     /// layout pass of a Grid is expensive, while fixed-size cells only need a multiplication.
     /// </remarks>
-    public class DesignerGrid : Panel
+    public partial class DesignerGrid : Panel
     {
         private const double DashLength = 4.0;
 
@@ -87,6 +87,7 @@ namespace JuliaSynth.Controls
         protected override Size ArrangeOverride(Size finalSize)
         {
             EnsureGridLinesRenderer()?.Arrange(new Rect(finalSize));
+            EnsureWiresRenderer().Arrange(new Rect(finalSize));
 
             foreach (Control child in Children)
             {
@@ -102,7 +103,8 @@ namespace JuliaSynth.Controls
         {
             if (ShowCustomGridLines && _gridLinesRenderer == null)
             {
-                _gridLinesRenderer = new GridLinesRenderer(this);
+                // Below the wires, which are below the nodes.
+                _gridLinesRenderer = new GridLinesRenderer(this) { ZIndex = -2 };
                 VisualChildren.Add(_gridLinesRenderer);
             }
 

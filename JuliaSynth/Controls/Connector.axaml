@@ -6,31 +6,31 @@
              Width="16"
              Height="16"
              ZIndex="2"
+             Background="Transparent"
+             Cursor="Cross"
              >
 
-  <!-- A round port: accent fill with a ring in the window background color so it stands out on any node color. -->
-  <Button x:Name="ConnectButton"
-          HorizontalAlignment="Stretch"
-          VerticalAlignment="Stretch"
-          IsTabStop="False"
-          Focusable="False"
-          Cursor="Hand"
-          >
-    <Button.Styles>
-      <Style Selector="Button#ConnectButton">
-        <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource CanvasBackgroundBrush}"/>
-        <Setter Property="Template">
-          <ControlTemplate>
-            <Ellipse Fill="{TemplateBinding Background}"
-                     Stroke="{TemplateBinding BorderBrush}"
-                     StrokeThickness="2"/>
-          </ControlTemplate>
-        </Setter>
-      </Style>
-      <Style Selector="Button#ConnectButton:pointerover">
-        <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}"/>
-      </Style>
-    </Button.Styles>
-  </Button>
+  <UserControl.Styles>
+    <!-- A round port: accent fill with a ring in the canvas color so it stands out on any node color. -->
+    <Style Selector="Ellipse#Port">
+      <Setter Property="Fill" Value="{DynamicResource SystemAccentColor}"/>
+      <Setter Property="Stroke" Value="{DynamicResource CanvasBackgroundBrush}"/>
+      <Setter Property="StrokeThickness" Value="2"/>
+    </Style>
+    <Style Selector=":is(UserControl):pointerover > Ellipse#Port">
+      <Setter Property="Fill" Value="{DynamicResource SystemAccentColorLight1}"/>
+    </Style>
+
+    <!-- Drop target feedback while a wire is dragged over the port. -->
+    <Style Selector=":is(UserControl).accept > Ellipse#Port">
+      <Setter Property="Fill" Value="#16C60C"/>
+      <Setter Property="StrokeThickness" Value="3"/>
+    </Style>
+    <Style Selector=":is(UserControl).reject > Ellipse#Port">
+      <Setter Property="Fill" Value="#E81123"/>
+      <Setter Property="StrokeThickness" Value="3"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Ellipse x:Name="Port"/>
 </UserControl>

@@ -40,6 +40,11 @@ namespace JuliaSynth.Model
             set => this.RaiseAndSetIfChanged(ref _color, value);
         }
 
+        /// <summary>
+        /// Julia type of the value this node outputs, e.g. <c>Float32</c>.
+        /// </summary>
+        public virtual string OutputType => Function.AnyType;
+
         #endregion
         public Node()
         {
