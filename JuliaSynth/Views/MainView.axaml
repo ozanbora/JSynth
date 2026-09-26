@@ -21,23 +21,15 @@
     <jsViewModels:MainViewModel/>
   </Design.DataContext>
   
-  <Grid x:Name="MainGrid">
-    <Grid.RowDefinitions>
-      <RowDefinition Height="30"/>
-      <RowDefinition Height="*" />
-      <RowDefinition Height="50"/>
-    </Grid.RowDefinitions>
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="100"/>
-      <ColumnDefinition Width="*"/>
-    </Grid.ColumnDefinitions>
+  <Grid x:Name="MainGrid"
+        RowDefinitions="*,Auto">
     <Grid.Resources>
       <jsConverters:VectorFormatConverter x:Key="VectorConverter"/>
       <jsConverters:PercentConverter x:Key="PercentConverter"/>
     </Grid.Resources>
 
-    <Border Grid.Row="1"
-            Grid.Column="1"
+    <Border Grid.Row="0"
+            Background="{DynamicResource CanvasBackgroundBrush}"
             >
       <ScrollViewer HorizontalScrollBarVisibility="Auto"
                     VerticalScrollBarVisibility="Auto"
@@ -62,10 +54,10 @@
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <jsControls:DesignerGrid ShowCustomGridLines="True"
-                            GridLineBrush="White"
+                            GridLineBrush="{DynamicResource CanvasGridLineBrush}"
                             GridLineThickness="0.5"
                             Focusable="True"
-                            Background="DarkGray"
+                            Background="{DynamicResource CanvasBackgroundBrush}"
                             >
 
                   <i:Interaction.Behaviors>
@@ -89,7 +81,7 @@
 
               </Style>
               <Style Selector="ItemsControl.shadows Border.node">
-                <Setter Property="BoxShadow" Value="10 10 40 0 Black"/>
+                <Setter Property="BoxShadow" Value="0 6 18 0 #73000000"/>
               </Style>
             </ItemsControl.Styles>
             
@@ -116,46 +108,61 @@
       </ScrollViewer>
     </Border>
     
-    <Grid Grid.Row="2" 
-          Grid.Column="1" 
-          HorizontalAlignment="Right"
-          VerticalAlignment="Bottom"
-          >
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="*"/>
-      </Grid.ColumnDefinitions>
-      <Grid.RenderTransform>
-        <TransformGroup>
-          <ScaleTransform ScaleX="0.8" ScaleY="0.8"/>
-        </TransformGroup>
-      </Grid.RenderTransform>
-      <TextBlock Grid.Column="1"
-                 VerticalAlignment="Bottom"
-                 HorizontalAlignment="Center"
-                 TextAlignment="Right"
-                 Width="120"
-                 Text="{ Binding ScrollViewerOffset, Converter={StaticResource VectorConverter} }" />
-      <Slider Name="ZoomSlider"
-              Value="{Binding Path=SelectedZoomLevel, Mode=TwoWay}"
-              Minimum="{Binding Path=MinZoom, Mode=OneTime}"
-              Maximum="{Binding Path=MaxZoom, Mode=OneTime}"
-              IsSnapToTickEnabled="True"
-              Ticks="{Binding Path=ZoomLevels, Mode=OneTime}"
-              TickPlacement="TopLeft"
-              Width="200"
-              Margin="0 10 10 0"
-              >
-        <Slider.Styles>
-          <Style Selector="Slider/template/Thumb">
-            <Setter Property="ToolTip.Tip" Value="{Binding $parent[Slider].Value, Mode=OneWay, Converter={StaticResource PercentConverter}}" />
-            <Setter Property="ToolTip.Placement" Value="Top" />
-            <Setter Property="ToolTip.ShowDelay" Value="0"/>
-            <Setter Property="ToolTip.VerticalOffset" Value="-10" />
-            <Setter Property="ToolTip.HorizontalOffset" Value="0" />
+    <!-- Status bar -->
+    <Border Grid.Row="1"
+            Background="{DynamicResource StatusBarBackgroundBrush}"
+            BorderBrush="{DynamicResource StatusBarBorderBrush}"
+            BorderThickness="0 1 0 0"
+            Padding="12 2"
+            >
+      <Grid ColumnDefinitions="*,Auto">
+        <Grid.Styles>
+          <Style Selector="Button.zoom">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6 0"/>
+            <Setter Property="MinWidth" Value="28"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
           </Style>
-        </Slider.Styles>
-      </Slider>
-    </Grid>
+        </Grid.Styles>
+
+        <TextBlock Grid.Column="0"
+                   VerticalAlignment="Center"
+                   Opacity="0.6"
+                   FontSize="12"
+                   ToolTip.Tip="Scroll position"
+                   Text="{Binding Path=ScrollViewerOffset, Converter={StaticResource VectorConverter}}" />
+
+        <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    Spacing="2"
+                    VerticalAlignment="Center">
+          <Button Classes="zoom"
+                  Content="−"
+                  Command="{Binding Path=ZoomOut}"
+                  ToolTip.Tip="Zoom out (Ctrl+−)" />
+          <Slider Name="ZoomSlider"
+                  Value="{Binding Path=SelectedZoomLevel, Mode=TwoWay}"
+                  Minimum="{Binding Path=MinZoom, Mode=OneTime}"
+                  Maximum="{Binding Path=MaxZoom, Mode=OneTime}"
+                  IsSnapToTickEnabled="True"
+                  Ticks="{Binding Path=ZoomLevels, Mode=OneTime}"
+                  Width="160"
+                  VerticalAlignment="Center"
+                  />
+          <Button Classes="zoom"
+                  Content="+"
+                  Command="{Binding Path=ZoomIn}"
+                  ToolTip.Tip="Zoom in (Ctrl++)" />
+          <Button Classes="zoom"
+                  MinWidth="52"
+                  Content="{Binding Path=SelectedZoomLevel, Converter={StaticResource PercentConverter}}"
+                  Command="{Binding Path=ResetZoom}"
+                  ToolTip.Tip="Reset zoom to 100% (Ctrl+0)" />
+        </StackPanel>
+      </Grid>
+    </Border>
   </Grid>
 </UserControl>

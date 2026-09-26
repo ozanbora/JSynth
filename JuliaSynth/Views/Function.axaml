@@ -11,6 +11,7 @@
              xmlns:jsDetails="clr-namespace:JuliaSynth.Views.Details"
 
              x:DataType="jsModel:Function"
+             Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
              >
   <Design.DataContext>
     <jsModel:Function />
@@ -21,39 +22,21 @@
   </UserControl.Resources>
 
   <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
-          CornerRadius="8"
           Classes="node"
-          BorderBrush="Black"
-          BorderThickness="1"
           >
-    <Grid ShowGridLines="False">
-
-      <Grid.RowDefinitions>
-        <RowDefinition Height="30"/>
-        <RowDefinition Height="50"/>
-        <RowDefinition Height="*"/>
-      </Grid.RowDefinitions>
-
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="40"/>
-        <ColumnDefinition Width="*"/>
-      </Grid.ColumnDefinitions>
+    <Grid RowDefinitions="30,48,*"
+          ColumnDefinitions="40,*">
 
       <TextBlock Grid.Column="0"
                  Grid.Row="0"
                  Grid.RowSpan="2"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Top"
-                 FontFamily="{StaticResource NotoSansMath}"
-                 FontSize="64"
+                 Classes="glyph"
                  Text="𝒇"
                  />
 
       <StackPanel Grid.Row="0"
                   Grid.Column="1"
-                  Orientation="Horizontal"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Center">
+                  Classes="nodeActions">
 
         <TextBlock Text="⚠"
                    VerticalAlignment="Center"
@@ -63,8 +46,9 @@
                    ToolTip.Tip="{Binding Path=Error}"
                    />
 
-        <Button Content="Ξ"
-                FontFamily="{StaticResource NotoSansMath}"
+        <Button Classes="nodeAction"
+                Content="Ξ"
+                ToolTip.Tip="Edit"
               >
           <Button.Flyout>
             <Flyout Placement="Top"
@@ -75,12 +59,20 @@
           </Button.Flyout>
         </Button>
 
-        <Button Content="𝑖"
-                FontFamily="{StaticResource NotoSansMath}"
-              />
+        <TextBlock Classes="nodeInfo"
+                   Text="𝑖"
+                   >
+          <ToolTip.Tip>
+            <TextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                       TextAlignment="Left"
+                       Text="{Binding Path=Code}"/>
+          </ToolTip.Tip>
+        </TextBlock>
 
-        <Button Content="X"
-                FontFamily="{StaticResource NotoSansMath}"
+        <Button Classes="nodeAction danger"
+                Content="✕"
+                ToolTip.Tip="Delete"
+                Click="Delete_Click"
                 />
 
       </StackPanel>
@@ -91,21 +83,21 @@
                      HorizontalAlignment="Right"
                      VerticalAlignment="Top"
                      ZIndex="3"
-                     Margin="0 0 -12 0"/>
+                     Margin="0 0 -8 0"/>
 
       <StackPanel Grid.Row="1"
                   Grid.Column="1"
                   Orientation="Horizontal"
                   HorizontalAlignment="Right"
                   VerticalAlignment="Bottom"
+                  Margin="4 0 8 0"
                   ToolTip.Tip="{Binding Path=Code}"
                   >
         <TextBlock FontSize="18"
+                   TextTrimming="CharacterEllipsis"
                    Text="{Binding Path=Name}"
                    />
-        <TextBlock FontFamily="{StaticResource NotoSansMath}"
-                   FontStyle="Italic"
-                   FontSize="12"
+        <TextBlock Classes="caption"
                    VerticalAlignment="Bottom"
                    Margin="2 0 0 2"
                    Text="{Binding Path=ReturnType, StringFormat=::\{0\}}"
@@ -125,13 +117,10 @@
               <jsControls:Connector HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
                                     ZIndex="3"
-                                    Margin="-12 0 0 0"/>
+                                    Margin="-8 0 0 0"/>
               <TextBlock HorizontalAlignment="Left"
-                         VerticalAlignment="Center"
                          Margin="16 0 8 0"
-                         FontFamily="{StaticResource NotoSansMath}"
-                         FontStyle="Italic"
-                         FontSize="12"
+                         Classes="caption"
                          TextTrimming="CharacterEllipsis"
                          Text="{Binding Path=Signature}"
                          ToolTip.Tip="{Binding Path=Signature}"

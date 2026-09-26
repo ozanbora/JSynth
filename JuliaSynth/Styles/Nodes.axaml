@@ -1,0 +1,141 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:jsConverters="clr-namespace:JuliaSynth.Converters">
+
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="CanvasBackgroundBrush" Color="#F0F0F0"/>
+          <SolidColorBrush x:Key="CanvasGridLineBrush" Color="#C4C4C4"/>
+          <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#FAFAFA"/>
+          <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#E0E0E0"/>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="CanvasBackgroundBrush" Color="#1E1E1E"/>
+          <SolidColorBrush x:Key="CanvasGridLineBrush" Color="#3A3A3A"/>
+          <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#272727"/>
+          <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#333333"/>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+
+      <jsConverters:ContrastBrushConverter x:Key="ContrastBrushConverter"/>
+      <SolidColorBrush x:Key="NodeBorderBrush" Color="#59000000"/>
+      <SolidColorBrush x:Key="NodeActionHoverBrush" Color="#33808080"/>
+      <SolidColorBrush x:Key="NodeActionPressedBrush" Color="#59808080"/>
+      <SolidColorBrush x:Key="DangerBrush" Color="#C42B1C"/>
+    </ResourceDictionary>
+  </Styles.Resources>
+
+  <!-- Node body -->
+  <Style Selector="Border.node">
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="BorderBrush" Value="{StaticResource NodeBorderBrush}"/>
+  </Style>
+
+  <!-- Large type glyph in the node's left column (x, z, n, f) -->
+  <Style Selector="TextBlock.glyph">
+    <Setter Property="FontFamily" Value="{DynamicResource NotoSansMath}"/>
+    <Setter Property="FontSize" Value="56"/>
+    <Setter Property="HorizontalAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment" Value="Top"/>
+    <Setter Property="Margin" Value="0 4 0 0"/>
+  </Style>
+
+  <!-- Small labels such as Min / Max / parameter signatures -->
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontFamily" Value="{DynamicResource NotoSansMath}"/>
+    <Setter Property="FontStyle" Value="Italic"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="Opacity" Value="0.8"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+
+  <!-- The node's main value -->
+  <Style Selector="TextBlock.value">
+    <Setter Property="FontSize" Value="18"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    <Setter Property="HorizontalAlignment" Value="Right"/>
+    <Setter Property="VerticalAlignment" Value="Bottom"/>
+    <Setter Property="Margin" Value="4 0 8 0"/>
+  </Style>
+
+  <!-- Secondary values such as the range limits -->
+  <Style Selector="TextBlock.limit">
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    <Setter Property="HorizontalAlignment" Value="Right"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Margin" Value="4 0 8 0"/>
+  </Style>
+
+  <!-- Header actions: small borderless buttons that use the node's text color -->
+  <Style Selector="StackPanel.nodeActions">
+    <Setter Property="Orientation" Value="Horizontal"/>
+    <Setter Property="HorizontalAlignment" Value="Right"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Spacing" Value="2"/>
+    <Setter Property="Margin" Value="0 0 4 0"/>
+  </Style>
+
+  <Style Selector="Button.nodeAction">
+    <Setter Property="Width" Value="24"/>
+    <Setter Property="Height" Value="22"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="FontFamily" Value="{DynamicResource NotoSansMath}"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{Binding $parent[UserControl].Foreground}"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}"
+                CornerRadius="4">
+          <ContentPresenter Name="Presenter"
+                            Content="{TemplateBinding Content}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button.nodeAction:pointerover">
+    <Setter Property="Background" Value="{StaticResource NodeActionHoverBrush}"/>
+  </Style>
+  <Style Selector="Button.nodeAction:pressed">
+    <Setter Property="Background" Value="{StaticResource NodeActionPressedBrush}"/>
+  </Style>
+  <Style Selector="Button.nodeAction.danger:pointerover">
+    <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+
+  <!-- Info glyph: shows a description on hover, it is not clickable -->
+  <Style Selector="TextBlock.nodeInfo">
+    <Setter Property="Width" Value="24"/>
+    <Setter Property="FontFamily" Value="{DynamicResource NotoSansMath}"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="TextAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Opacity" Value="0.8"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="ToolTip.ShowDelay" Value="200"/>
+  </Style>
+
+  <!-- Details flyouts: theme colored text regardless of the node color, and some breathing room -->
+  <Style Selector=":is(UserControl).details">
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+  </Style>
+  <Style Selector=":is(UserControl).details > Grid > :is(Control)">
+    <Setter Property="Margin" Value="0 3"/>
+  </Style>
+  <Style Selector=":is(UserControl).details > Grid > Label">
+    <Setter Property="Margin" Value="0 3 12 3"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style Selector=":is(UserControl).details > Grid > StackPanel > Label">
+    <Setter Property="Margin" Value="12 0 6 0"/>
+  </Style>
+</Styles>

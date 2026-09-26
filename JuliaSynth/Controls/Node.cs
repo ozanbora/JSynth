@@ -1,7 +1,9 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
+using JuliaSynth.ViewModels;
 using System;
 
 namespace JuliaSynth.Controls
@@ -84,6 +86,17 @@ namespace JuliaSynth.Controls
             if (_isDragging)
             {
                 EndDrag();
+            }
+        }
+
+        /// <summary>
+        /// Removes this node from the designer.
+        /// </summary>
+        protected void Delete_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is Model.Node node)
+            {
+                _ = MainViewModel.Nodes.Remove(node);
             }
         }
 

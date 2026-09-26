@@ -6,8 +6,20 @@
         xmlns:views="clr-namespace:JuliaSynth.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="JuliaSynth.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="JuliaSynth"
+        MinWidth="640"
+        MinHeight="400"
+        WindowStartupLocation="CenterScreen"
         >
+        <Window.KeyBindings>
+          <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding Path=ZoomIn}"/>
+          <KeyBinding Gesture="Ctrl+Add" Command="{Binding Path=ZoomIn}"/>
+          <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding Path=ZoomOut}"/>
+          <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding Path=ZoomOut}"/>
+          <KeyBinding Gesture="Ctrl+D0" Command="{Binding Path=ResetZoom}"/>
+          <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding Path=ResetZoom}"/>
+        </Window.KeyBindings>
         <views:MainView />
 </Window>
