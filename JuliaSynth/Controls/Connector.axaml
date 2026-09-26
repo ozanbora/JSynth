@@ -3,18 +3,34 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              x:Class="JuliaSynth.Controls.Connector"
-             Width="24"
+             Width="16"
              Height="16"
              ZIndex="2"
-             Opacity="1.0"
-             Background="{DynamicResource SolidBackgroundFillColorBase}"
              >
-  
-  <Button x:Name="ConnectButton" 
-          Classes="accent"
+
+  <!-- A round port: accent fill with a ring in the window background color so it stands out on any node color. -->
+  <Button x:Name="ConnectButton"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
           IsTabStop="False"
           Focusable="False"
-          />
+          Cursor="Hand"
+          >
+    <Button.Styles>
+      <Style Selector="Button#ConnectButton">
+        <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource CanvasBackgroundBrush}"/>
+        <Setter Property="Template">
+          <ControlTemplate>
+            <Ellipse Fill="{TemplateBinding Background}"
+                     Stroke="{TemplateBinding BorderBrush}"
+                     StrokeThickness="2"/>
+          </ControlTemplate>
+        </Setter>
+      </Style>
+      <Style Selector="Button#ConnectButton:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}"/>
+      </Style>
+    </Button.Styles>
+  </Button>
 </UserControl>

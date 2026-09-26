@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              
              x:Class="JuliaSynth.Views.Details.UnsignedInteger"
+             Classes="details"
              
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
              xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 
              x:Class="JuliaSynth.Views.Details.Function"
+             Classes="details"
 
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
 
@@ -138,7 +139,7 @@
             Grid.Column="1"
             Padding="6"
             CornerRadius="4"
-            Background="{DynamicResource SolidBackgroundFillColorBase}"
+            Background="{DynamicResource CanvasBackgroundBrush}"
             >
       <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
                            TextWrapping="Wrap"

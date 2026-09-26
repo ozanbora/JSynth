@@ -8,7 +8,7 @@ namespace JuliaSynth.Views;
 
 public partial class Function : Node
 {
-    // Header (30) + name row (50), see Function.axaml.
+    // Header (30) + name row (48) + border (2 x 1), see Function.axaml.
     private const double HeaderHeight = 80;
     private const double ParameterRowHeight = 20;
     private const int MinParameterRows = 2;

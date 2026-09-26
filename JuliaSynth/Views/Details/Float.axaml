@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              
              x:Class="JuliaSynth.Views.Details.Float"
+             Classes="details"
              
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
              xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"
@@ -98,7 +99,7 @@
              HorizontalAlignment="Stretch"
              HorizontalContentAlignment="Right"
              IsEnabled="False"
-             Text="{Binding Path=Epsilon, StringFormat=\{0:e25\}}"
+             Text="{Binding Path=Epsilon, StringFormat=\{0:R\}}"
              ToolTip.Tip="This is machine epsilon for this bitness, i.e. smallest representable floating point number."
                    />
   </Grid>
