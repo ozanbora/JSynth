@@ -1,15 +1,12 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Xaml.Interactivity;
 
 namespace JuliaSynth.Interactions
 {
     public class UserControlTriggerBehavior : Trigger<Control>
     {
-        private KeyModifiers _savedKeyModifiers = KeyModifiers.None;
-
         private bool _pointerPressedWhileCtrlPressed = false;
 
         private PointerPoint _lastPoint;
@@ -41,9 +38,6 @@ namespace JuliaSynth.Interactions
                 AssociatedObject.PointerPressed += AssociatedObject_PointerPressed;
                 AssociatedObject.PointerMoved += AssociatedObject_PointerMoved;
                 AssociatedObject.PointerReleased += AssociatedObject_PointerReleased;
-
-                AssociatedObject.AddHandler(InputElement.KeyDownEvent, Button_OnKeyDown, RoutingStrategies.Tunnel);
-                AssociatedObject.AddHandler(InputElement.KeyUpEvent, Button_OnKeyUp, RoutingStrategies.Tunnel);
             }
         }
 
@@ -59,15 +53,12 @@ namespace JuliaSynth.Interactions
                 AssociatedObject.PointerPressed -= AssociatedObject_PointerPressed;
                 AssociatedObject.PointerMoved -= AssociatedObject_PointerMoved;
                 AssociatedObject.PointerReleased -= AssociatedObject_PointerReleased;
-
-                AssociatedObject.RemoveHandler(InputElement.KeyDownEvent, Button_OnKeyDown);
-                AssociatedObject.RemoveHandler(InputElement.KeyUpEvent, Button_OnKeyUp);
             }
         }
 
         private void AssociatedObject_PointerPressed(object? sender, PointerPressedEventArgs eventArgs)
         {
-            if (KeyModifiers == _savedKeyModifiers)
+            if (eventArgs.KeyModifiers == KeyModifiers)
             {
                 _pointerPressedWhileCtrlPressed = true;
                 _lastPoint = eventArgs.GetCurrentPoint(sender as Control);
@@ -76,7 +67,7 @@ namespace JuliaSynth.Interactions
 
         private void AssociatedObject_PointerMoved(object? sender, PointerEventArgs eventArgs)
         {
-            if (KeyModifiers == _savedKeyModifiers && _pointerPressedWhileCtrlPressed)
+            if (eventArgs.KeyModifiers == KeyModifiers && _pointerPressedWhileCtrlPressed)
             {
                 PointerPoint currentPoint = eventArgs.GetCurrentPoint(sender as Control);
                 Vector offset = currentPoint.Position - _lastPoint.Position;
@@ -88,28 +79,16 @@ namespace JuliaSynth.Interactions
 
         private void AssociatedObject_PointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
         {
-            if (KeyModifiers == _savedKeyModifiers)
+            if (_pointerPressedWhileCtrlPressed && eventArgs.KeyModifiers == KeyModifiers)
             {
-                if (_pointerPressedWhileCtrlPressed)
-                {
-                    PointerPoint currentPoint = eventArgs.GetCurrentPoint(sender as Control);
-                    Vector offset = currentPoint.Position - _lastPoint.Position;
+                PointerPoint currentPoint = eventArgs.GetCurrentPoint(sender as Control);
+                Vector offset = currentPoint.Position - _lastPoint.Position;
 
-                    _ = Interaction.ExecuteActions(AssociatedObject, Actions, parameter: offset);
-                }
-
-                _pointerPressedWhileCtrlPressed = false;
+                _ = Interaction.ExecuteActions(AssociatedObject, Actions, parameter: offset);
             }
-        }
 
-        private void Button_OnKeyDown(object? sender, KeyEventArgs e)
-        {
-            _savedKeyModifiers = e.KeyModifiers;
-        }
-
-        private void Button_OnKeyUp(object? sender, KeyEventArgs e)
-        {
-            _savedKeyModifiers = KeyModifiers.None;
+            // Always end the pan, even when the modifier was let go first.
+            _pointerPressedWhileCtrlPressed = false;
         }
     }
 }

@@ -23,6 +23,7 @@
 
   <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
           Classes="node"
+          Classes.selected="{Binding Path=IsSelected}"
           >
     <Grid RowDefinitions="30,48,*"
           ColumnDefinitions="40,*">

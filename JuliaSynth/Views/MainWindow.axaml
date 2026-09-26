@@ -20,6 +20,13 @@
           <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding Path=ZoomOut}"/>
           <KeyBinding Gesture="Ctrl+D0" Command="{Binding Path=ResetZoom}"/>
           <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding Path=ResetZoom}"/>
+          <!-- Text boxes live in flyouts (their own popups), so these never steal their keys. -->
+          <KeyBinding Gesture="Ctrl+Z" Command="{Binding Path=Undo}"/>
+          <KeyBinding Gesture="Ctrl+Y" Command="{Binding Path=Redo}"/>
+          <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding Path=Redo}"/>
+          <KeyBinding Gesture="Delete" Command="{Binding Path=DeleteSelected}"/>
+          <KeyBinding Gesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
+          <KeyBinding Gesture="Escape" Command="{Binding Path=ClearSelection}"/>
         </Window.KeyBindings>
         <views:MainView />
 </Window>

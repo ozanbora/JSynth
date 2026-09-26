@@ -88,6 +88,7 @@ namespace JuliaSynth.Controls
         {
             EnsureGridLinesRenderer()?.Arrange(new Rect(finalSize));
             EnsureWiresRenderer().Arrange(new Rect(finalSize));
+            EnsureSelectionRenderer().Arrange(new Rect(finalSize));
 
             foreach (Control child in Children)
             {

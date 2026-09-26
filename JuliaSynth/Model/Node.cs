@@ -1,4 +1,4 @@
-﻿using Avalonia.Media;
+using Avalonia.Media;
 using Newtonsoft.Json;
 using ReactiveUI;
 using System;
@@ -12,6 +12,7 @@ namespace JuliaSynth.Model
         private int _column;
         private int _row;
         private Color _color;
+        private bool _isSelected;
 
         #endregion
 
@@ -38,6 +39,15 @@ namespace JuliaSynth.Model
         {
             get => _color;
             set => this.RaiseAndSetIfChanged(ref _color, value);
+        }
+
+        /// <summary>
+        /// Selected on the designer; not saved.
+        /// </summary>
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => this.RaiseAndSetIfChanged(ref _isSelected, value);
         }
 
         /// <summary>

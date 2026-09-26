@@ -8,9 +8,11 @@ using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Linq;
 
 namespace JuliaSynth.ViewModels;
 
@@ -44,10 +46,17 @@ public class MainViewModel : ReactiveObject
     /// </summary>
     public static AvaloniaList<Connection> Connections { get; } = [];
 
+    /// <summary>
+    /// Undo and redo for everything saved in nodes.json.
+    /// </summary>
+    public static UndoHistory History { get; } = new(CaptureDesign, RestoreDesign);
+
     static MainViewModel()
     {
         Nodes.CollectionChanged += NodesChanged;
+        Connections.CollectionChanged += (_, _) => History.ScheduleCommit();
         AddStartingDesign();
+        History.Reset();
     }
 
     /// <summary>
@@ -124,25 +133,175 @@ public class MainViewModel : ReactiveObject
         _ = Connections.Remove(connection);
     }
 
+    #region Change tracking
     private static void NodesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        foreach (Function function in e.OldItems?.OfType<Function>() ?? [])
+        foreach (Node node in e.OldItems?.OfType<Node>() ?? [])
         {
-            function.Parameters.CollectionChanged -= ParametersChanged;
+            Track(node, false);
         }
 
-        foreach (Function function in e.NewItems?.OfType<Function>() ?? [])
+        foreach (Node node in e.NewItems?.OfType<Node>() ?? [])
         {
-            function.Parameters.CollectionChanged += ParametersChanged;
+            Track(node, true);
         }
 
         PruneConnections();
+        History.ScheduleCommit();
+    }
+
+    private static void Track(Node node, bool track)
+    {
+        if (track)
+        {
+            node.PropertyChanged += DesignPropertyChanged;
+        }
+        else
+        {
+            node.PropertyChanged -= DesignPropertyChanged;
+        }
+
+        if (node is Function function)
+        {
+            if (track)
+            {
+                function.Parameters.CollectionChanged += ParametersChanged;
+            }
+            else
+            {
+                function.Parameters.CollectionChanged -= ParametersChanged;
+            }
+
+            foreach (Parameter parameter in function.Parameters)
+            {
+                Track(parameter, track);
+            }
+        }
+    }
+
+    private static void Track(Parameter parameter, bool track)
+    {
+        if (track)
+        {
+            parameter.PropertyChanged += DesignPropertyChanged;
+        }
+        else
+        {
+            parameter.PropertyChanged -= DesignPropertyChanged;
+        }
     }
 
     private static void ParametersChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        foreach (Parameter parameter in e.OldItems?.OfType<Parameter>() ?? [])
+        {
+            Track(parameter, false);
+        }
+
+        foreach (Parameter parameter in e.NewItems?.OfType<Parameter>() ?? [])
+        {
+            Track(parameter, true);
+        }
+
+        PruneConnections();
+        History.ScheduleCommit();
+    }
+
+    private static void DesignPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Selection isn't part of the design.
+        if (e.PropertyName != nameof(Node.IsSelected))
+        {
+            History.ScheduleCommit();
+        }
+    }
+
+    private static string CaptureDesign()
+    {
+        return JsonConvert.SerializeObject(new DesignDocument { Nodes = Nodes, Connections = Connections }, settings);
+    }
+
+    private static void RestoreDesign(string json)
+    {
+        HashSet<string> existing = Nodes.Select(n => n.ID).ToHashSet();
+        HashSet<string> selected = Nodes.Where(n => n.IsSelected).Select(n => n.ID).ToHashSet();
+
+        if (JsonConvert.DeserializeObject<DesignDocument>(json, settings) is DesignDocument document)
+        {
+            Load(document);
+        }
+
+        // Keep the selection, and select what came back (e.g. undoing a delete) so it is easy to spot.
+        foreach (Node node in Nodes)
+        {
+            node.IsSelected = selected.Contains(node.ID) || !existing.Contains(node.ID);
+        }
+    }
+
+    private static void Load(DesignDocument document)
+    {
+        Nodes.Clear();
+        Connections.Clear();
+        Nodes.AddRange(document.Nodes);
+        Connections.AddRange(document.Connections);
         PruneConnections();
     }
+    #endregion
+
+    #region Editing
+    /// <summary>
+    /// Adds a new node of <paramref name="kind"/> (Float, Integer, UnsignedInteger or Function)
+    /// at the first free spot at or below the given cell, and selects it.
+    /// </summary>
+    public static Node AddNode(string kind, int row, int column)
+    {
+        Node node = kind switch
+        {
+            nameof(Float) => new Float(),
+            nameof(Integer) => new Integer(),
+            nameof(UnsignedInteger) => new UnsignedInteger(),
+            _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
+        };
+
+        // Nodes are 9x6 cells centred on their cell; step down until this one overlaps none.
+        row = Math.Clamp(row, 3, Constants.ROWS - 4);
+        column = Math.Clamp(column, 5, Constants.COLUMNS - 5);
+        while (row < Constants.ROWS - 4 && Nodes.Any(n => Math.Abs(n.Row - row) < 7 && Math.Abs(n.Column - column) < 10))
+        {
+            row++;
+        }
+
+        (node.Row, node.Column) = (row, column);
+        SelectOnly(node);
+        Nodes.Add(node);
+        return node;
+    }
+
+    private static string FreeFunctionName()
+    {
+        HashSet<string> used = Nodes.OfType<Function>().Select(f => f.Name).ToHashSet();
+        return "fghkpqrstuvw".Select(c => c.ToString()).FirstOrDefault(n => !used.Contains(n))
+            ?? $"f{Nodes.Count + 1}";
+    }
+
+    public static void SelectOnly(Node? node)
+    {
+        foreach (Node other in Nodes)
+        {
+            other.IsSelected = other == node;
+        }
+
+        if (node is not null)
+        {
+            node.IsSelected = true;
+        }
+    }
+
+    public static void DeleteSelectedNodes()
+    {
+        Nodes.RemoveAll(Nodes.Where(n => n.IsSelected).ToList());
+    }
+    #endregion
 
     /// <summary>
     /// Drops the wires whose node or parameter was deleted.
@@ -187,7 +346,26 @@ public class MainViewModel : ReactiveObject
         ZoomIn = ReactiveCommand.Create(() => StepZoom(1));
         ZoomOut = ReactiveCommand.Create(() => StepZoom(-1));
         ResetZoom = ReactiveCommand.Create(() => { SelectedZoomLevel = 1.0; });
+
+        IObservable<Unit> historyChanged = Observable.FromEventPattern(h => History.Changed += h, h => History.Changed -= h)
+            .Select(_ => Unit.Default)
+            .StartWith(Unit.Default);
+        Undo = ReactiveCommand.Create(History.Undo, historyChanged.Select(_ => History.CanUndo));
+        Redo = ReactiveCommand.Create(History.Redo, historyChanged.Select(_ => History.CanRedo));
+        DeleteSelected = ReactiveCommand.Create(DeleteSelectedNodes);
+        SelectAll = ReactiveCommand.Create(() => { foreach (Node node in Nodes) { node.IsSelected = true; } });
+        ClearSelection = ReactiveCommand.Create(() => SelectOnly(null));
     }
+
+    public ReactiveCommand<Unit, Unit> Undo { get; }
+
+    public ReactiveCommand<Unit, Unit> Redo { get; }
+
+    public ReactiveCommand<Unit, Unit> DeleteSelected { get; }
+
+    public ReactiveCommand<Unit, Unit> SelectAll { get; }
+
+    public ReactiveCommand<Unit, Unit> ClearSelection { get; }
 
     private void CtrlPanMove(Vector offset)
     {
@@ -272,10 +450,7 @@ public class MainViewModel : ReactiveObject
             return;
         }
 
-        Nodes.Clear();
-        Connections.Clear();
-        Nodes.AddRange(document.Nodes);
-        Connections.AddRange(document.Connections);
-        PruneConnections();
+        Load(document);
+        History.Reset();
     }
 }

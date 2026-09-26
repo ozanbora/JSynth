@@ -31,7 +31,8 @@
     <Border Grid.Row="0"
             Background="{DynamicResource CanvasBackgroundBrush}"
             >
-      <ScrollViewer HorizontalScrollBarVisibility="Auto"
+      <ScrollViewer x:Name="CanvasScroll"
+                    HorizontalScrollBarVisibility="Auto"
                     VerticalScrollBarVisibility="Auto"
                     Offset="{ Binding Path=ScrollViewerOffset, Mode=TwoWay}"
                     AllowAutoHide="True"
@@ -48,8 +49,27 @@
                             ScaleY="{Binding Path=SelectedZoomLevel, Mode=OneWay}"/>
           </LayoutTransformControl.LayoutTransform>
 
-          <ItemsControl ItemsSource="{Binding Path=Nodes}"
-                        Classes.shadows="{Binding Path=ShowShadows}">
+          <ItemsControl x:Name="NodesItems"
+                        ItemsSource="{Binding Path=Nodes}"
+                        Classes.shadows="{Binding Path=ShowShadows}"
+                        ContextRequested="Canvas_ContextRequested">
+
+            <ItemsControl.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="Add node">
+                  <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtPointer_Click"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Delete selected" InputGesture="Delete" Command="{Binding Path=DeleteSelected}"/>
+                <MenuItem Header="Select all" InputGesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
+                <Separator/>
+                <MenuItem Header="Undo" InputGesture="Ctrl+Z" Command="{Binding Path=Undo}"/>
+                <MenuItem Header="Redo" InputGesture="Ctrl+Y" Command="{Binding Path=Redo}"/>
+              </ContextMenu>
+            </ItemsControl.ContextMenu>
 
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -82,6 +102,13 @@
               </Style>
               <Style Selector="ItemsControl.shadows Border.node">
                 <Setter Property="BoxShadow" Value="0 6 18 0 #73000000"/>
+              </Style>
+              <!-- Selection ring: a spread shadow without blur, so it costs nothing and moves nothing. -->
+              <Style Selector="Border.node.selected">
+                <Setter Property="BoxShadow" Value="0 0 0 3 #0078D4"/>
+              </Style>
+              <Style Selector="ItemsControl.shadows Border.node.selected">
+                <Setter Property="BoxShadow" Value="0 0 0 3 #0078D4, 0 6 18 0 #73000000"/>
               </Style>
             </ItemsControl.Styles>
             
@@ -117,7 +144,7 @@
             >
       <Grid ColumnDefinitions="*,Auto">
         <Grid.Styles>
-          <Style Selector="Button.zoom">
+          <Style Selector="Button.bar">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="6 0"/>
@@ -128,18 +155,48 @@
           </Style>
         </Grid.Styles>
 
-        <TextBlock Grid.Column="0"
-                   VerticalAlignment="Center"
-                   Opacity="0.6"
-                   FontSize="12"
-                   ToolTip.Tip="Scroll position"
-                   Text="{Binding Path=ScrollViewerOffset, Converter={StaticResource VectorConverter}}" />
+        <StackPanel Grid.Column="0"
+                    Orientation="Horizontal"
+                    Spacing="2"
+                    VerticalAlignment="Center">
+          <DropDownButton Content="Add node"
+                          Height="26"
+                          Padding="8 0"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          ToolTip.Tip="Add a node in the middle of the view (or right-click the canvas)">
+            <DropDownButton.Flyout>
+              <MenuFlyout Placement="TopEdgeAlignedLeft">
+                <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
+              </MenuFlyout>
+            </DropDownButton.Flyout>
+          </DropDownButton>
+          <Button Classes="bar"
+                  Content="↶"
+                  FontSize="16"
+                  Command="{Binding Path=Undo}"
+                  ToolTip.Tip="Undo (Ctrl+Z)" />
+          <Button Classes="bar"
+                  Content="↷"
+                  FontSize="16"
+                  Command="{Binding Path=Redo}"
+                  ToolTip.Tip="Redo (Ctrl+Y)" />
+          <TextBlock VerticalAlignment="Center"
+                     Margin="12 0 0 0"
+                     Opacity="0.6"
+                     FontSize="12"
+                     ToolTip.Tip="Scroll position"
+                     Text="{Binding Path=ScrollViewerOffset, Converter={StaticResource VectorConverter}}" />
+        </StackPanel>
 
         <StackPanel Grid.Column="1"
                     Orientation="Horizontal"
                     Spacing="2"
                     VerticalAlignment="Center">
-          <Button Classes="zoom"
+          <Button Classes="bar"
                   Content="−"
                   Command="{Binding Path=ZoomOut}"
                   ToolTip.Tip="Zoom out (Ctrl+−)" />
@@ -152,11 +209,11 @@
                   Width="160"
                   VerticalAlignment="Center"
                   />
-          <Button Classes="zoom"
+          <Button Classes="bar"
                   Content="+"
                   Command="{Binding Path=ZoomIn}"
                   ToolTip.Tip="Zoom in (Ctrl++)" />
-          <Button Classes="zoom"
+          <Button Classes="bar"
                   MinWidth="52"
                   Content="{Binding Path=SelectedZoomLevel, Converter={StaticResource PercentConverter}}"
                   Command="{Binding Path=ResetZoom}"
