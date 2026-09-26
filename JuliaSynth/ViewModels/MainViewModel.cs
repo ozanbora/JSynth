@@ -27,7 +27,15 @@ public class MainViewModel : ReactiveObject
         new Float() { Row = 5, Column = 10, Value = 0.0 },
         new UnsignedInteger() { Row = 3, Column = 4, Value = 0 },
         new Integer() { Row = 3, Column = 4, Value = 0 },
-        new Function() { Row = 6, Column = 9},
+        new Function()
+        {
+            Row = 6,
+            Column = 9,
+            Name = "f",
+            ReturnType = "Float64",
+            Body = "x * y",
+            Parameters = { new Parameter("x", "Float64"), new Parameter("y", "Float64") },
+        },
         ]);
     public double MinZoom { get; } = 0.25;
 

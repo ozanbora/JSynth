@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+             x:Class="JuliaSynth.Views.Details.Function"
+
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+
+             x:DataType="jsModel:Function"
+             Width="400"
+
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             >
+
+  <Design.DataContext>
+    <jsModel:Function />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <FontFamily x:Key="CodeFont">Cascadia Mono,Consolas,Menlo,monospace</FontFamily>
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto"
+        ColumnDefinitions="auto,*"
+        >
+
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Name"
+           />
+    <StackPanel Grid.Row="0"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                >
+      <TextBox Text="{Binding Path=Name}"
+               Width="160"
+               VerticalAlignment="Center"
+               ToolTip.Tip="Name of the Julia function."
+               />
+
+      <Label Content="Color" VerticalAlignment="Center"/>
+      <ColorPicker Color="{Binding Path=Color}"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"
+                   ToolTip.Tip="Select the color you want to display this node."
+                   />
+    </StackPanel>
+
+    <Label Grid.Row="1"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Returns"
+           />
+    <ComboBox Grid.Row="1"
+              Grid.Column="1"
+              SelectedValue="{Binding Path=ReturnType}"
+              ItemsSource="{Binding Path=PossibleTypes}"
+              ToolTip.Tip="Return type of the function. Any leaves the return type unannotated."
+              />
+
+    <Label Grid.Row="2"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Parameters"
+           />
+    <StackPanel Grid.Row="2"
+                Grid.Column="1"
+                Spacing="2"
+                >
+      <ItemsControl x:Name="ParameterList"
+                    ItemsSource="{Binding Path=Parameters}"
+                    >
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="jsModel:Parameter">
+            <Grid ColumnDefinitions="*,auto,auto"
+                  Margin="0 0 0 2"
+                  >
+              <TextBox Grid.Column="0"
+                       Text="{Binding Path=Name}"
+                       ToolTip.Tip="Name of the parameter."
+                       />
+              <ComboBox Grid.Column="1"
+                        Width="100"
+                        Margin="2 0"
+                        ItemsSource="{Binding Path=PossibleTypes}"
+                        SelectedValue="{Binding Path=Type}"
+                        ToolTip.Tip="Type of the parameter. Any leaves the parameter unannotated."
+                        />
+              <Button Grid.Column="2"
+                      Content="−"
+                      Click="RemoveParameter_Click"
+                      ToolTip.Tip="Remove this parameter."
+                      />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Button Content="+ Add parameter"
+              Click="AddParameter_Click"
+              />
+    </StackPanel>
+
+    <Label Grid.Row="3"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Body"
+           />
+    <TextBox Grid.Row="3"
+             Grid.Column="1"
+             Height="100"
+             AcceptsReturn="True"
+             AcceptsTab="True"
+             TextWrapping="NoWrap"
+             FontFamily="{StaticResource CodeFont}"
+             Text="{Binding Path=Body}"
+             ToolTip.Tip="Julia code of the function body. The value of the last expression is returned."
+             />
+
+    <TextBlock Grid.Row="4"
+               Grid.Column="1"
+               Margin="0 4"
+               Foreground="OrangeRed"
+               TextWrapping="Wrap"
+               Text="{Binding Path=Error}"
+               IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+               />
+
+    <Label Grid.Row="5"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Julia"
+           />
+    <Border Grid.Row="5"
+            Grid.Column="1"
+            Padding="6"
+            CornerRadius="4"
+            Background="{DynamicResource SolidBackgroundFillColorBase}"
+            >
+      <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
+                           TextWrapping="Wrap"
+                           Text="{Binding Path=Code}"
+                           />
+    </Border>
+  </Grid>
+
+</UserControl>
