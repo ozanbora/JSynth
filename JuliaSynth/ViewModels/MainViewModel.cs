@@ -34,21 +34,11 @@ public class MainViewModel : ReactiveObject
         0.25, 0.33, 0.50, 0.67, 0.75, 0.90, 1.00, 1.10, 1.25, 1.50, 1.75, 2.00, 2.50, 3.00
         ]);
 
-    // Nodes are 9x6 cells and centred on their cell; keep the defaults apart so none is hidden.
-    public static AvaloniaList<Node> Nodes { get; } = new([
-        new Float() { Row = 6, Column = 8, Value = 0.0 },
-        new UnsignedInteger() { Row = 6, Column = 20, Value = 0 },
-        new Integer() { Row = 6, Column = 32, Value = 0 },
-        new Function()
-        {
-            Row = 16,
-            Column = 20,
-            Name = "f",
-            ReturnType = "Float64",
-            Body = "x * y",
-            Parameters = { new Parameter("x", "Float64"), new Parameter("y", "Float64") },
-        },
-        ]);
+    /// <summary>
+    /// The nodes on the designer; the starting design until nodes.json is loaded.
+    /// </summary>
+    public static AvaloniaList<Node> Nodes { get; } = [];
+
     /// <summary>
     /// Wires between node outputs and function parameters.
     /// </summary>
@@ -57,9 +47,51 @@ public class MainViewModel : ReactiveObject
     static MainViewModel()
     {
         Nodes.CollectionChanged += NodesChanged;
-        foreach (Function function in Nodes.OfType<Function>())
+        AddStartingDesign();
+    }
+
+    /// <summary>
+    /// A small wired example using every node type: g(f(x, z), n), i.e. x^z / n.
+    /// </summary>
+    private static void AddStartingDesign()
+    {
+        // Bitness first: changing it resets the range and clamps the value.
+        Float x = new() { SelectedType = "64-bit", Value = 1.5 };
+        Integer z = new() { SelectedType = "64-bit", Value = 3 };
+        UnsignedInteger n = new() { SelectedType = "64-bit", Value = 2 };
+
+        Function f = new()
         {
-            function.Parameters.CollectionChanged += ParametersChanged;
+            Name = "f",
+            ReturnType = "Float64",
+            Body = "x ^ z",
+            Parameters = { new Parameter("x", "Float64"), new Parameter("z", "Int64") },
+        };
+
+        Function g = new()
+        {
+            Name = "g",
+            ReturnType = "Float64",
+            Body = "y / n",
+            Parameters = { new Parameter("y", "Float64"), new Parameter("n", "UInt64") },
+        };
+
+        // Nodes are 9x6 cells and centred on their cell: inputs on the left, each function
+        // between the nodes it takes, so the wires run left to right without crossing.
+        (x.Row, x.Column) = (5, 8);
+        (z.Row, z.Column) = (13, 8);
+        (n.Row, n.Column) = (21, 8);
+        (f.Row, f.Column) = (9, 22);
+        (g.Row, g.Column) = (17, 36);
+
+        Nodes.AddRange([x, z, n, f, g]);
+
+        foreach ((Node source, Function target, int parameter) in new (Node, Function, int)[] { (x, f, 0), (z, f, 1), (f, g, 0), (n, g, 1) })
+        {
+            if (Connect(source, target, target.Parameters[parameter]) is string error)
+            {
+                throw new InvalidOperationException($"Invalid starting design: {error}");
+            }
         }
     }
 
