@@ -13,7 +13,6 @@ namespace JuliaSynth.Controls
 
         public Node() : base()
         {
-            RenderOptions.SetRequiresFullOpacityHandling(this, true);
             ClipToBounds = false;
             Width = 180;
             Height = 120;

@@ -1,21 +1,26 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Avalonia.VisualTree;
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 
 namespace JuliaSynth.Controls
 {
-    public class DesignerGrid : Grid
+    /// <summary>
+    /// Designer surface made of <see cref="Constants.ROWS"/> x <see cref="Constants.COLUMNS"/> fixed-size cells.
+    /// Children are placed in a cell through the Grid.Row/Grid.Column attached properties.
+    /// </summary>
+    /// <remarks>
+    /// This is deliberately not a <see cref="Grid"/>: with hundreds of row and column definitions every
+    /// layout pass of a Grid is expensive, while fixed-size cells only need a multiplication.
+    /// </remarks>
+    public class DesignerGrid : Panel
     {
-        private readonly int NumberOfRows = Constants.ROWS;
-        private readonly int NumberOfColumns = Constants.COLUMNS;
+        private const double DashLength = 4.0;
 
-        private new readonly GridLength Height = new(Constants.HEIGHT);
-        private new readonly GridLength Width = new(Constants.WIDTH);
+        private static readonly double CellHeight = Constants.HEIGHT;
+        private static readonly double CellWidth = Constants.WIDTH;
 
+        private IBrush? _gridLinesBrush;
         private GridLinesRenderer? _gridLinesRenderer;
 
         #region Properties
@@ -39,7 +44,7 @@ namespace JuliaSynth.Controls
 
         public double GridLineThickness
         {
-            get => (double)GetValue(GridLineThicknessProperty);
+            get => GetValue(GridLineThicknessProperty);
             set => SetValue(GridLineThicknessProperty, value);
         }
 
@@ -47,47 +52,61 @@ namespace JuliaSynth.Controls
             AvaloniaProperty.Register<DesignerGrid, double>(nameof(GridLineThickness), 1.0);
         #endregion
 
-        public DesignerGrid() : base()
+        static DesignerGrid()
         {
-            RowDefinitions = []; ColumnDefinitions = [];
-
-            for (int i = 0; i < NumberOfRows; i++)
-            {
-                RowDefinitions.Add(new RowDefinition() { Height = Height });
-            }
-
-            for (int i = 0; i < NumberOfColumns; i++)
-            {
-                ColumnDefinitions.Add(new ColumnDefinition() { Width = Width });
-            }
-
-            MinWidth = NumberOfColumns * Width.Value;
-            MinHeight = NumberOfRows * Height.Value;
-            RenderOptions.SetRequiresFullOpacityHandling(this, true);
+            AffectsParentArrange<DesignerGrid>(Grid.RowProperty, Grid.ColumnProperty);
         }
 
-        protected override Size ArrangeOverride(Size arrangeSize)
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
-            //  update render bound on grid lines renderer visual
-            GridLinesRenderer? gridLinesRenderer = EnsureGridLinesRenderer();
-            gridLinesRenderer?.UpdateRenderBounds(arrangeSize);
+            base.OnPropertyChanged(change);
 
-            return base.ArrangeOverride(arrangeSize);
+            if (change.Property == GridLineBrushProperty || change.Property == GridLineThicknessProperty)
+            {
+                _gridLinesBrush = null;
+                _gridLinesRenderer?.InvalidateVisual();
+            }
+            else if (change.Property == ShowCustomGridLinesProperty)
+            {
+                InvalidateArrange();
+            }
+        }
+
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            // Measure like a Grid with fixed-size cells: each child gets exactly one cell.
+            Size cell = new(CellWidth, CellHeight);
+            foreach (Control child in Children)
+            {
+                child.Measure(cell);
+            }
+
+            return new Size(Constants.COLUMNS * CellWidth, Constants.ROWS * CellHeight);
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            EnsureGridLinesRenderer()?.Arrange(new Rect(finalSize));
+
+            foreach (Control child in Children)
+            {
+                int row = Math.Clamp(Grid.GetRow(child), 0, Constants.ROWS - 1);
+                int column = Math.Clamp(Grid.GetColumn(child), 0, Constants.COLUMNS - 1);
+                child.Arrange(new Rect(column * CellWidth, row * CellHeight, CellWidth, CellHeight));
+            }
+
+            return finalSize;
         }
 
         private GridLinesRenderer? EnsureGridLinesRenderer()
         {
-            //
-            //  synchronize the state
-            //
-            if (ShowCustomGridLines && (_gridLinesRenderer == null))
+            if (ShowCustomGridLines && _gridLinesRenderer == null)
             {
-                _gridLinesRenderer = new GridLinesRenderer(
-                    GridLineBrush, GridLineThickness);
+                _gridLinesRenderer = new GridLinesRenderer(this);
                 VisualChildren.Add(_gridLinesRenderer);
             }
 
-            if ((!ShowCustomGridLines) && (_gridLinesRenderer != null))
+            if (!ShowCustomGridLines && _gridLinesRenderer != null)
             {
                 _ = VisualChildren.Remove(_gridLinesRenderer);
                 _gridLinesRenderer = null;
@@ -97,85 +116,82 @@ namespace JuliaSynth.Controls
         }
 
         /// <summary>
-        /// Helper for rendering grid lines.
+        /// Builds a brush holding the dashed lines of a few cells, tiled over the whole surface.
+        /// Drawing hundreds of dashed lines spanning the whole surface is far too slow.
         /// </summary>
-        internal class GridLinesRenderer : Control
+        private IBrush CreateGridLinesBrush()
         {
-            #region Private Fields
-            private Size _lastArrangeSize;
-            private const double _dashLength = 4.0;
-            private readonly Pen _dashPen;
-            #endregion
+            double thickness = GridLineThickness;
 
-            /// <summary>
-            /// Static initialization
-            /// </summary>
-            internal GridLinesRenderer(IBrush? brush, double thickness)
+            // Pen dashes are scaled by the thickness; the tile has to hold a whole number of dash
+            // periods, otherwise the dashes would not line up from one tile to the next.
+            double dashPeriod = 2 * DashLength * thickness;
+            int cells = 1;
+            while (cells < 16 && !(IsMultipleOf(cells * CellWidth, dashPeriod) && IsMultipleOf(cells * CellHeight, dashPeriod)))
             {
-                List<double> dashArray = [_dashLength, _dashLength];
-
-                DashStyle ds1 = new(dashArray, 0);
-                _dashPen = new Pen(brush, thickness, lineCap: PenLineCap.Flat, dashStyle: ds1);
+                cells++;
             }
 
-            /// <summary>
-            /// UpdateRenderBounds.
-            /// </summary>
-            public sealed override void Render(DrawingContext drawingContext)
-            {
-                DesignerGrid? grid = this.GetVisualParent<DesignerGrid>();
+            double tileWidth = cells * CellWidth;
+            double tileHeight = cells * CellHeight;
 
-                if (grid == null || !grid.ShowCustomGridLines)
+            // Lines run through the middle of the tile's cells so they are not clipped by the tile
+            // edges; the tile is shifted back by half a cell below so they land on cell boundaries.
+            GeometryGroup lines = new();
+            for (int i = 0; i < cells; i++)
+            {
+                double x = (i + 0.5) * CellWidth;
+                double y = (i + 0.5) * CellHeight;
+                lines.Children.Add(new LineGeometry(new Point(x, 0), new Point(x, tileHeight)));
+                lines.Children.Add(new LineGeometry(new Point(0, y), new Point(tileWidth, y)));
+            }
+
+            Rect tile = new(0, 0, tileWidth, tileHeight);
+            DrawingGroup drawing = new()
+            {
+                Children =
                 {
-                    return;
-                }
+                    // Transparent fill so that the drawing's bounds are exactly one tile.
+                    new GeometryDrawing { Geometry = new RectangleGeometry(tile), Brush = Brushes.Transparent },
+                    new GeometryDrawing
+                    {
+                        Geometry = lines,
+                        Pen = new Pen(GridLineBrush, thickness, new DashStyle([DashLength, DashLength], 0), PenLineCap.Flat),
+                    },
+                },
+            };
 
-                for (int i = 1; i < grid.ColumnDefinitions.Count; ++i)
-                {
-                    ColumnDefinition column = grid.ColumnDefinitions[i];
-                    double finalOffset = Convert.ToDouble(column.GetType()
-                        .GetProperty("FinalOffset", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
-                        ?.GetValue(column));
-                    DrawGridLine(
-                        drawingContext,
-                        finalOffset, 0.0,
-                        finalOffset, _lastArrangeSize.Height);
-                }
-
-                for (int i = 1; i < grid.RowDefinitions.Count; ++i)
-                {
-                    RowDefinition row = grid.RowDefinitions[i];
-                    double finalOffset = Convert.ToDouble(row.GetType()
-                        .GetProperty("FinalOffset", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
-                        ?.GetValue(row));
-                    DrawGridLine(
-                        drawingContext,
-                        0.0, finalOffset,
-                        _lastArrangeSize.Width, finalOffset);
-                }
-            }
-
-            /// <summary>
-            /// Draw single hi-contrast line.
-            /// </summary>
-            private void DrawGridLine(
-                DrawingContext drawingContext,
-                double startX,
-                double startY,
-                double endX,
-                double endY)
+            return new DrawingBrush(drawing)
             {
-                Point start = new(startX, startY);
-                Point end = new(endX, endY);
-                drawingContext.DrawLine(_dashPen, start, end);
-            }
+                TileMode = TileMode.Tile,
+                Stretch = Stretch.None,
+                SourceRect = new RelativeRect(tile, RelativeUnit.Absolute),
+                DestinationRect = new RelativeRect(-CellWidth / 2, -CellHeight / 2, tileWidth, tileHeight, RelativeUnit.Absolute),
+            };
+        }
 
-            internal void UpdateRenderBounds(Size arrangeSize)
+        private static bool IsMultipleOf(double value, double period)
+        {
+            double remainder = value % period;
+            return remainder < 1e-6 || period - remainder < 1e-6;
+        }
+
+        /// <summary>
+        /// Paints the grid lines over the whole surface, below the nodes.
+        /// </summary>
+        private sealed class GridLinesRenderer(DesignerGrid grid) : Control
+        {
+            public override void Render(DrawingContext context)
             {
-                _lastArrangeSize = arrangeSize;
-                InvalidateVisual();
-            }
+                grid._gridLinesBrush ??= grid.CreateGridLinesBrush();
 
+                // Only the lines between cells, not the ones on the outer edges.
+                Rect inner = new Rect(Bounds.Size).Deflate(new Thickness(CellWidth / 2, CellHeight / 2));
+                using (context.PushClip(inner))
+                {
+                    context.FillRectangle(grid._gridLinesBrush, new Rect(Bounds.Size));
+                }
+            }
         }
     }
 }

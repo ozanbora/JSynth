@@ -60,8 +60,7 @@
 
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <jsControls:DesignerGrid ShowGridLines="False"
-                            ShowCustomGridLines="True"
+                <jsControls:DesignerGrid ShowCustomGridLines="True"
                             GridLineBrush="White"
                             GridLineThickness="0.5"
                             Focusable="True"
