@@ -44,8 +44,19 @@ public class MainViewModel : ReactiveObject
     public double SelectedZoomLevel
     {
         get => _selectedZoomLevel;
-        set => this.RaiseAndSetIfChanged(ref _selectedZoomLevel, value);
+        set
+        {
+            _ = this.RaiseAndSetIfChanged(ref _selectedZoomLevel, value);
+            this.RaisePropertyChanged(nameof(ShowShadows));
+        }
     }
+
+    /// <summary>
+    /// Shadows are scaled with the zoom, and blurring them gets very expensive when zoomed in.
+    /// </summary>
+    public bool ShowShadows => SelectedZoomLevel <= MaxShadowZoom;
+
+    private const double MaxShadowZoom = 2.0;
 
 
     public Vector ScrollViewerOffset

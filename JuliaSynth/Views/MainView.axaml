@@ -56,7 +56,8 @@
                             ScaleY="{Binding Path=SelectedZoomLevel, Mode=OneWay}"/>
           </LayoutTransformControl.LayoutTransform>
 
-          <ItemsControl ItemsSource="{Binding Path=Nodes}">
+          <ItemsControl ItemsSource="{Binding Path=Nodes}"
+                        Classes.shadows="{Binding Path=ShowShadows}">
 
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -86,6 +87,9 @@
                 <Setter Property="ClipToBounds" Value="False"/>
                 <Setter Property="ZIndex" Value="1"/>
 
+              </Style>
+              <Style Selector="ItemsControl.shadows Border.node">
+                <Setter Property="BoxShadow" Value="10 10 40 0 Black"/>
               </Style>
             </ItemsControl.Styles>
             

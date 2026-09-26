@@ -22,7 +22,7 @@
 
   <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
           CornerRadius="8"
-          BoxShadow="10 10 40 0 Black"
+          Classes="node"
           BorderBrush="Black"
           BorderThickness="1"
           >
