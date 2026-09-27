@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using ReactiveUI;
 using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 
 namespace JuliaSynth.Model
 {
@@ -50,6 +50,38 @@ namespace JuliaSynth.Model
 
                 _ = this.RaiseAndSetIfChanged(ref _type, value);
                 this.RaisePropertyChanged(nameof(Signature));
+                this.RaisePropertyChanged(nameof(Shape));
+                this.RaisePropertyChanged(nameof(ElementType));
+            }
+        }
+
+        /// <summary>
+        /// Scalar, Vector or Matrix: the first half of <see cref="Type"/>, picked separately.
+        /// </summary>
+        public string Shape
+        {
+            get => JuliaTypes.Split(Type).Shape;
+            set
+            {
+                if (value is not null)
+                {
+                    Type = JuliaTypes.Compose(value, ElementType);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Any, Float64, ...: the second half of <see cref="Type"/>.
+        /// </summary>
+        public string ElementType
+        {
+            get => JuliaTypes.Split(Type).ElementType;
+            set
+            {
+                if (value is not null)
+                {
+                    Type = JuliaTypes.Compose(Shape, value);
+                }
             }
         }
 
@@ -58,7 +90,9 @@ namespace JuliaSynth.Model
         /// </summary>
         public string Signature => Type == Function.AnyType ? Name : $"{Name}::{Type}";
 
-        public ReadOnlyObservableCollection<string> PossibleTypes => Function.Types;
+        public static IReadOnlyList<string> Shapes => JuliaTypes.Shapes;
+
+        public static IReadOnlyList<string> ElementTypes => JuliaTypes.ElementTypes;
         #endregion
 
         public Parameter() : this("x", Function.AnyType)

@@ -117,13 +117,63 @@ namespace JuliaSynth.Tests
             Assert.Equal("Matrix{Float64} can't be passed to v::Vector{Float64}.", Wiring.Validate([], matrix, f, v));
         }
 
-        [Fact]
-        public void Functions_offer_vector_and_matrix_types()
+        [Theory]
+        [InlineData("Scalar", "Float64", "Float64")]
+        [InlineData("Scalar", "Any", "Any")]
+        [InlineData("Vector", "Int32", "Vector{Int32}")]
+        [InlineData("Matrix", "Float64", "Matrix{Float64}")]
+        [InlineData("Vector", "Any", "Vector")]
+        public void A_type_is_a_shape_and_an_element_type(string shape, string element, string type)
         {
-            Assert.Contains("Vector{Float64}", Function.Types);
-            Assert.Contains("Matrix{Int32}", Function.Types);
-            Assert.Equal(1 + (3 * JuliaTypes.Numeric.Count), Function.Types.Count);
-            Assert.Equal(Function.Types.Count, Function.Types.Distinct().Count());
+            Assert.Equal(type, JuliaTypes.Compose(shape, element));
+            Assert.Equal((shape, element), JuliaTypes.Split(type));
+        }
+
+        [Fact]
+        public void Types_are_picked_from_two_short_lists()
+        {
+            Assert.Equal(["Scalar", "Vector", "Matrix"], JuliaTypes.Shapes);
+            Assert.Equal(13, JuliaTypes.ElementTypes.Count);
+            Assert.Equal("Any", JuliaTypes.ElementTypes[0]);
+        }
+
+        [Fact]
+        public void Picking_a_parameter_shape_keeps_its_element_type_and_the_other_way_round()
+        {
+            Parameter p = new("x", "Float64");
+
+            p.Shape = "Vector";
+            Assert.Equal("Vector{Float64}", p.Type);
+
+            p.ElementType = "Int8";
+            Assert.Equal("Vector{Int8}", p.Type);
+            Assert.Equal("x::Vector{Int8}", p.Signature);
+
+            p.Shape = "Scalar";
+            Assert.Equal("Int8", p.Type);
+        }
+
+        [Fact]
+        public void Picking_a_return_shape_updates_the_function_output()
+        {
+            Function f = new() { ReturnType = "Float32" };
+
+            f.ReturnShape = "Matrix";
+
+            Assert.Equal("Matrix{Float32}", f.OutputType);
+            Assert.Equal("Float32", f.ReturnElementType);
+        }
+
+        [Theory]
+        [InlineData("Vector{Int64}", "Vector", true)]
+        [InlineData("Vector{Float64}", "Vector", true)]
+        [InlineData("Matrix{Float64}", "Vector", false)]
+        [InlineData("Float64", "Vector", false)]
+        [InlineData("Matrix", "Matrix{Int8}", true)]
+        [InlineData("Vector{Int64}", "Vector{Float64}", false)]
+        public void A_plain_vector_or_matrix_takes_any_element_type_but_not_another_shape(string output, string parameter, bool compatible)
+        {
+            Assert.Equal(compatible, Wiring.AreTypesCompatible(output, parameter));
         }
     }
 }

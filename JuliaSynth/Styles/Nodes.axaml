@@ -19,6 +19,8 @@
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
 
+      <!-- Fluent caps flyouts at 456; the node edit panels are wider. -->
+      <x:Double x:Key="FlyoutThemeMaxWidth">640</x:Double>
       <jsConverters:ContrastBrushConverter x:Key="ContrastBrushConverter"/>
       <jsConverters:CompactIntegerConverter x:Key="CompactIntegerConverter"/>
       <SolidColorBrush x:Key="NodeBorderBrush" Color="#59000000"/>

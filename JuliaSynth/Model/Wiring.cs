@@ -10,13 +10,20 @@ namespace JuliaSynth.Model
     {
         /// <summary>
         /// Julia only dispatches to a typed parameter with a value of exactly that type;
-        /// <c>Any</c> on either side is left to be checked at run time.
+        /// <c>Any</c> on either side is left to be checked at run time. The same goes for element
+        /// types: a plain <c>Vector</c> (a vector of Any) takes any vector, but never a matrix.
         /// </summary>
         public static bool AreTypesCompatible(string outputType, string parameterType)
         {
-            return outputType == Function.AnyType
-                || parameterType == Function.AnyType
-                || outputType == parameterType;
+            if (outputType == Function.AnyType || parameterType == Function.AnyType)
+            {
+                return true;
+            }
+
+            (string outputShape, string outputElement) = JuliaTypes.Split(outputType);
+            (string parameterShape, string parameterElement) = JuliaTypes.Split(parameterType);
+            return outputShape == parameterShape
+                && (outputElement == parameterElement || outputElement == Function.AnyType || parameterElement == Function.AnyType);
         }
 
         /// <summary>

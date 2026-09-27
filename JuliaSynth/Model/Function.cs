@@ -54,6 +54,38 @@ namespace JuliaSynth.Model
             {
                 _ = this.RaiseAndSetIfChanged(ref _returnType, value ?? _returnType);
                 this.RaisePropertyChanged(nameof(OutputType));
+                this.RaisePropertyChanged(nameof(ReturnShape));
+                this.RaisePropertyChanged(nameof(ReturnElementType));
+            }
+        }
+
+        /// <summary>
+        /// Scalar, Vector or Matrix: the first half of <see cref="ReturnType"/>, picked separately.
+        /// </summary>
+        public string ReturnShape
+        {
+            get => JuliaTypes.Split(ReturnType).Shape;
+            set
+            {
+                if (value is not null)
+                {
+                    ReturnType = JuliaTypes.Compose(value, ReturnElementType);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Any, Float64, ...: the second half of <see cref="ReturnType"/>.
+        /// </summary>
+        public string ReturnElementType
+        {
+            get => JuliaTypes.Split(ReturnType).ElementType;
+            set
+            {
+                if (value is not null)
+                {
+                    ReturnType = JuliaTypes.Compose(ReturnShape, value);
+                }
             }
         }
 
@@ -71,12 +103,9 @@ namespace JuliaSynth.Model
 
         public override string OutputType => ReturnType;
 
-        public ReadOnlyObservableCollection<string> PossibleTypes => Types;
+        public static IReadOnlyList<string> Shapes => JuliaTypes.Shapes;
 
-        /// <summary>
-        /// Julia types selectable for parameters and return values.
-        /// </summary>
-        public static ReadOnlyObservableCollection<string> Types { get; } = new([.. JuliaTypes.All]);
+        public static IReadOnlyList<string> ElementTypes => JuliaTypes.ElementTypes;
 
         /// <summary>
         /// Julia signature, e.g. <c>f(x::Float64, y)::Float64</c>.

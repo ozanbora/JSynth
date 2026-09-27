@@ -21,15 +21,55 @@ namespace JuliaSynth.Model
             "Float16", "Float32", "Float64",
         ];
 
-        public static string VectorOf(string elementType) => $"Vector{{{elementType}}}";
-
-        public static string MatrixOf(string elementType) => $"Matrix{{{elementType}}}";
+        public const string Scalar = "Scalar";
+        public const string Vector = "Vector";
+        public const string Matrix = "Matrix";
 
         /// <summary>
-        /// Any, the scalar types, then a vector and a matrix of each.
+        /// A type is picked as a shape plus an element type, rather than from one long list.
         /// </summary>
-        public static IReadOnlyList<string> All { get; } =
-            [Function.AnyType, .. Numeric, .. Numeric.Select(VectorOf), .. Numeric.Select(MatrixOf)];
+        public static IReadOnlyList<string> Shapes { get; } = [Scalar, Vector, Matrix];
+
+        /// <summary>
+        /// Any, then the scalar types.
+        /// </summary>
+        public static IReadOnlyList<string> ElementTypes { get; } = [Function.AnyType, .. Numeric];
+
+        public static string VectorOf(string elementType) => Compose(Vector, elementType);
+
+        public static string MatrixOf(string elementType) => Compose(Matrix, elementType);
+
+        /// <summary>
+        /// "Float64", "Vector{Float64}"; a vector or matrix of Any is Julia's plain Vector or Matrix,
+        /// which takes any element type.
+        /// </summary>
+        public static string Compose(string shape, string elementType)
+        {
+            return shape == Scalar ? elementType
+                : elementType == Function.AnyType ? shape
+                : $"{shape}{{{elementType}}}";
+        }
+
+        /// <summary>
+        /// The opposite of <see cref="Compose"/>: "Vector{Int64}" is (Vector, Int64), "Matrix" is (Matrix, Any).
+        /// </summary>
+        public static (string Shape, string ElementType) Split(string type)
+        {
+            foreach (string shape in new[] { Vector, Matrix })
+            {
+                if (type == shape)
+                {
+                    return (shape, Function.AnyType);
+                }
+
+                if (type.StartsWith(shape + "{", StringComparison.Ordinal) && type.EndsWith('}'))
+                {
+                    return (shape, type[(shape.Length + 1)..^1]);
+                }
+            }
+
+            return (Scalar, type);
+        }
 
         /// <summary>
         /// Whether <paramref name="literal"/> is a value of <paramref name="type"/>, e.g. "300" is not an Int8.

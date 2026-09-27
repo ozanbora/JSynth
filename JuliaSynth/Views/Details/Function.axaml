@@ -9,7 +9,7 @@
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
 
              x:DataType="jsModel:Function"
-             Width="400"
+             Width="500"
 
              mc:Ignorable="d"
              d:DesignHeight="450"
@@ -55,12 +55,22 @@
            VerticalAlignment="Center"
            Content="Returns"
            />
-    <ComboBox Grid.Row="1"
-              Grid.Column="1"
-              SelectedValue="{Binding Path=ReturnType}"
-              ItemsSource="{Binding Path=PossibleTypes}"
-              ToolTip.Tip="Return type of the function. Any leaves the return type unannotated."
-              />
+    <StackPanel Grid.Row="1"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="4"
+                >
+      <ComboBox Width="90"
+                SelectedValue="{Binding Path=ReturnShape}"
+                ItemsSource="{x:Static jsModel:JuliaTypes.Shapes}"
+                ToolTip.Tip="Whether the function returns a single value, a vector or a matrix."
+                />
+      <ComboBox Width="100"
+                SelectedValue="{Binding Path=ReturnElementType}"
+                ItemsSource="{x:Static jsModel:JuliaTypes.ElementTypes}"
+                ToolTip.Tip="Type of the returned value (or of its elements). Any leaves it unannotated."
+                />
+    </StackPanel>
 
     <Label Grid.Row="2"
            Grid.Column="0"
@@ -76,7 +86,7 @@
                     >
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="jsModel:Parameter">
-            <Grid ColumnDefinitions="*,auto,auto"
+            <Grid ColumnDefinitions="*,auto,auto,auto"
                   Margin="0 0 0 2"
                   >
               <TextBox Grid.Column="0"
@@ -84,13 +94,20 @@
                        ToolTip.Tip="Name of the parameter."
                        />
               <ComboBox Grid.Column="1"
-                        Width="100"
-                        Margin="2 0"
-                        ItemsSource="{Binding Path=PossibleTypes}"
-                        SelectedValue="{Binding Path=Type}"
-                        ToolTip.Tip="Type of the parameter. Any leaves the parameter unannotated."
+                        Width="90"
+                        Margin="4 0 0 0"
+                        ItemsSource="{x:Static jsModel:JuliaTypes.Shapes}"
+                        SelectedValue="{Binding Path=Shape}"
+                        ToolTip.Tip="Whether the parameter takes a single value, a vector or a matrix."
                         />
-              <Button Grid.Column="2"
+              <ComboBox Grid.Column="2"
+                        Width="100"
+                        Margin="4 0"
+                        ItemsSource="{x:Static jsModel:JuliaTypes.ElementTypes}"
+                        SelectedValue="{Binding Path=ElementType}"
+                        ToolTip.Tip="Type of the value (or of its elements). Any leaves the parameter unannotated."
+                        />
+              <Button Grid.Column="3"
                       Content="−"
                       Click="RemoveParameter_Click"
                       ToolTip.Tip="Remove this parameter."
