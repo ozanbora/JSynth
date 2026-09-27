@@ -29,6 +29,9 @@ namespace JuliaSynth.ViewModels
             typeof(MatrixNode),
             typeof(Function),
             typeof(Parameter),
+            typeof(ArrayBuilder),
+            typeof(Argument),
+            typeof(List<Argument>),
             typeof(Connection),
             typeof(Color),
         ];

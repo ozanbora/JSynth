@@ -9,7 +9,7 @@
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
 
              x:DataType="jsModel:Function"
-             Width="500"
+             Width="580"
 
              mc:Ignorable="d"
              d:DesignHeight="450"
@@ -60,10 +60,10 @@
                 Orientation="Horizontal"
                 Spacing="4"
                 >
-      <ComboBox Width="90"
+      <ComboBox Width="150"
                 SelectedValue="{Binding Path=ReturnShape}"
                 ItemsSource="{x:Static jsModel:JuliaTypes.Shapes}"
-                ToolTip.Tip="Whether the function returns a single value, a vector or a matrix."
+                ToolTip.Tip="Whether the function returns a single value, a vector or a matrix (dense, sparse, or Abstract: either)."
                 />
       <ComboBox Width="100"
                 SelectedValue="{Binding Path=ReturnElementType}"
@@ -94,11 +94,11 @@
                        ToolTip.Tip="Name of the parameter."
                        />
               <ComboBox Grid.Column="1"
-                        Width="90"
+                        Width="150"
                         Margin="4 0 0 0"
                         ItemsSource="{x:Static jsModel:JuliaTypes.Shapes}"
                         SelectedValue="{Binding Path=Shape}"
-                        ToolTip.Tip="Whether the parameter takes a single value, a vector or a matrix."
+                        ToolTip.Tip="Whether the parameter takes a single value, a vector or a matrix. AbstractVector and AbstractMatrix take dense and sparse ones."
                         />
               <ComboBox Grid.Column="2"
                         Width="100"

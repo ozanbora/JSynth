@@ -103,6 +103,8 @@ namespace JuliaSynth.Model
 
         public override string OutputType => ReturnType;
 
+        public override IReadOnlyList<Parameter> Inputs => Parameters;
+
         public static IReadOnlyList<string> Shapes => JuliaTypes.Shapes;
 
         public static IReadOnlyList<string> ElementTypes => JuliaTypes.ElementTypes;

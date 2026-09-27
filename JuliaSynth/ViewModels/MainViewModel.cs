@@ -54,7 +54,11 @@ public class MainViewModel : ReactiveObject
     static MainViewModel()
     {
         Nodes.CollectionChanged += NodesChanged;
-        Connections.CollectionChanged += (_, _) => History.ScheduleCommit();
+        Connections.CollectionChanged += (_, _) =>
+        {
+            MarkWiredInputs();
+            History.ScheduleCommit();
+        };
         AddStartingDesign();
         History.Reset();
     }
@@ -119,7 +123,7 @@ public class MainViewModel : ReactiveObject
     /// <paramref name="target"/>, replacing the wire already on that parameter.
     /// </summary>
     /// <returns>Why the connection isn't allowed, or null when it was made.</returns>
-    public static string? Connect(Node source, Function target, Parameter parameter)
+    public static string? Connect(Node source, Node target, Parameter parameter)
     {
         List<Connection> replaced = Connections.Where(c => c.ParameterID == parameter.ID).ToList();
         string? error = Wiring.Validate(Connections.Except(replaced), source, target, parameter);
@@ -157,6 +161,7 @@ public class MainViewModel : ReactiveObject
         }
 
         PruneConnections();
+        MarkWiredInputs();
         History.ScheduleCommit();
     }
 
@@ -171,21 +176,21 @@ public class MainViewModel : ReactiveObject
             node.PropertyChanged -= DesignPropertyChanged;
         }
 
-        if (node is Function function)
+        if (node.Inputs is INotifyCollectionChanged inputs)
         {
             if (track)
             {
-                function.Parameters.CollectionChanged += ParametersChanged;
+                inputs.CollectionChanged += ParametersChanged;
             }
             else
             {
-                function.Parameters.CollectionChanged -= ParametersChanged;
+                inputs.CollectionChanged -= ParametersChanged;
             }
+        }
 
-            foreach (Parameter parameter in function.Parameters)
-            {
-                Track(parameter, track);
-            }
+        foreach (Parameter parameter in node.Inputs)
+        {
+            Track(parameter, track);
         }
     }
 
@@ -214,13 +219,26 @@ public class MainViewModel : ReactiveObject
         }
 
         PruneConnections();
+        MarkWiredInputs();
         History.ScheduleCommit();
+    }
+
+    /// <summary>
+    /// Tells every input whether a wire feeds it, e.g. so a builder hides the value typed in for it.
+    /// </summary>
+    private static void MarkWiredInputs()
+    {
+        HashSet<string> wired = Connections.Select(c => c.ParameterID).ToHashSet();
+        foreach (Parameter parameter in Nodes.SelectMany(n => n.Inputs))
+        {
+            parameter.IsWired = wired.Contains(parameter.ID);
+        }
     }
 
     private static void DesignPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // Selection isn't part of the design.
-        if (e.PropertyName != nameof(Node.IsSelected))
+        // Selection and wiring state aren't part of the design.
+        if (e.PropertyName is not (nameof(Node.IsSelected) or nameof(Parameter.IsWired)))
         {
             History.ScheduleCommit();
         }
@@ -261,7 +279,7 @@ public class MainViewModel : ReactiveObject
     #region Editing
     /// <summary>
     /// Adds a new node of <paramref name="kind"/> (Float, Integer, UnsignedInteger, VectorNode,
-    /// MatrixNode or Function)
+    /// MatrixNode, ArrayBuilder or Function)
     /// at the first free spot at or below the given cell, and selects it.
     /// </summary>
     public static Node AddNode(string kind, int row, int column)
@@ -273,6 +291,7 @@ public class MainViewModel : ReactiveObject
             nameof(UnsignedInteger) => new UnsignedInteger(),
             nameof(VectorNode) => new VectorNode(),
             nameof(MatrixNode) => new MatrixNode(),
+            nameof(ArrayBuilder) => new ArrayBuilder(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
 
@@ -412,15 +431,15 @@ public class MainViewModel : ReactiveObject
             node.RenewID();
             newIDs[oldID] = node.ID;
 
+            foreach (Parameter parameter in node.AllInputs)
+            {
+                string oldParameterID = parameter.ID;
+                parameter.RenewID();
+                newIDs[oldParameterID] = parameter.ID;
+            }
+
             if (node is Function function)
             {
-                foreach (Parameter parameter in function.Parameters)
-                {
-                    string oldParameterID = parameter.ID;
-                    parameter.RenewID();
-                    newIDs[oldParameterID] = parameter.ID;
-                }
-
                 // Two Julia functions with one name would clash.
                 if (functionNames.Contains(function.Name))
                 {

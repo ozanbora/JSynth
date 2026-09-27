@@ -132,7 +132,9 @@ namespace JuliaSynth.Tests
         [Fact]
         public void Types_are_picked_from_two_short_lists()
         {
-            Assert.Equal(["Scalar", "Vector", "Matrix"], JuliaTypes.Shapes);
+            Assert.Equal(
+                ["Scalar", "Vector", "SparseVector", "AbstractVector", "Matrix", "SparseMatrixCSC", "AbstractMatrix"],
+                JuliaTypes.Shapes);
             Assert.Equal(13, JuliaTypes.ElementTypes.Count);
             Assert.Equal("Any", JuliaTypes.ElementTypes[0]);
         }

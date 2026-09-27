@@ -184,12 +184,12 @@ namespace JuliaSynth.Controls
         }
 
         /// <summary>
-        /// The output node, the function and the parameter a wire between two ports would connect.
+        /// The output node, the receiving node and its parameter a wire between two ports would connect.
         /// </summary>
-        private static (Model.Node Source, Function Target, Parameter Parameter)? ResolveEnds(Connector a, Connector b)
+        private static (Model.Node Source, Model.Node Target, Parameter Parameter)? ResolveEnds(Connector a, Connector b)
         {
             (Connector output, Connector input) = a.IsInput ? (b, a) : (a, b);
-            return output.Owner is Model.Node source && input.Owner is Function target && input.Parameter is Parameter parameter
+            return output.Owner is Model.Node source && input.Owner is Model.Node target && input.Parameter is Parameter parameter
                 ? (source, target, parameter)
                 : null;
         }

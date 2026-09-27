@@ -2,6 +2,7 @@ using Avalonia.Media;
 using Newtonsoft.Json;
 using ReactiveUI;
 using System;
+using System.Collections.Generic;
 
 namespace JuliaSynth.Model
 {
@@ -54,6 +55,17 @@ namespace JuliaSynth.Model
         /// Julia type of the value this node outputs, e.g. <c>Float32</c>.
         /// </summary>
         public virtual string OutputType => Function.AnyType;
+
+        /// <summary>
+        /// The parameters wires can feed: a function's parameters, an array builder's sizes, ...
+        /// Observable when they can change.
+        /// </summary>
+        public virtual IReadOnlyList<Parameter> Inputs => [];
+
+        /// <summary>
+        /// <see cref="Inputs"/>, plus those kept for later that aren't used right now.
+        /// </summary>
+        public virtual IEnumerable<Parameter> AllInputs => Inputs;
 
         #endregion
         public Node()

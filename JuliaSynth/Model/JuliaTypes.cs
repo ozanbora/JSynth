@@ -24,29 +24,47 @@ namespace JuliaSynth.Model
         public const string Scalar = "Scalar";
         public const string Vector = "Vector";
         public const string Matrix = "Matrix";
+        public const string SparseVector = "SparseVector";
+        public const string SparseMatrix = "SparseMatrixCSC";
+        public const string AbstractVector = "AbstractVector";
+        public const string AbstractMatrix = "AbstractMatrix";
 
         /// <summary>
-        /// A type is picked as a shape plus an element type, rather than from one long list.
+        /// A type is picked as a shape plus an element type, rather than from one long list. The
+        /// abstract shapes take dense and sparse arrays alike, like <c>f(A::AbstractMatrix)</c> in Julia.
         /// </summary>
-        public static IReadOnlyList<string> Shapes { get; } = [Scalar, Vector, Matrix];
+        public static IReadOnlyList<string> Shapes { get; } = [
+            Scalar,
+            Vector, SparseVector, AbstractVector,
+            Matrix, SparseMatrix, AbstractMatrix,
+        ];
 
         /// <summary>
         /// Any, then the scalar types.
         /// </summary>
         public static IReadOnlyList<string> ElementTypes { get; } = [Function.AnyType, .. Numeric];
 
+        /// <summary>
+        /// The floating point types: the only ones some functions (randn, range) make values of.
+        /// </summary>
+        public static IReadOnlyList<string> Floats { get; } = ["Float16", "Float32", "Float64"];
+
+        // Sparse arrays store their indices as Int64, Julia's default.
+        private const string SparseIndexType = "Int64";
+
         public static string VectorOf(string elementType) => Compose(Vector, elementType);
 
         public static string MatrixOf(string elementType) => Compose(Matrix, elementType);
 
         /// <summary>
-        /// "Float64", "Vector{Float64}"; a vector or matrix of Any is Julia's plain Vector or Matrix,
-        /// which takes any element type.
+        /// "Float64", "Vector{Float64}", "SparseMatrixCSC{Float64, Int64}"; an array of Any is Julia's
+        /// plain Vector, Matrix, ..., which takes any element type.
         /// </summary>
         public static string Compose(string shape, string elementType)
         {
             return shape == Scalar ? elementType
                 : elementType == Function.AnyType ? shape
+                : IsSparse(shape) ? $"{shape}{{{elementType}, {SparseIndexType}}}"
                 : $"{shape}{{{elementType}}}";
         }
 
@@ -55,7 +73,7 @@ namespace JuliaSynth.Model
         /// </summary>
         public static (string Shape, string ElementType) Split(string type)
         {
-            foreach (string shape in new[] { Vector, Matrix })
+            foreach (string shape in Shapes.Skip(1))
             {
                 if (type == shape)
                 {
@@ -64,11 +82,34 @@ namespace JuliaSynth.Model
 
                 if (type.StartsWith(shape + "{", StringComparison.Ordinal) && type.EndsWith('}'))
                 {
-                    return (shape, type[(shape.Length + 1)..^1]);
+                    // Sparse arrays also name their index type: {Float64, Int64}.
+                    return (shape, type[(shape.Length + 1)..^1].Split(',')[0].Trim());
                 }
             }
 
             return (Scalar, type);
+        }
+
+        public static bool IsSparse(string shape) => shape is SparseVector or SparseMatrix;
+
+        /// <summary>
+        /// 0 for a scalar, 1 for any kind of vector, 2 for any kind of matrix.
+        /// </summary>
+        public static int Dimensions(string shape) => shape switch
+        {
+            Vector or SparseVector or AbstractVector => 1,
+            Matrix or SparseMatrix or AbstractMatrix => 2,
+            _ => 0,
+        };
+
+        /// <summary>
+        /// Whether a value of <paramref name="shape"/> can be passed where <paramref name="parameterShape"/>
+        /// is asked for: the same shape, or any array of the right dimensions for an abstract one.
+        /// </summary>
+        public static bool FitsShape(string shape, string parameterShape)
+        {
+            return shape == parameterShape
+                || (parameterShape is AbstractVector or AbstractMatrix && Dimensions(shape) == Dimensions(parameterShape));
         }
 
         /// <summary>

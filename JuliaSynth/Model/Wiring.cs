@@ -11,7 +11,8 @@ namespace JuliaSynth.Model
         /// <summary>
         /// Julia only dispatches to a typed parameter with a value of exactly that type;
         /// <c>Any</c> on either side is left to be checked at run time. The same goes for element
-        /// types: a plain <c>Vector</c> (a vector of Any) takes any vector, but never a matrix.
+        /// types: a plain <c>Vector</c> (a vector of Any) takes any vector, but never a matrix. An
+        /// <c>AbstractVector</c> takes dense and sparse vectors alike; a <c>Vector</c> only dense ones.
         /// </summary>
         public static bool AreTypesCompatible(string outputType, string parameterType)
         {
@@ -22,7 +23,7 @@ namespace JuliaSynth.Model
 
             (string outputShape, string outputElement) = JuliaTypes.Split(outputType);
             (string parameterShape, string parameterElement) = JuliaTypes.Split(parameterType);
-            return outputShape == parameterShape
+            return JuliaTypes.FitsShape(outputShape, parameterShape)
                 && (outputElement == parameterElement || outputElement == Function.AnyType || parameterElement == Function.AnyType);
         }
 
@@ -30,7 +31,7 @@ namespace JuliaSynth.Model
         /// Returns why <paramref name="source"/> can't be wired to <paramref name="parameter"/>
         /// of <paramref name="target"/>, or null when it can.
         /// </summary>
-        public static string? Validate(IEnumerable<Connection> connections, Node source, Function target, Parameter parameter)
+        public static string? Validate(IEnumerable<Connection> connections, Node source, Node target, Parameter parameter)
         {
             if (!AreTypesCompatible(source.OutputType, parameter.Type))
             {
@@ -84,7 +85,7 @@ namespace JuliaSynth.Model
         public static bool IsAttached(IEnumerable<Node> nodes, Connection connection)
         {
             return nodes.Any(n => n.ID == connection.SourceID)
-                && nodes.OfType<Function>().Any(f => f.ID == connection.TargetID && f.Parameters.Any(p => p.ID == connection.ParameterID));
+                && nodes.Any(n => n.ID == connection.TargetID && n.Inputs.Any(p => p.ID == connection.ParameterID));
         }
     }
 }

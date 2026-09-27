@@ -62,6 +62,7 @@
                   <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtPointer_Click"/>
                 </MenuItem>
                 <Separator/>
@@ -135,6 +136,9 @@
               <DataTemplate DataType="jsModel:MatrixNode">
                 <jsInputs:ArrayInput DataContext="{Binding}"/>
               </DataTemplate>
+              <DataTemplate DataType="jsModel:ArrayBuilder">
+                <jsInputs:ArrayBuilder DataContext="{Binding}"/>
+              </DataTemplate>
               <DataTemplate DataType="jsModel:Function">
                 <jsViews:Function DataContext="{Binding}"/>
               </DataTemplate>
@@ -185,6 +189,7 @@
                 <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtCenter_Click"/>
                   <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtCenter_Click"/>
                   <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
               </MenuFlyout>
             </DropDownButton.Flyout>

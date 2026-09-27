@@ -14,6 +14,7 @@ namespace JuliaSynth.Model
         #region Private Properties
         private string _name;
         private string _type;
+        private bool _isWired;
         #endregion
 
         #region Public Properties
@@ -89,6 +90,15 @@ namespace JuliaSynth.Model
         /// Julia representation of the parameter; untyped (Any) parameters have no annotation.
         /// </summary>
         public string Signature => Type == Function.AnyType ? Name : $"{Name}::{Type}";
+
+        /// <summary>
+        /// Whether a wire feeds this parameter; kept up to date by the designer, not saved.
+        /// </summary>
+        public bool IsWired
+        {
+            get => _isWired;
+            set => this.RaiseAndSetIfChanged(ref _isWired, value);
+        }
 
         public static IReadOnlyList<string> Shapes => JuliaTypes.Shapes;
 
