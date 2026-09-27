@@ -15,10 +15,26 @@ namespace JuliaSynth.Model
         private static readonly char[] ValueSeparators = [',', ' ', '\t'];
 
         /// <summary>
+        /// Values typed into a node are saved in the design and parsed on every change; bigger arrays
+        /// belong in an array builder or a file.
+        /// </summary>
+        public const int MaxValues = 10_000;
+
+        // Longer text surely holds too many values; don't even split it.
+        private const int MaxLength = MaxValues * 32;
+
+        public const string TooManyValues = "More than 10,000 values is too many to type in: use an array builder or load the values from a file.";
+
+        /// <summary>
         /// The values row by row, or an error saying what is wrong.
         /// </summary>
         public static (List<List<string>>? Rows, string? Error) Parse(string? text, string elementType)
         {
+            if (text?.Length > MaxLength)
+            {
+                return (null, TooManyValues);
+            }
+
             string body = (text ?? string.Empty).Replace("\r", string.Empty).Trim();
             if (body.StartsWith('[') != body.EndsWith(']'))
             {
@@ -32,6 +48,11 @@ namespace JuliaSynth.Model
                 .Select(row => row.Split(ValueSeparators, StringSplitOptions.RemoveEmptyEntries).ToList())
                 .Where(row => row.Count > 0)
                 .ToList();
+
+            if (rows.Sum(row => row.Count) > MaxValues)
+            {
+                return (null, TooManyValues);
+            }
 
             for (int r = 1; r < rows.Count; r++)
             {

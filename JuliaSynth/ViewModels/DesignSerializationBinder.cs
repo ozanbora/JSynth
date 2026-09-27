@@ -30,6 +30,8 @@ namespace JuliaSynth.ViewModels
             typeof(Function),
             typeof(Parameter),
             typeof(ArrayBuilder),
+            typeof(ArrayFile),
+            typeof(SparseInput),
             typeof(Argument),
             typeof(List<Argument>),
             typeof(Connection),

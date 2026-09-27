@@ -1,0 +1,149 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+             x:Class="JuliaSynth.Views.Details.SparseInput"
+             Classes="details"
+
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+             xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"
+
+             x:DataType="jsModel:SparseInput"
+             Width="440"
+
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             >
+
+  <Design.DataContext>
+    <jsModel:SparseInput />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <FontFamily x:Key="CodeFont">Cascadia Mono,Consolas,Menlo,monospace</FontFamily>
+    <jsConverters:DecimalToLongConverter x:Key="DecimalConverter"/>
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="auto,auto,auto,auto,auto"
+        ColumnDefinitions="auto,*"
+        >
+
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Makes"
+           />
+    <StackPanel Grid.Row="0"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="4"
+                >
+      <ComboBox Width="150"
+                SelectedValue="{Binding Path=Shape}"
+                ItemsSource="{x:Static jsModel:SparseInput.Shapes}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="A sparse vector or a sparse matrix."
+                />
+      <ComboBox Width="100"
+                SelectedValue="{Binding Path=ElementType}"
+                ItemsSource="{Binding Path=PossibleTypes}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="Julia type of every value."
+                />
+      <ColorPicker Color="{Binding Path=Color}"
+                   Margin="8 0 0 0"
+                   VerticalAlignment="Center"
+                   ToolTip.Tip="Select the color you want to display this node."
+                   />
+    </StackPanel>
+
+    <Label Grid.Row="1"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Size"
+           />
+    <StackPanel Grid.Row="1"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="4"
+                >
+      <NumericUpDown Width="130"
+                     Increment="1"
+                     Minimum="0"
+                     ClipValueToMinMax="True"
+                     ButtonSpinnerLocation="Left"
+                     FormatString="\{0:N0\}"
+                     Value="{Binding Path=Rows, Converter={StaticResource DecimalConverter}}"
+                     ToolTip.Tip="Number of rows; the length, for a vector."
+                     />
+      <TextBlock Text="×"
+                 VerticalAlignment="Center"
+                 IsVisible="{Binding Path=IsMatrix}"
+                 />
+      <NumericUpDown Width="130"
+                     Increment="1"
+                     Minimum="0"
+                     ClipValueToMinMax="True"
+                     ButtonSpinnerLocation="Left"
+                     FormatString="\{0:N0\}"
+                     Value="{Binding Path=Columns, Converter={StaticResource DecimalConverter}}"
+                     IsVisible="{Binding Path=IsMatrix}"
+                     ToolTip.Tip="Number of columns."
+                     />
+    </StackPanel>
+
+    <Label Grid.Row="2"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Entries"
+           />
+    <StackPanel Grid.Row="2"
+                Grid.Column="1"
+                Spacing="4">
+      <TextBox Height="120"
+               AcceptsReturn="True"
+               TextWrapping="NoWrap"
+               FontFamily="{StaticResource CodeFont}"
+               Text="{Binding Path=Text}"
+               ToolTip.Tip="The values that aren't zero, one per line; ; also separates entries."
+               />
+      <TextBlock FontSize="12"
+                 Opacity="0.7"
+                 TextWrapping="Wrap"
+                 Text="{Binding Path=Hint}"
+                 />
+    </StackPanel>
+
+    <TextBlock Grid.Row="3"
+               Grid.Column="1"
+               Margin="0 4"
+               Foreground="OrangeRed"
+               TextWrapping="Wrap"
+               Text="{Binding Path=Error}"
+               IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+               />
+
+    <!-- Hidden while there's an error: it would only repeat it. -->
+    <Label Grid.Row="4"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Julia"
+           IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNull}}"
+           />
+    <Border Grid.Row="4"
+            Grid.Column="1"
+            IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNull}}"
+            Padding="6"
+            CornerRadius="4"
+            Background="{DynamicResource CanvasBackgroundBrush}"
+            >
+      <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
+                           TextWrapping="Wrap"
+                           MaxHeight="120"
+                           Text="{Binding Path=Code}"
+                           />
+    </Border>
+  </Grid>
+
+</UserControl>

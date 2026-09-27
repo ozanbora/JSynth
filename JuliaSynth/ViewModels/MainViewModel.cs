@@ -279,7 +279,7 @@ public class MainViewModel : ReactiveObject
     #region Editing
     /// <summary>
     /// Adds a new node of <paramref name="kind"/> (Float, Integer, UnsignedInteger, VectorNode,
-    /// MatrixNode, ArrayBuilder or Function)
+    /// MatrixNode, SparseInput, ArrayBuilder, ArrayFile or Function)
     /// at the first free spot at or below the given cell, and selects it.
     /// </summary>
     public static Node AddNode(string kind, int row, int column)
@@ -292,6 +292,8 @@ public class MainViewModel : ReactiveObject
             nameof(VectorNode) => new VectorNode(),
             nameof(MatrixNode) => new MatrixNode(),
             nameof(ArrayBuilder) => new ArrayBuilder(),
+            nameof(SparseInput) => new SparseInput(),
+            nameof(ArrayFile) => new ArrayFile(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
 
