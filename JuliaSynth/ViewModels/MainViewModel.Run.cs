@@ -255,9 +255,17 @@ public partial class MainViewModel
     private static string ValueLine(Report report)
     {
         string[] lines = report.Text.Split('\n');
+        if (lines.Length == 1)
+        {
+            return lines[0];
+        }
 
-        // Arrays show a summary line ("3-element Vector{Float64}:") before their elements.
-        return lines.Length > 1 ? $"{lines[0].TrimEnd(':')}: {string.Join(", ", lines.Skip(1).Take(4).Select(l => l.Trim()))}{(lines.Length > 5 ? ", …" : string.Empty)}" : lines[0];
+        // Arrays show a summary line ("3-element Vector{Float64}:") before their elements. A vector's
+        // elements fit on one line; a matrix's rows (or a sparse matrix's dot picture) don't.
+        string summary = lines[0].TrimEnd(':');
+        return JuliaTypes.Dimensions(JuliaTypes.Split(report.Type).Shape) == 1
+            ? $"{summary}: {string.Join(", ", lines.Skip(1).Take(4).Select(l => l.Trim()))}{(lines.Length > 5 ? ", …" : string.Empty)}"
+            : summary;
     }
 
     private static string Shorten(string text)
