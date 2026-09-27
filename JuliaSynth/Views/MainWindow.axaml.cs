@@ -168,6 +168,59 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void ChooseJulia_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Choose the Julia program (julia.exe, in the bin folder of Julia)",
+            FileTypeFilter = OperatingSystem.IsWindows()
+                ? [new FilePickerFileType("Julia") { Patterns = ["julia.exe"] }, FilePickerFileTypes.All]
+                : [FilePickerFileTypes.All],
+        });
+
+        if (files.FirstOrDefault()?.TryGetLocalPath() is string path)
+        {
+            _ = await viewModel.ChooseJuliaAsync(path);
+        }
+    }
+
+    private async void ExportScript_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        IStorageFile? file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Export Julia script",
+            FileTypeChoices = [new FilePickerFileType("Julia script") { Patterns = ["*.jl"] }],
+            DefaultExtension = ".jl",
+            SuggestedFileName = (viewModel.FilePath is null ? "Untitled" : Path.GetFileNameWithoutExtension(viewModel.FilePath)) + ".jl",
+            SuggestedStartLocation = await StartFolderAsync(viewModel),
+            ShowOverwritePrompt = true,
+        });
+
+        if (file?.TryGetLocalPath() is not string path)
+        {
+            return;
+        }
+
+        try
+        {
+            await File.WriteAllTextAsync(path, MainViewModel.ExportScript());
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            _ = await MessageDialog.ShowAsync(this, "Can't export the script", $"{Path.GetFileName(path)} couldn't be written.\n\n{error.Message}", "OK");
+        }
+    }
+
     /// <summary>
     /// The open file's folder, else Documents.
     /// </summary>

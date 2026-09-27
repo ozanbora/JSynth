@@ -21,6 +21,11 @@ namespace JuliaSynth.ViewModels
         public string? LastFile { get; set; }
 
         /// <summary>
+        /// The Julia program picked by the user; null to look for one.
+        /// </summary>
+        public string? JuliaPath { get; set; }
+
+        /// <summary>
         /// Settings can't be read (missing, unreadable, corrupt) → defaults; they are a convenience only.
         /// </summary>
         public static AppSettings Load()

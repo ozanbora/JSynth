@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:jsModel="clr-namespace:JuliaSynth.Model"
+             x:Class="JuliaSynth.Controls.ResultBadge"
+             x:DataType="jsModel:Node"
+             IsVisible="{Binding Path=HasResult}"
+             VerticalAlignment="Center"
+             Margin="0 0 4 0"
+             >
+  <!-- What the last run gave: ✓ a value, ✗ an error, – not run. A filled circle reads on any node color. -->
+  <UserControl.Styles>
+    <Style Selector="Border.badge">
+      <Setter Property="Width" Value="18"/>
+      <Setter Property="Height" Value="18"/>
+      <Setter Property="CornerRadius" Value="9"/>
+      <Setter Property="BorderBrush" Value="#E6FFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Background" Value="#616161"/>
+    </Style>
+    <Style Selector="Border.badge.ok">
+      <Setter Property="Background" Value="#2E7D32"/>
+    </Style>
+    <Style Selector="Border.badge.error">
+      <Setter Property="Background" Value="#C62828"/>
+    </Style>
+    <Style Selector="Border.badge > TextBlock">
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Border Classes="badge"
+          Classes.ok="{Binding Path=IsResultOk}"
+          Classes.error="{Binding Path=IsResultError}"
+          ToolTip.ShowDelay="200"
+          >
+    <ToolTip.Tip>
+      <SelectableTextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                           FontSize="12"
+                           MaxWidth="520"
+                           TextWrapping="Wrap"
+                           Text="{Binding Path=ResultTip}"/>
+    </ToolTip.Tip>
+    <Panel>
+      <TextBlock Text="✓" IsVisible="{Binding Path=IsResultOk}"/>
+      <TextBlock Text="✗" IsVisible="{Binding Path=IsResultError}"/>
+      <TextBlock Text="–" IsVisible="{Binding Path=IsResultSkipped}"/>
+    </Panel>
+  </Border>
+</UserControl>

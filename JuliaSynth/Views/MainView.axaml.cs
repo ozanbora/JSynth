@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using JuliaSynth.ViewModels;
+using System;
+using System.Collections.Specialized;
 
 namespace JuliaSynth.Views;
 
@@ -11,9 +13,37 @@ public partial class MainView : UserControl
     // from the keyboard.
     private Point? _menuPoint;
 
+    private MainViewModel? _viewModel;
+
     public MainView()
     {
         InitializeComponent();
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+
+        if (_viewModel is not null)
+        {
+            _viewModel.Output.CollectionChanged -= OutputChanged;
+        }
+
+        _viewModel = DataContext as MainViewModel;
+
+        if (_viewModel is not null)
+        {
+            _viewModel.Output.CollectionChanged += OutputChanged;
+        }
+    }
+
+    // Keep the latest output in view.
+    private void OutputChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Add && _viewModel?.Output.Count > 0)
+        {
+            OutputList.ScrollIntoView(_viewModel.Output.Count - 1);
+        }
     }
 
     private Control? Canvas => NodesItems.ItemsPanelRoot;

@@ -22,7 +22,7 @@
   </Design.DataContext>
   
   <Grid x:Name="MainGrid"
-        RowDefinitions="*,Auto">
+        RowDefinitions="*,Auto,Auto">
     <Grid.Resources>
       <jsConverters:VectorFormatConverter x:Key="VectorConverter"/>
       <jsConverters:PercentConverter x:Key="PercentConverter"/>
@@ -160,8 +160,76 @@
       </ScrollViewer>
     </Border>
     
-    <!-- Status bar -->
+    <!-- Output of runs: printed lines, values and errors -->
     <Border Grid.Row="1"
+            Height="200"
+            IsVisible="{Binding Path=IsOutputVisible}"
+            Background="{DynamicResource StatusBarBackgroundBrush}"
+            BorderBrush="{DynamicResource StatusBarBorderBrush}"
+            BorderThickness="0 1 0 0"
+            >
+      <DockPanel>
+        <Grid DockPanel.Dock="Top"
+              ColumnDefinitions="*,Auto,Auto"
+              Margin="12 2 4 0"
+              >
+          <TextBlock Grid.Column="0"
+                     VerticalAlignment="Center"
+                     FontWeight="SemiBold"
+                     Text="Output"
+                     />
+          <Button Grid.Column="1"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Content="Clear"
+                  Command="{Binding Path=ClearOutput}"
+                  />
+          <Button Grid.Column="2"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Content="✕"
+                  Command="{Binding Path=ToggleOutput}"
+                  ToolTip.Tip="Hide the output"
+                  />
+        </Grid>
+        <ListBox x:Name="OutputList"
+                 ItemsSource="{Binding Path=Output}"
+                 Background="Transparent"
+                 Padding="8 0 8 4"
+                 >
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="4 0"/>
+              <Setter Property="MinHeight" Value="0"/>
+            </Style>
+            <Style Selector="SelectableTextBlock.error">
+              <Setter Property="Foreground" Value="#FF6B6B"/>
+            </Style>
+            <Style Selector="SelectableTextBlock.info">
+              <Setter Property="Opacity" Value="0.65"/>
+            </Style>
+            <Style Selector="SelectableTextBlock.value">
+              <Setter Property="Foreground" Value="#7BD88F"/>
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="jsViewModels:OutputEntry">
+              <SelectableTextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Classes.error="{Binding Path=IsError}"
+                                   Classes.info="{Binding Path=IsInfo}"
+                                   Classes.value="{Binding Path=IsValue}"
+                                   Text="{Binding Path=Text}"
+                                   />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <!-- Status bar -->
+    <Border Grid.Row="2"
             Background="{DynamicResource StatusBarBackgroundBrush}"
             BorderBrush="{DynamicResource StatusBarBorderBrush}"
             BorderThickness="0 1 0 0"
@@ -195,11 +263,11 @@
                 <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtCenter_Click"/>
-                  <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtCenter_Click"/>
-                  <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtCenter_Click"/>
-                  <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtCenter_Click"/>
-                  <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
-                  <MenuItem Header="Load from file (CSV, .mtx, JLD2)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Load from file (CSV, .mtx, JLD2)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
               </MenuFlyout>
             </DropDownButton.Flyout>
@@ -214,6 +282,28 @@
                   FontSize="16"
                   Command="{Binding Path=Redo}"
                   ToolTip.Tip="Redo (Ctrl+Y)" />
+          <Button Classes="bar"
+                  Margin="8 0 0 0"
+                  Content="▶ Run"
+                  Command="{Binding Path=Run}"
+                  IsVisible="{Binding !IsRunning}"
+                  ToolTip.Tip="Run the design with Julia (F5)" />
+          <Button Classes="bar"
+                  Margin="8 0 0 0"
+                  Content="■ Stop"
+                  Command="{Binding Path=Stop}"
+                  IsVisible="{Binding IsRunning}"
+                  ToolTip.Tip="Stop Julia (Shift+F5)" />
+          <Button Classes="bar"
+                  Content="Output"
+                  Command="{Binding Path=ToggleOutput}"
+                  ToolTip.Tip="Show or hide the output of runs" />
+          <TextBlock VerticalAlignment="Center"
+                     Margin="8 0 0 0"
+                     Opacity="0.6"
+                     FontSize="12"
+                     Text="{Binding Path=JuliaStatus}"
+                     ToolTip.Tip="{Binding Path=Julia.Path, FallbackValue='Install Julia, or pick julia.exe with Run → Choose Julia…'}" />
           <TextBlock VerticalAlignment="Center"
                      Margin="12 0 0 0"
                      Opacity="0.6"

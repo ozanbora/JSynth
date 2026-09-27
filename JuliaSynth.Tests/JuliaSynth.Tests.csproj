@@ -17,5 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\JuliaSynth\JuliaSynth.csproj" />
+    <ProjectReference Include="..\JuliaSynth.Runtime\JuliaSynth.Runtime.csproj" />
   </ItemGroup>
 </Project>

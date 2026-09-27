@@ -16,7 +16,7 @@ using System.Reactive.Linq;
 
 namespace JuliaSynth.ViewModels;
 
-public class MainViewModel : ReactiveObject
+public partial class MainViewModel : ReactiveObject
 {
     private Vector _scrollViewerOffset = Vector.Zero;
     private double _selectedZoomLevel = 1.0;
@@ -57,7 +57,7 @@ public class MainViewModel : ReactiveObject
         Connections.CollectionChanged += (_, _) =>
         {
             MarkWiredInputs();
-            History.ScheduleCommit();
+            DesignChanged();
         };
         AddStartingDesign();
         History.Reset();
@@ -162,7 +162,7 @@ public class MainViewModel : ReactiveObject
 
         PruneConnections();
         MarkWiredInputs();
-        History.ScheduleCommit();
+        DesignChanged();
     }
 
     private static void Track(Node node, bool track)
@@ -220,7 +220,7 @@ public class MainViewModel : ReactiveObject
 
         PruneConnections();
         MarkWiredInputs();
-        History.ScheduleCommit();
+        DesignChanged();
     }
 
     /// <summary>
@@ -237,10 +237,10 @@ public class MainViewModel : ReactiveObject
 
     private static void DesignPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // Selection and wiring state aren't part of the design.
-        if (e.PropertyName is not (nameof(Node.IsSelected) or nameof(Parameter.IsWired)))
+        // Selection, wiring state and run results aren't part of the design.
+        if (e.PropertyName is not (nameof(Node.IsSelected) or nameof(Parameter.IsWired)) && !(e.PropertyName is string name && Node.ResultProperties.Contains(name)))
         {
-            History.ScheduleCommit();
+            DesignChanged();
         }
     }
 
@@ -528,6 +528,7 @@ public class MainViewModel : ReactiveObject
         Cut = ReactiveCommand.Create(CutSelection);
         Paste = ReactiveCommand.Create(PasteClipboard);
         Duplicate = ReactiveCommand.Create(DuplicateSelection);
+        CreateRunCommands();
 
         History.Changed += (_, _) =>
         {
@@ -639,6 +640,8 @@ public class MainViewModel : ReactiveObject
     /// </summary>
     public void StartUp()
     {
+        _ = FindJuliaAsync();
+
         foreach (string? path in new[] { AppSettings.Load().LastFile, LegacyFile })
         {
             if (path is not null && File.Exists(path))

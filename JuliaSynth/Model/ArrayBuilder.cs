@@ -266,7 +266,12 @@ namespace JuliaSynth.Model
         /// <summary>
         /// <see cref="Julia"/>, after the <c>using</c> it needs.
         /// </summary>
-        public string Code => Current.Package is string package ? $"using {package}\n{Julia}" : Julia;
+        public string Code => Package is string package ? $"using {package}\n{Julia}" : Julia;
+
+        /// <summary>
+        /// The package the Julia code needs loaded, or null.
+        /// </summary>
+        public string? Package => Current.Package;
 
         /// <summary>
         /// Why the arguments aren't valid, or null.

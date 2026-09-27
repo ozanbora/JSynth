@@ -39,6 +39,8 @@
                   Grid.Column="1"
                   Classes="nodeActions">
 
+        <jsControls:ResultBadge/>
+
         <TextBlock Text="⚠"
                    VerticalAlignment="Center"
                    Margin="0 0 4 0"

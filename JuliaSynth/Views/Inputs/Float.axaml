@@ -52,6 +52,8 @@
                   Grid.Column="1"
                   Classes="nodeActions">
 
+        <jsControls:ResultBadge/>
+
         <Button Classes="nodeAction"
                 Content="Ξ"
                 ToolTip.Tip="Edit"

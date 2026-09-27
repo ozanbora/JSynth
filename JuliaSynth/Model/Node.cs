@@ -3,6 +3,8 @@ using Newtonsoft.Json;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using JuliaSynth.Runtime;
 
 namespace JuliaSynth.Model
 {
@@ -14,6 +16,7 @@ namespace JuliaSynth.Model
         private int _row;
         private Color _color;
         private bool _isSelected;
+        private Report? _result;
 
         #endregion
 
@@ -50,6 +53,48 @@ namespace JuliaSynth.Model
             get => _isSelected;
             set => this.RaiseAndSetIfChanged(ref _isSelected, value);
         }
+
+        /// <summary>
+        /// What the last run of the design said about this node's value; not saved.
+        /// </summary>
+        public Report? Result
+        {
+            get => _result;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _result, value);
+                foreach (string name in ResultProperties.Skip(1))
+                {
+                    this.RaisePropertyChanged(name);
+                }
+            }
+        }
+
+        /// <summary>
+        /// <see cref="Result"/> and the properties shown from it: changing them doesn't change the design.
+        /// </summary>
+        public static IReadOnlyList<string> ResultProperties { get; } = [
+            nameof(Result), nameof(HasResult), nameof(IsResultOk), nameof(IsResultError), nameof(IsResultSkipped), nameof(ResultTip),
+        ];
+
+        public bool HasResult => Result is not null;
+
+        public bool IsResultOk => Result?.Status == ReportStatus.Ok;
+
+        public bool IsResultError => Result?.Status == ReportStatus.Error;
+
+        public bool IsResultSkipped => Result?.Status == ReportStatus.Skipped;
+
+        /// <summary>
+        /// The value and its type, or what went wrong.
+        /// </summary>
+        public string ResultTip => Result switch
+        {
+            { Status: ReportStatus.Ok } r => $"{r.Type}\n{r.Text}",
+            { Status: ReportStatus.Error } r => $"Error\n{r.Text}",
+            { Status: ReportStatus.Skipped } r => $"Not run\n{r.Text}",
+            _ => string.Empty,
+        };
 
         /// <summary>
         /// Julia type of the value this node outputs, e.g. <c>Float32</c>.

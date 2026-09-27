@@ -30,4 +30,8 @@
   <ItemGroup>
     <Folder Include="Assets\Fonts\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JuliaSynth.Runtime\JuliaSynth.Runtime.csproj" />
+  </ItemGroup>
 </Project>

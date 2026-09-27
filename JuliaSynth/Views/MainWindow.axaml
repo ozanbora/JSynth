@@ -31,6 +31,8 @@
           <KeyBinding Gesture="Ctrl+X" Command="{Binding Path=Cut}"/>
           <KeyBinding Gesture="Ctrl+V" Command="{Binding Path=Paste}"/>
           <KeyBinding Gesture="Ctrl+D" Command="{Binding Path=Duplicate}"/>
+          <KeyBinding Gesture="F5" Command="{Binding Path=Run}"/>
+          <KeyBinding Gesture="Shift+F5" Command="{Binding Path=Stop}"/>
         </Window.KeyBindings>
 
         <DockPanel>
@@ -58,6 +60,15 @@
               <Separator/>
               <MenuItem Header="_Delete" InputGesture="Delete" Command="{Binding Path=DeleteSelected}"/>
               <MenuItem Header="Select _all" InputGesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
+            </MenuItem>
+            <MenuItem Header="_Run">
+              <MenuItem Header="_Run" InputGesture="F5" Command="{Binding Path=Run}"/>
+              <MenuItem Header="_Stop" InputGesture="Shift+F5" Command="{Binding Path=Stop}"/>
+              <Separator/>
+              <MenuItem Header="Show _output" Command="{Binding Path=ToggleOutput}"/>
+              <MenuItem Header="_Export Julia script…" Click="ExportScript_Click"/>
+              <Separator/>
+              <MenuItem Header="_Choose Julia…" Click="ChooseJulia_Click"/>
             </MenuItem>
           </Menu>
           </Border>
