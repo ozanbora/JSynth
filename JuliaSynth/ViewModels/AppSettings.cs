@@ -9,7 +9,10 @@ namespace JuliaSynth.ViewModels
     /// </summary>
     public sealed class AppSettings
     {
-        private static readonly string SettingsPath = Path.Combine(
+        /// <summary>
+        /// Where settings are kept; tests point this at a temporary folder.
+        /// </summary>
+        internal static string SettingsPath { get; set; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "JuliaSynth", "settings.json");
 
         /// <summary>

@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="JuliaSynth.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.1.4" />
     <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.1.4" />
     <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="11.1.4" />

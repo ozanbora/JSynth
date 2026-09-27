@@ -60,6 +60,16 @@ public class MainViewModel : ReactiveObject
     }
 
     /// <summary>
+    /// Replaces the design with the starting design, as an unsaved new one. Tests start from here.
+    /// </summary>
+    internal static void LoadStartingDesign()
+    {
+        Load(new DesignDocument());
+        AddStartingDesign();
+        History.Reset();
+    }
+
+    /// <summary>
     /// A small wired example using every node type: g(f(x, z), n), i.e. x^z / n.
     /// </summary>
     private static void AddStartingDesign()
