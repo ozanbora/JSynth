@@ -70,6 +70,11 @@ namespace JuliaSynth.Controls
             {
                 InvalidateArrange();
             }
+            else if (change.Property == BackgroundProperty)
+            {
+                // Wire colors are adjusted to the background.
+                InvalidateWires();
+            }
         }
 
         protected override Size MeasureOverride(Size availableSize)

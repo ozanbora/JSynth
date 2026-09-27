@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
+using JuliaSynth.Converters;
 using JuliaSynth.Model;
 using JuliaSynth.ViewModels;
 using System;
@@ -212,6 +213,16 @@ namespace JuliaSynth.Controls
         {
             private const double Thickness = 2.5;
 
+            /// <summary>
+            /// The node's color, adjusted to stand out from the canvas (a dark blue wire on the dark
+            /// canvas would be nearly invisible).
+            /// </summary>
+            private IBrush WireBrush(Color color)
+            {
+                Color canvas = (grid.Background as ISolidColorBrush)?.Color ?? Colors.Black;
+                return new SolidColorBrush(ColorContrast.StandOut(color, canvas));
+            }
+
             public override void Render(DrawingContext context)
             {
                 Dictionary<string, Connector> outputs = [];
@@ -237,7 +248,7 @@ namespace JuliaSynth.Controls
                     {
                         // A type changed after wiring: keep the wire but flag it.
                         Pen pen = Wiring.AreTypesCompatible(source.OutputType, parameter.Type)
-                            ? new Pen(new SolidColorBrush(source.Color), Thickness)
+                            ? new Pen(WireBrush(source.Color), Thickness)
                             : new Pen(InvalidWireBrush, Thickness, new DashStyle([2, 2], 0));
                         DrawWire(context, pen, output.CenterIn(grid), input.CenterIn(grid));
                     }
@@ -251,7 +262,7 @@ namespace JuliaSynth.Controls
                         : grid._dragPoint;
                     IBrush brush = grid._dragError != null
                         ? InvalidWireBrush
-                        : port.Owner is Model.Node node && !port.IsInput ? new SolidColorBrush(node.Color) : Brushes.Gray;
+                        : port.Owner is Model.Node node && !port.IsInput ? WireBrush(node.Color) : Brushes.Gray;
                     Pen pen = new(brush, Thickness, new DashStyle([2, 2], 0));
 
                     // Always draw from the output side so the curve leaves and enters horizontally.

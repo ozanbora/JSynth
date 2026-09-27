@@ -88,21 +88,21 @@
       <TextBlock Grid.Row="1"
                  Grid.Column="1"
                  Classes="value"
-                 Text="{Binding Path=Value, StringFormat=\{0:N0\}}"
+                 Text="{Binding Path=Value, Converter={StaticResource CompactIntegerConverter}}"
                  ToolTip.Tip="{Binding Path=Value, StringFormat=\{0:N0\}}"
                  />
 
       <TextBlock Grid.Row="2"
                  Grid.Column="1"
                  Classes="limit"
-                 Text="{Binding Path=Min, StringFormat=\{0:N0\}}"
+                 Text="{Binding Path=Min, Converter={StaticResource CompactIntegerConverter}}"
                  ToolTip.Tip="{Binding Path=Min, StringFormat=\{0:N0\}}"
                  />
 
       <TextBlock Grid.Row="3"
                  Grid.Column="1"
                  Classes="limit"
-                 Text="{Binding Path=Max, StringFormat=\{0:N0\}}"
+                 Text="{Binding Path=Max, Converter={StaticResource CompactIntegerConverter}}"
                  ToolTip.Tip="{Binding Path=Max, StringFormat=\{0:N0\}}"
                  />
 

@@ -20,6 +20,7 @@
       </ResourceDictionary.ThemeDictionaries>
 
       <jsConverters:ContrastBrushConverter x:Key="ContrastBrushConverter"/>
+      <jsConverters:CompactIntegerConverter x:Key="CompactIntegerConverter"/>
       <SolidColorBrush x:Key="NodeBorderBrush" Color="#59000000"/>
       <SolidColorBrush x:Key="NodeActionHoverBrush" Color="#33808080"/>
       <SolidColorBrush x:Key="NodeActionPressedBrush" Color="#59808080"/>

@@ -17,15 +17,8 @@ namespace JuliaSynth.Converters
                 return null;
             }
 
-            // WCAG relative luminance; black has the better contrast ratio above ~0.18.
-            static double Linear(byte c)
-            {
-                double s = c / 255.0;
-                return s <= 0.03928 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4);
-            }
-
-            double luminance = (0.2126 * Linear(color.R)) + (0.7152 * Linear(color.G)) + (0.0722 * Linear(color.B));
-            return luminance > 0.179 ? Brushes.Black : Brushes.White;
+            // Black has the better contrast ratio above a relative luminance of about 0.18.
+            return ColorContrast.Luminance(color) > 0.179 ? Brushes.Black : Brushes.White;
         }
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
