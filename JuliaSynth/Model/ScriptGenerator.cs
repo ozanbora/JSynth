@@ -29,6 +29,15 @@ namespace JuliaSynth.Model
         {
             List<Node> nodes = designNodes.ToList();
             List<Connection> connections = designConnections.Where(c => Wiring.IsAttached(nodes, c)).ToList();
+
+            // Builders write wired arguments by name and typed-in ones by value; make sure they know which is
+            // which for these connections (the designer keeps this up to date, a design built elsewhere may not).
+            HashSet<string> wired = connections.Select(c => c.ParameterID).ToHashSet();
+            foreach (Parameter parameter in nodes.SelectMany(n => n.Inputs))
+            {
+                parameter.IsWired = wired.Contains(parameter.ID);
+            }
+
             Dictionary<string, string> variables = NameVariables(nodes);
             List<Node> order = WiringOrder(nodes, connections);
 

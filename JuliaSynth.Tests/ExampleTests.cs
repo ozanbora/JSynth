@@ -1,0 +1,103 @@
+using JuliaSynth.Model;
+using JuliaSynth.Runtime;
+using JuliaSynth.ViewModels;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace JuliaSynth.Tests
+{
+    public class ExampleTests
+    {
+        public static IEnumerable<object[]> Names => Examples.All.Select(e => new object[] { e.Name });
+
+        private static Example Named(string name) => Examples.All.Single(e => e.Name == name);
+
+        [Theory]
+        [MemberData(nameof(Names))]
+        public void An_example_is_complete_and_tidy(string name)
+        {
+            MainViewModel.DesignDocument design = Named(name).Build();
+
+            // Everything computable: nothing unwired or invalid, so the plain script skips nothing.
+            string script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: false).Text;
+            Assert.DoesNotContain("\n# ", script.Split("# Values")[1]);
+
+            // No node on top of another (nodes are 9×6 cells, centred on their cell).
+            foreach (Node a in design.Nodes)
+            {
+                foreach (Node b in design.Nodes.Where(n => n != a))
+                {
+                    Assert.False(Math.Abs(a.Row - b.Row) < 7 && Math.Abs(a.Column - b.Column) < 10, $"{Label(a)} overlaps {Label(b)}");
+                }
+            }
+        }
+
+        private static string Label(Node node) => node is Function f ? f.Name : $"{node.GetType().Name} at {node.Row},{node.Column}";
+
+        [Fact]
+        public void Opening_an_example_makes_a_new_unsaved_design_and_explains_it()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new();
+
+                viewModel.OpenExample(Named("Loan payment"));
+
+                Assert.Null(viewModel.FilePath);
+                Assert.False(viewModel.IsDirty);
+                Assert.False(MainViewModel.History.CanUndo);
+                Assert.Contains(MainViewModel.Nodes.OfType<Function>(), f => f.Name == "payment");
+                Assert.True(viewModel.IsOutputVisible);
+                Assert.StartsWith("Example: Loan payment. Finance:", viewModel.Output.Last().Text);
+            });
+        }
+
+        /// <summary>
+        /// The value each named variable should have, within a tolerance.
+        /// </summary>
+        public static IEnumerable<object[]> Answers =>
+        [
+            ["Loan payment", "payment_out", 1266.713, 0.001],
+            ["Loan payment", "interest_out", 206016.779, 0.001],
+            ["Projectile", "distance_out", 40.775, 0.001],
+            ["Projectile", "peak_out", 10.194, 0.001],
+            ["Projectile", "airtime_out", 2.883, 0.001],
+            ["Line fit", "predict_out", 82.171, 0.001],
+            ["PageRank", "top_out", 3.0, 0.0],
+            ["Heat in a rod", "hottest_out", 0.125, 0.0002],
+            ["Monte Carlo π", "estimate_out", Math.PI, 0.05],
+        ];
+
+        [Theory]
+        [MemberData(nameof(Answers))]
+        public async Task An_example_gives_the_right_answer_with_real_julia(string name, string variable, double expected, double tolerance)
+        {
+            // Nothing to check against without Julia.
+            if (await JuliaLocator.FindAsync(null) is not JuliaInstallation julia)
+            {
+                return;
+            }
+
+            MainViewModel.DesignDocument design = Named(name).Build();
+            JuliaScript script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: true);
+            JuliaRunner runner = new(julia.Path);
+            ConcurrentQueue<Report> reports = new();
+            runner.Reported += reports.Enqueue;
+
+            RunResult result = await runner.RunAsync(script.Text, Path.GetTempPath());
+
+            Assert.True(result.Succeeded);
+            Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
+            Assert.Equal(design.Nodes.Count, reports.Count);
+            Report answer = reports.Single(r => script.Variables[r.Id] == variable);
+            Assert.InRange(double.Parse(answer.Text, CultureInfo.InvariantCulture), expected - tolerance, expected + tolerance);
+        }
+    }
+}

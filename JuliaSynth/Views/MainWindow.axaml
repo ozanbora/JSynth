@@ -47,6 +47,9 @@
               <MenuItem Header="_Save" InputGesture="Ctrl+S" HotKey="Ctrl+S" Click="Save_Click"/>
               <MenuItem Header="Save _As…" InputGesture="Ctrl+Shift+S" HotKey="Ctrl+Shift+S" Click="SaveAs_Click"/>
               <Separator/>
+              <!-- Filled from Examples.All -->
+              <MenuItem x:Name="ExamplesMenu" Header="E_xamples"/>
+              <Separator/>
               <MenuItem Header="E_xit" Click="Exit_Click"/>
             </MenuItem>
             <MenuItem Header="_Edit">

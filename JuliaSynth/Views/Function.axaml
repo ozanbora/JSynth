@@ -88,24 +88,26 @@
                      ZIndex="3"
                      Margin="0 0 -8 0"/>
 
-      <StackPanel Grid.Row="1"
-                  Grid.Column="1"
-                  Orientation="Horizontal"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Bottom"
-                  Margin="4 0 8 0"
-                  ToolTip.Tip="{Binding Path=Code}"
-                  >
-        <TextBlock FontSize="18"
+      <!-- The name, then the return type in what room is left (e.g. ::SparseMatrixCSC{… ); the tooltip has it all. -->
+      <DockPanel Grid.Row="1"
+                 Grid.Column="1"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Bottom"
+                 Margin="4 0 8 0"
+                 ToolTip.Tip="{Binding Path=Code}"
+                 >
+        <TextBlock DockPanel.Dock="Left"
+                   FontSize="18"
                    TextTrimming="CharacterEllipsis"
                    Text="{Binding Path=Name}"
                    />
         <TextBlock Classes="caption"
                    VerticalAlignment="Bottom"
                    Margin="2 0 0 2"
+                   TextTrimming="{x:Static jsControls:Trimming.Dots}"
                    Text="{Binding Path=ReturnType, StringFormat=::\{0\}}"
                    />
-      </StackPanel>
+      </DockPanel>
 
       <!-- Inputs, one per parameter -->
       <ItemsControl Grid.Row="2"

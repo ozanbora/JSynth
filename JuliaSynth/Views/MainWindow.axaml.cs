@@ -29,6 +29,20 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        foreach (Example example in Examples.All)
+        {
+            MenuItem item = new() { Header = example.Name };
+            ToolTip.SetTip(item, example.Description);
+            item.Click += async (_, _) =>
+            {
+                if (ViewModel is MainViewModel viewModel && await ConfirmDiscardAsync())
+                {
+                    viewModel.OpenExample(example);
+                }
+            };
+            ExamplesMenu.Items.Add(item);
+        }
     }
 
     private MainViewModel? ViewModel => DataContext as MainViewModel;

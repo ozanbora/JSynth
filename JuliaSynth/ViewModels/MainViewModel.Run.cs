@@ -179,6 +179,25 @@ public partial class MainViewModel
     }
 
     /// <summary>
+    /// Replaces the design with <paramref name="example"/>, as a new unsaved design, and says what it does.
+    /// </summary>
+    public void OpenExample(Example example)
+    {
+        Load(example.Build());
+        History.Reset();
+        FilePath = null;
+        ScrollViewerOffset = Avalonia.Vector.Zero;
+
+        IsOutputVisible = true;
+        if (Output.Count > 0)
+        {
+            Log(string.Empty, OutputKind.Info);
+        }
+
+        Log($"Example: {example.Name}. {example.Description} Run it with F5.", OutputKind.Output);
+    }
+
+    /// <summary>
     /// The design as a plain Julia script, to save and run elsewhere.
     /// </summary>
     public static string ExportScript()
