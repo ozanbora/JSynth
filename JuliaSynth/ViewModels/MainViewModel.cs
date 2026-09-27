@@ -260,7 +260,8 @@ public class MainViewModel : ReactiveObject
 
     #region Editing
     /// <summary>
-    /// Adds a new node of <paramref name="kind"/> (Float, Integer, UnsignedInteger or Function)
+    /// Adds a new node of <paramref name="kind"/> (Float, Integer, UnsignedInteger, VectorNode,
+    /// MatrixNode or Function)
     /// at the first free spot at or below the given cell, and selects it.
     /// </summary>
     public static Node AddNode(string kind, int row, int column)
@@ -270,6 +271,8 @@ public class MainViewModel : ReactiveObject
             nameof(Float) => new Float(),
             nameof(Integer) => new Integer(),
             nameof(UnsignedInteger) => new UnsignedInteger(),
+            nameof(VectorNode) => new VectorNode(),
+            nameof(MatrixNode) => new MatrixNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
 

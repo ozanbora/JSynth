@@ -76,21 +76,7 @@ namespace JuliaSynth.Model
         /// <summary>
         /// Julia types selectable for parameters and return values.
         /// </summary>
-        public static ReadOnlyObservableCollection<string> Types { get; } = new([
-            AnyType,
-            "Bool",
-            "Int8",
-            "Int16",
-            "Int32",
-            "Int64",
-            "UInt8",
-            "UInt16",
-            "UInt32",
-            "UInt64",
-            "Float16",
-            "Float32",
-            "Float64",
-        ]);
+        public static ReadOnlyObservableCollection<string> Types { get; } = new([.. JuliaTypes.All]);
 
         /// <summary>
         /// Julia signature, e.g. <c>f(x::Float64, y)::Float64</c>.

@@ -63,6 +63,26 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void Vectors_and_matrices_are_saved_as_typed()
+        {
+            Run(viewModel =>
+            {
+                MainViewModel.Nodes.Add(new VectorNode { ElementType = "Int64", Text = "[1, 2, 18_446]" });
+                MainViewModel.Nodes.Add(new MatrixNode { ElementType = "Float32", Text = "1.5 2\n3 4e2" });
+                viewModel.SaveDesign(PathOf("arrays.jsynth"));
+
+                viewModel.NewDesign();
+                viewModel.OpenDesign(PathOf("arrays.jsynth"));
+
+                VectorNode vector = Assert.Single(MainViewModel.Nodes.OfType<VectorNode>());
+                MatrixNode matrix = Assert.Single(MainViewModel.Nodes.OfType<MatrixNode>());
+                Assert.Equal(("Int64", "[1, 2, 18_446]"), (vector.ElementType, vector.Text));
+                Assert.Equal(("Float32", "1.5 2\n3 4e2"), (matrix.ElementType, matrix.Text));
+                Assert.Equal("2×2", matrix.Size);
+            });
+        }
+
+        [Fact]
         public void Saving_names_the_design_and_clears_the_unsaved_mark()
         {
             Run(viewModel =>

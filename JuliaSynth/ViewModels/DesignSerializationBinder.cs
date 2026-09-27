@@ -25,6 +25,8 @@ namespace JuliaSynth.ViewModels
             typeof(Float),
             typeof(Integer),
             typeof(UnsignedInteger),
+            typeof(VectorNode),
+            typeof(MatrixNode),
             typeof(Function),
             typeof(Parameter),
             typeof(Connection),
