@@ -27,6 +27,10 @@
           <KeyBinding Gesture="Delete" Command="{Binding Path=DeleteSelected}"/>
           <KeyBinding Gesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
           <KeyBinding Gesture="Escape" Command="{Binding Path=ClearSelection}"/>
+          <KeyBinding Gesture="Ctrl+C" Command="{Binding Path=Copy}"/>
+          <KeyBinding Gesture="Ctrl+X" Command="{Binding Path=Cut}"/>
+          <KeyBinding Gesture="Ctrl+V" Command="{Binding Path=Paste}"/>
+          <KeyBinding Gesture="Ctrl+D" Command="{Binding Path=Duplicate}"/>
         </Window.KeyBindings>
 
         <DockPanel>
@@ -46,6 +50,11 @@
             <MenuItem Header="_Edit">
               <MenuItem Header="_Undo" InputGesture="Ctrl+Z" Command="{Binding Path=Undo}"/>
               <MenuItem Header="_Redo" InputGesture="Ctrl+Y" Command="{Binding Path=Redo}"/>
+              <Separator/>
+              <MenuItem Header="Cu_t" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
+              <MenuItem Header="_Copy" InputGesture="Ctrl+C" Command="{Binding Path=Copy}"/>
+              <MenuItem Header="_Paste" InputGesture="Ctrl+V" Command="{Binding Path=Paste}"/>
+              <MenuItem Header="D_uplicate" InputGesture="Ctrl+D" Command="{Binding Path=Duplicate}"/>
               <Separator/>
               <MenuItem Header="_Delete" InputGesture="Delete" Command="{Binding Path=DeleteSelected}"/>
               <MenuItem Header="Select _all" InputGesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>

@@ -60,5 +60,13 @@ namespace JuliaSynth.Model
         {
             ID = Guid.NewGuid().ToString("N");
         }
+
+        /// <summary>
+        /// Gives a pasted copy an identity of its own.
+        /// </summary>
+        internal void RenewID()
+        {
+            ID = Guid.NewGuid().ToString("N");
+        }
     }
 }

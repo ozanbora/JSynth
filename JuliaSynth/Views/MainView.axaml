@@ -63,6 +63,11 @@
                   <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtPointer_Click"/>
                 </MenuItem>
                 <Separator/>
+                <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
+                <MenuItem Header="Copy" InputGesture="Ctrl+C" Command="{Binding Path=Copy}"/>
+                <MenuItem Header="Paste" InputGesture="Ctrl+V" Command="{Binding Path=Paste}"/>
+                <MenuItem Header="Duplicate" InputGesture="Ctrl+D" Command="{Binding Path=Duplicate}"/>
+                <Separator/>
                 <MenuItem Header="Delete selected" InputGesture="Delete" Command="{Binding Path=DeleteSelected}"/>
                 <MenuItem Header="Select all" InputGesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
                 <Separator/>

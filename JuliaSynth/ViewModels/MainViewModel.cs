@@ -289,9 +289,13 @@ public class MainViewModel : ReactiveObject
 
     private static string FreeFunctionName()
     {
-        HashSet<string> used = Nodes.OfType<Function>().Select(f => f.Name).ToHashSet();
+        return FreeFunctionName(Nodes.OfType<Function>().Select(f => f.Name).ToHashSet());
+    }
+
+    private static string FreeFunctionName(ISet<string> used)
+    {
         return "fghkpqrstuvw".Select(c => c.ToString()).FirstOrDefault(n => !used.Contains(n))
-            ?? $"f{Nodes.Count + 1}";
+            ?? Enumerable.Range(1, int.MaxValue).Select(i => $"f{i}").First(n => !used.Contains(n));
     }
 
     public static void SelectOnly(Node? node)
@@ -310,6 +314,137 @@ public class MainViewModel : ReactiveObject
     public static void DeleteSelectedNodes()
     {
         Nodes.RemoveAll(Nodes.Where(n => n.IsSelected).ToList());
+    }
+    #endregion
+
+    #region Clipboard
+    // Nodes copied as design-file text; kept in the app, not on the system clipboard.
+    private static string? _clipboard;
+
+    // How many times the clipboard was pasted: each paste lands a little further away.
+    private static int _pasteCount;
+
+    // Pasted copies are offset from the originals by this many cells, per paste.
+    private const int PasteOffset = 3;
+
+    public static bool HasClipboard => _clipboard is not null;
+
+    /// <summary>
+    /// Copies the selected nodes and the wires between them. False when nothing is selected.
+    /// </summary>
+    public static bool CopySelection()
+    {
+        if (CaptureSelection() is not string copy)
+        {
+            return false;
+        }
+
+        _clipboard = copy;
+        _pasteCount = 0;
+        return true;
+    }
+
+    public static void CutSelection()
+    {
+        if (CopySelection())
+        {
+            DeleteSelectedNodes();
+
+            // The first paste after a cut puts the nodes back where they were.
+            _pasteCount = -1;
+        }
+    }
+
+    public static void PasteClipboard()
+    {
+        if (_clipboard is not null)
+        {
+            _pasteCount++;
+            PasteCopy(_clipboard, _pasteCount * PasteOffset);
+        }
+    }
+
+    /// <summary>
+    /// Copies and pastes the selection in one go, leaving the clipboard as it was.
+    /// </summary>
+    public static void DuplicateSelection()
+    {
+        if (CaptureSelection() is string copy)
+        {
+            PasteCopy(copy, PasteOffset);
+        }
+    }
+
+    private static string? CaptureSelection()
+    {
+        List<Node> selected = Nodes.Where(n => n.IsSelected).ToList();
+        if (selected.Count == 0)
+        {
+            return null;
+        }
+
+        // Only wires within the selection come along; the copies can't keep the others.
+        HashSet<string> ids = selected.Select(n => n.ID).ToHashSet();
+        List<Connection> wires = Connections.Where(c => ids.Contains(c.SourceID) && ids.Contains(c.TargetID)).ToList();
+
+        return JsonConvert.SerializeObject(new DesignDocument { Nodes = new(selected), Connections = new(wires) }, settings);
+    }
+
+    /// <summary>
+    /// Adds the copied nodes as new ones (new identities, clashing function names changed), moved by
+    /// <paramref name="offset"/> cells, with their wires; the pasted nodes become the selection.
+    /// </summary>
+    private static void PasteCopy(string copy, int offset)
+    {
+        if (JsonConvert.DeserializeObject<DesignDocument>(copy, settings) is not DesignDocument pasted || pasted.Nodes.Count == 0)
+        {
+            return;
+        }
+
+        Dictionary<string, string> newIDs = [];
+        HashSet<string> functionNames = Nodes.OfType<Function>().Select(f => f.Name).ToHashSet();
+        foreach (Node node in pasted.Nodes)
+        {
+            string oldID = node.ID;
+            node.RenewID();
+            newIDs[oldID] = node.ID;
+
+            if (node is Function function)
+            {
+                foreach (Parameter parameter in function.Parameters)
+                {
+                    string oldParameterID = parameter.ID;
+                    parameter.RenewID();
+                    newIDs[oldParameterID] = parameter.ID;
+                }
+
+                // Two Julia functions with one name would clash.
+                if (functionNames.Contains(function.Name))
+                {
+                    function.Name = FreeFunctionName(functionNames);
+                }
+
+                _ = functionNames.Add(function.Name);
+            }
+        }
+
+        // Move the group as one, as far as the canvas edges allow.
+        int rows = Math.Min(offset, Constants.ROWS - 1 - pasted.Nodes.Max(n => n.Row));
+        int columns = Math.Min(offset, Constants.COLUMNS - 1 - pasted.Nodes.Max(n => n.Column));
+        foreach (Node node in pasted.Nodes)
+        {
+            node.Row += rows;
+            node.Column += columns;
+        }
+
+        SelectOnly(null);
+        Nodes.AddRange(pasted.Nodes);
+        foreach (Node node in pasted.Nodes)
+        {
+            node.IsSelected = true;
+        }
+
+        Connections.AddRange(pasted.Connections.Select(c => new Connection(newIDs[c.SourceID], newIDs[c.TargetID], newIDs[c.ParameterID])));
     }
     #endregion
 
@@ -365,6 +500,10 @@ public class MainViewModel : ReactiveObject
         DeleteSelected = ReactiveCommand.Create(DeleteSelectedNodes);
         SelectAll = ReactiveCommand.Create(() => { foreach (Node node in Nodes) { node.IsSelected = true; } });
         ClearSelection = ReactiveCommand.Create(() => SelectOnly(null));
+        Copy = ReactiveCommand.Create(() => { _ = CopySelection(); });
+        Cut = ReactiveCommand.Create(CutSelection);
+        Paste = ReactiveCommand.Create(PasteClipboard);
+        Duplicate = ReactiveCommand.Create(DuplicateSelection);
 
         History.Changed += (_, _) =>
         {
@@ -382,6 +521,14 @@ public class MainViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> SelectAll { get; }
 
     public ReactiveCommand<Unit, Unit> ClearSelection { get; }
+
+    public ReactiveCommand<Unit, Unit> Copy { get; }
+
+    public ReactiveCommand<Unit, Unit> Cut { get; }
+
+    public ReactiveCommand<Unit, Unit> Paste { get; }
+
+    public ReactiveCommand<Unit, Unit> Duplicate { get; }
 
     private void CtrlPanMove(Vector offset)
     {
