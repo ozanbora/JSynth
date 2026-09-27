@@ -43,6 +43,21 @@ public enum OutputKind
 }
 
 /// <summary>
+/// What to do about packages a design needs that aren't installed.
+/// </summary>
+public enum PackageChoice
+{
+    Install,
+
+    /// <summary>
+    /// Run without them; the nodes needing them are skipped.
+    /// </summary>
+    RunAnyway,
+
+    Cancel,
+}
+
+/// <summary>
 /// A line in the output panel.
 /// </summary>
 public sealed record OutputEntry(string Text, OutputKind Kind)
@@ -92,6 +107,9 @@ public partial class MainViewModel
         {
             _ = this.RaiseAndSetIfChanged(ref _julia, value);
             this.RaisePropertyChanged(nameof(JuliaStatus));
+
+            // Another Julia has packages of its own.
+            _installedPackages.Clear();
         }
     }
 
@@ -106,6 +124,8 @@ public partial class MainViewModel
 
     public ReactiveCommand<Unit, Unit> Stop { get; private set; } = null!;
 
+    public ReactiveCommand<Unit, Unit> InstallPackages { get; private set; } = null!;
+
     public ReactiveCommand<Unit, Unit> ClearOutput { get; private set; } = null!;
 
     public ReactiveCommand<Unit, Unit> ToggleOutput { get; private set; } = null!;
@@ -115,6 +135,7 @@ public partial class MainViewModel
         IObservable<bool> running = this.WhenAnyValue(x => x.IsRunning);
         Run = ReactiveCommand.CreateFromTask(RunDesignAsync, running.Select(r => !r));
         Stop = ReactiveCommand.Create(() => _runCancellation?.Cancel(), running);
+        InstallPackages = ReactiveCommand.CreateFromTask(InstallMissingPackagesAsync, running.Select(r => !r));
         ClearOutput = ReactiveCommand.Create(Output.Clear);
         ToggleOutput = ReactiveCommand.Create(() => { IsOutputVisible = !IsOutputVisible; });
     }
@@ -166,69 +187,73 @@ public partial class MainViewModel
     }
 
     /// <summary>
+    /// Asks whether to install the packages named, which the design needs but Julia can't load; the
+    /// flag says whether running without them is an option. Set by the window; without it (in tests),
+    /// runs go ahead without them.
+    /// </summary>
+    public Func<IReadOnlyList<string>, bool, Task<PackageChoice>>? AskToInstall { get; set; }
+
+    // Packages known to load with the current Julia, so they aren't checked before every run.
+    private readonly HashSet<string> _installedPackages = [];
+
+    /// <summary>
+    /// Where runs start (and relative paths in the design start from): the design's folder.
+    /// </summary>
+    private string RunFolder => _filePath is string path && Path.GetDirectoryName(path) is { Length: > 0 } directory
+        ? directory
+        : Environment.CurrentDirectory;
+
+    /// <summary>
     /// Runs the whole design and shows every node's value (or error) on the node and in the output.
+    /// Packages the design needs that aren't installed are offered for installing first.
     /// </summary>
     public async Task RunDesignAsync()
     {
-        IsOutputVisible = true;
-        if (Julia is null)
+        if (await StartAsync() is not (JuliaInstallation julia, CancellationTokenSource cancellation))
         {
-            await FindJuliaAsync();
-        }
-
-        if (Julia is not JuliaInstallation julia)
-        {
-            Log("Julia wasn't found. Install it from https://julialang.org/downloads (juliaup is easiest), or pick julia.exe with Run → Choose Julia…", OutputKind.Error);
             return;
         }
 
-        // Results of the last run no longer apply once the run starts.
-        foreach (Node node in Nodes)
+        try
         {
-            node.Result = null;
-        }
+            string folder = RunFolder;
+            JuliaScript script = ScriptGenerator.Generate(Nodes, Connections, instrumented: true);
+            int version = _designVersion;
+            Dictionary<string, Node> nodes = Nodes.ToDictionary(n => n.ID);
 
-        JuliaScript script = ScriptGenerator.Generate(Nodes, Connections, instrumented: true);
-        int version = _designVersion;
-        Dictionary<string, Node> nodes = Nodes.ToDictionary(n => n.ID);
-
-        JuliaRunner runner = new(julia.Path);
-        runner.Output += line => Dispatcher.UIThread.Post(() => Log(line.Text, line.IsError ? OutputKind.Error : OutputKind.Output));
-        runner.Reported += report => Dispatcher.UIThread.Post(() => Show(report));
-
-        void Show(Report report)
-        {
-            // Nodes changed since the run started would show values they don't have.
-            if (version != _designVersion || !nodes.TryGetValue(report.Id, out Node? node) || !script.Variables.TryGetValue(report.Id, out string? variable))
+            if (!await EnsurePackagesAsync(julia, script.Packages, folder, offerRunAnyway: true, cancellation.Token))
             {
                 return;
             }
 
-            node.Result = report;
-            Log(report.Status switch
+            // Results of the last run no longer apply once the run starts.
+            foreach (Node node in Nodes)
             {
-                ReportStatus.Ok => $"{variable} = {Shorten(ValueLine(report))}   ({report.Type})",
-                ReportStatus.Error => $"{variable}: {Shorten(report.Text.Split('\n')[0])}",
-                _ => $"{variable} not run: {Shorten(report.Text.Split('\n')[0])}",
-            }, report.Status == ReportStatus.Ok ? OutputKind.Value : OutputKind.Failure);
-        }
+                node.Result = null;
+            }
 
-        string folder = _filePath is string path && Path.GetDirectoryName(path) is { Length: > 0 } directory
-            ? directory
-            : Environment.CurrentDirectory;
+            JuliaRunner runner = new(julia.Path);
+            runner.Output += line => Dispatcher.UIThread.Post(() => Log(line.Text, line.IsError ? OutputKind.Error : OutputKind.Output));
+            runner.Reported += report => Dispatcher.UIThread.Post(() => Show(report));
 
-        // A blank line between runs.
-        if (Output.Count > 0)
-        {
-            Log(string.Empty, OutputKind.Info);
-        }
+            void Show(Report report)
+            {
+                // Nodes changed since the run started would show values they don't have.
+                if (version != _designVersion || !nodes.TryGetValue(report.Id, out Node? node) || !script.Variables.TryGetValue(report.Id, out string? variable))
+                {
+                    return;
+                }
 
-        Log($"Running with Julia {julia.Version} in {folder}…", OutputKind.Info);
-        IsRunning = true;
-        using CancellationTokenSource cancellation = new();
-        _runCancellation = cancellation;
-        try
-        {
+                node.Result = report;
+                Log(report.Status switch
+                {
+                    ReportStatus.Ok => $"{variable} = {Shorten(ValueLine(report))}   ({report.Type})",
+                    ReportStatus.Error => $"{variable}: {Shorten(report.Text.Split('\n')[0])}",
+                    _ => $"{variable} not run: {Shorten(report.Text.Split('\n')[0])}",
+                }, report.Status == ReportStatus.Ok ? OutputKind.Value : OutputKind.Failure);
+            }
+
+            Log($"Running with Julia {julia.Version} in {folder}…", OutputKind.Info);
             RunResult result = await runner.RunAsync(script.Text, folder, cancellation.Token);
 
             // Let the output still queued for the UI thread come first.
@@ -244,9 +269,157 @@ public partial class MainViewModel
         }
         finally
         {
-            _runCancellation = null;
-            IsRunning = false;
+            Finish(cancellation);
         }
+    }
+
+    /// <summary>
+    /// Checks the packages the design needs, and offers to install the missing ones.
+    /// </summary>
+    public async Task InstallMissingPackagesAsync()
+    {
+        if (await StartAsync() is not (JuliaInstallation julia, CancellationTokenSource cancellation))
+        {
+            return;
+        }
+
+        try
+        {
+            IReadOnlyList<string> packages = ScriptGenerator.Generate(Nodes, Connections, instrumented: false).Packages;
+            if (packages.Count == 0)
+            {
+                Log("The design doesn't use any packages.", OutputKind.Info);
+                return;
+            }
+
+            // Check even those that loaded before: this is where to look when one went missing.
+            _installedPackages.Clear();
+            IReadOnlyList<string> missing = await EnsurePackagesAsync(julia, packages, RunFolder, offerRunAnyway: false, cancellation.Token)
+                ? packages.Where(p => !_installedPackages.Contains(p)).ToList()
+                : packages;
+            if (missing.Count == 0)
+            {
+                Log($"All packages the design needs are installed: {string.Join(", ", packages)}.", OutputKind.Info);
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            Log($"Julia couldn't be started: {e.Message}", OutputKind.Error);
+        }
+        finally
+        {
+            Finish(cancellation);
+        }
+    }
+
+    /// <summary>
+    /// Makes sure Julia can load <paramref name="packages"/>: finds those it can't and, if the user agrees,
+    /// installs them. False when the user cancelled or stopped.
+    /// </summary>
+    private async Task<bool> EnsurePackagesAsync(JuliaInstallation julia, IReadOnlyList<string> packages, string folder, bool offerRunAnyway, CancellationToken cancellationToken)
+    {
+        List<string> unknown = packages.Where(p => !_installedPackages.Contains(p)).ToList();
+        if (unknown.Count == 0)
+        {
+            return true;
+        }
+
+        JuliaPackages manager = new(julia.Path);
+        IReadOnlyList<string> missing;
+        try
+        {
+            Log($"Checking packages: {string.Join(", ", unknown)}…", OutputKind.Info);
+            missing = await manager.FindMissingAsync(unknown, folder, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            Log("Stopped.", OutputKind.Info);
+            return false;
+        }
+        catch (InvalidOperationException e)
+        {
+            // Not knowing is no reason not to run: nodes needing a missing package still say so.
+            Log(e.Message, OutputKind.Error);
+            return true;
+        }
+
+        _installedPackages.UnionWith(unknown.Except(missing));
+        if (missing.Count == 0)
+        {
+            return true;
+        }
+
+        string names = string.Join(", ", missing);
+        string them = missing.Count == 1 ? "it" : "them";
+        Log($"Not installed: {names}.", OutputKind.Error);
+        PackageChoice choice = AskToInstall is null ? PackageChoice.RunAnyway : await AskToInstall(missing, offerRunAnyway);
+        if (choice == PackageChoice.Cancel || (choice == PackageChoice.RunAnyway && !offerRunAnyway))
+        {
+            Log($"Not installing. To install {them} yourself, run in Julia: {JuliaPackages.InstallScript(missing).TrimEnd().Replace("\n", "; ")}", OutputKind.Info);
+            return false;
+        }
+
+        if (choice == PackageChoice.RunAnyway)
+        {
+            Log($"Running without {names}: the nodes needing {them} are skipped.", OutputKind.Info);
+            return true;
+        }
+
+        Log($"Installing {names} with Julia's package manager; the first time, this can take a few minutes…", OutputKind.Info);
+        RunResult result = await manager.InstallAsync(missing, folder, line => Dispatcher.UIThread.Post(() => Log(line.Text, OutputKind.Output)), cancellationToken);
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+        if (result.Cancelled)
+        {
+            Log("Installing stopped.", OutputKind.Info);
+            return false;
+        }
+
+        if (!result.Succeeded)
+        {
+            Log($"Installing {names} failed (see above); the nodes needing {them} are skipped.", OutputKind.Error);
+            return true;
+        }
+
+        _installedPackages.UnionWith(missing);
+        Log($"Installed {names} in {result.Elapsed.TotalSeconds:0} s.", OutputKind.Info);
+        return true;
+    }
+
+    /// <summary>
+    /// Finds Julia and marks a run (or package work) as going on, so Stop can end it; null without Julia.
+    /// </summary>
+    private async Task<(JuliaInstallation, CancellationTokenSource)?> StartAsync()
+    {
+        IsOutputVisible = true;
+
+        // A blank line between runs.
+        if (Output.Count > 0)
+        {
+            Log(string.Empty, OutputKind.Info);
+        }
+
+        if (Julia is null)
+        {
+            await FindJuliaAsync();
+        }
+
+        if (Julia is not JuliaInstallation julia)
+        {
+            Log("Julia wasn't found. Install it from https://julialang.org/downloads (juliaup is easiest), or pick julia.exe with Run → Choose Julia…", OutputKind.Error);
+            return null;
+        }
+
+        CancellationTokenSource cancellation = new();
+        _runCancellation = cancellation;
+        IsRunning = true;
+        return (julia, cancellation);
+    }
+
+    private void Finish(CancellationTokenSource cancellation)
+    {
+        _runCancellation = null;
+        cancellation.Dispose();
+        IsRunning = false;
     }
 
     /// <summary>

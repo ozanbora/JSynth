@@ -68,6 +68,7 @@
               <MenuItem Header="Show _output" Command="{Binding Path=ToggleOutput}"/>
               <MenuItem Header="_Export Julia script…" Click="ExportScript_Click"/>
               <Separator/>
+              <MenuItem Header="_Install missing packages…" Command="{Binding Path=InstallPackages}"/>
               <MenuItem Header="_Choose Julia…" Click="ChooseJulia_Click"/>
             </MenuItem>
           </Menu>

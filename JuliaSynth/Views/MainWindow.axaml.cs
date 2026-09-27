@@ -33,6 +33,33 @@ public partial class MainWindow : Window
 
     private MainViewModel? ViewModel => DataContext as MainViewModel;
 
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+
+        if (ViewModel is MainViewModel viewModel)
+        {
+            viewModel.AskToInstall = AskToInstallAsync;
+        }
+    }
+
+    private async Task<PackageChoice> AskToInstallAsync(IReadOnlyList<string> packages, bool offerRunAnyway)
+    {
+        bool one = packages.Count == 1;
+        string names = one ? packages[0] : $"{string.Join(", ", packages.SkipLast(1))} and {packages[^1]}";
+        string message = $"The design needs the Julia package{(one ? string.Empty : "s")} {names}, which {(one ? "isn't" : "aren't")} installed. "
+            + $"Install {(one ? "it" : "them")} now with Julia's package manager? Packages are downloaded from the internet; "
+            + "the first time, this can take a few minutes.";
+
+        string[] buttons = offerRunAnyway ? ["Install", "Run without", "Cancel"] : ["Install", "Cancel"];
+        return await MessageDialog.ShowAsync(this, "Missing Julia packages", message, buttons) switch
+        {
+            "Install" => PackageChoice.Install,
+            "Run without" => PackageChoice.RunAnyway,
+            _ => PackageChoice.Cancel,
+        };
+    }
+
     private async void New_Click(object? sender, RoutedEventArgs e)
     {
         if (ViewModel is MainViewModel viewModel && await ConfirmDiscardAsync())

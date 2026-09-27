@@ -3,6 +3,7 @@ using Avalonia.Headless;
 using Avalonia.ReactiveUI;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 // The design (MainViewModel.Nodes and friends) is shared, static state: tests must not overlap.
@@ -30,6 +31,18 @@ namespace JuliaSynth.Tests
         public static void Run(Action action)
         {
             Session.Value.Dispatch(action, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Runs asynchronous test code on the UI thread, until it is done.
+        /// </summary>
+        public static void Run(Func<Task> action)
+        {
+            Session.Value.Dispatch(async () =>
+            {
+                await action();
+                return true;
+            }, CancellationToken.None).GetAwaiter().GetResult();
         }
     }
 }

@@ -9,9 +9,9 @@ using System.Text;
 namespace JuliaSynth.Model
 {
     /// <summary>
-    /// A design as one Julia script, and the variable holding each node's value.
+    /// A design as one Julia script, the variable holding each node's value, and the packages it loads.
     /// </summary>
-    public sealed record JuliaScript(string Text, IReadOnlyDictionary<string, string> Variables);
+    public sealed record JuliaScript(string Text, IReadOnlyDictionary<string, string> Variables, IReadOnlyList<string> Packages);
 
     /// <summary>
     /// Turns a design into a Julia script: the packages it needs, the function definitions, then every
@@ -119,7 +119,7 @@ namespace JuliaSynth.Model
             }
 
             // Plain newlines, whatever the platform or the line endings of this source file.
-            return new JuliaScript(script.ToString().ReplaceLineEndings("\n"), variables);
+            return new JuliaScript(script.ToString().ReplaceLineEndings("\n"), variables, packages);
         }
 
         /// <summary>
