@@ -49,7 +49,9 @@ namespace JuliaSynth.Runtime
                 flush(stdout)
             end
             function _jsynth_ok(id, value)
-                text = sprint(show, MIME"text/plain"(), value; context = (:limit => true, :displaysize => (12, 60)))
+                # Text as it is (a saved file's path), rather than as a quoted and escaped Julia string.
+                text = value isa AbstractString ? String(value) :
+                    sprint(show, MIME"text/plain"(), value; context = (:limit => true, :displaysize => (12, 60)))
                 _jsynth_report(id, "ok", string(typeof(value)), text)
             end
             function _jsynth_error(id, e)

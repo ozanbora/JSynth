@@ -266,6 +266,7 @@ public partial class MainViewModel
                 node.Result = report;
                 Log(report.Status switch
                 {
+                    ReportStatus.Ok when node is SaveFile => $"{variable}: saved to {report.Text}",
                     ReportStatus.Ok => $"{variable} = {Shorten(ValueLine(report))}   ({report.Type})",
                     ReportStatus.Error => $"{variable}: {Shorten(report.Text.Split('\n')[0])}",
                     _ => $"{variable} not run: {Shorten(report.Text.Split('\n')[0])}",

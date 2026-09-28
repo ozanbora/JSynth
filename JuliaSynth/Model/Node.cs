@@ -67,7 +67,25 @@ namespace JuliaSynth.Model
                 {
                     this.RaisePropertyChanged(name);
                 }
+
+                OnResultChanged();
             }
+        }
+
+        /// <summary>
+        /// Lets a node update what it shows of <see cref="Result"/>.
+        /// </summary>
+        protected virtual void OnResultChanged()
+        {
+        }
+
+        /// <summary>
+        /// Whether a change of <paramref name="property"/> only changes what is shown (the selection, the
+        /// results of a run), not the design.
+        /// </summary>
+        public virtual bool IsViewState(string property)
+        {
+            return property == nameof(IsSelected) || ResultProperties.Contains(property);
         }
 
         /// <summary>
@@ -100,6 +118,11 @@ namespace JuliaSynth.Model
         /// Julia type of the value this node outputs, e.g. <c>Float32</c>.
         /// </summary>
         public virtual string OutputType => Function.AnyType;
+
+        /// <summary>
+        /// False for the nodes at the end of a design (showing or saving a value), which nothing can be wired from.
+        /// </summary>
+        public virtual bool HasOutput => true;
 
         /// <summary>
         /// The parameters wires can feed: a function's parameters, an array builder's sizes, ...

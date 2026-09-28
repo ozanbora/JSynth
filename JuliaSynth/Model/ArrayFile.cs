@@ -234,7 +234,7 @@ namespace JuliaSynth.Model
         /// <summary>
         /// A Julia string with the text as is: raw strings leave backslashes (Windows paths) alone.
         /// </summary>
-        private static string PathLiteral(string text)
+        internal static string PathLiteral(string text)
         {
             return $"raw\"{text.Replace("\"", "\\\"")}\"";
         }

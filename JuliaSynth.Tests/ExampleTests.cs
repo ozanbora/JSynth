@@ -28,14 +28,33 @@ namespace JuliaSynth.Tests
             string script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: false).Text;
             Assert.DoesNotContain("\n# ", script.Split("# Values")[1]);
 
-            // No node on top of another (nodes are 9×6 cells, centred on their cell).
+            // No node on top of another.
             foreach (Node a in design.Nodes)
             {
                 foreach (Node b in design.Nodes.Where(n => n != a))
                 {
-                    Assert.False(Math.Abs(a.Row - b.Row) < 7 && Math.Abs(a.Column - b.Column) < 10, $"{Label(a)} overlaps {Label(b)}");
+                    (double top, double left, double bottom, double right) = Cells(a);
+                    (double otherTop, double otherLeft, double otherBottom, double otherRight) = Cells(b);
+                    bool overlap = top < otherBottom && otherTop < bottom && left < otherRight && otherLeft < right;
+                    Assert.False(overlap, $"{Label(a)} overlaps {Label(b)}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Where a node sits, in cells: centred on its cell, 9×6 cells, except a Display (13×9) and nodes with
+        /// inputs, which grow down a cell per input past the second.
+        /// </summary>
+        private static (double Top, double Left, double Bottom, double Right) Cells(Node node)
+        {
+            (double width, double height) = node is DisplayNode ? (13, 9) : (9, 6);
+            double top = node.Row + 0.5 - (height / 2);
+            if (node is not DisplayNode && node.Inputs.Count > 2)
+            {
+                height += node.Inputs.Count - 2;
+            }
+
+            return (top, node.Column + 0.5 - (width / 2), top + height, node.Column + 0.5 + (width / 2));
         }
 
         private static string Label(Node node) => node is Function f ? f.Name : $"{node.GetType().Name} at {node.Row},{node.Column}";

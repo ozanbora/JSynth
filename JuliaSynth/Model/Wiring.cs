@@ -33,6 +33,11 @@ namespace JuliaSynth.Model
         /// </summary>
         public static string? Validate(IEnumerable<Connection> connections, Node source, Node target, Parameter parameter)
         {
+            if (!source.HasOutput)
+            {
+                return "This node has no output to wire from.";
+            }
+
             if (!AreTypesCompatible(source.OutputType, parameter.Type))
             {
                 return $"{source.OutputType} can't be passed to {parameter.Signature}.";

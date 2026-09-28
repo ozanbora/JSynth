@@ -18,10 +18,11 @@ namespace JuliaSynth.ViewModels
     /// </summary>
     public static class Examples
     {
-        // Columns of the node centres: inputs, then two stages of functions (nodes are 9 cells wide).
+        // Columns of the node centres: inputs, then stages of functions and displays (nodes are 9 cells wide).
         private const int Inputs = 8;
         private const int Stage1 = 22;
         private const int Stage2 = 36;
+        private const int Stage3 = 50;
 
         public static IReadOnlyList<Example> All { get; } = [
             new("Loan payment",
@@ -64,25 +65,32 @@ namespace JuliaSynth.ViewModels
                 """,
                 ("P", "Float64"), ("rate", "Float64"), ("years", "Int64"));
 
-            Function interest = Define("interest", "Float64", 17, Stage2,
+            Function interest = Define("interest", "Float64", 19, Stage2,
                 "monthly * 12 * years - P",
                 ("monthly", "Float64"), ("P", "Float64"), ("years", "Int64"));
 
-            return Design([amount, rate, years, payment, interest],
+            DisplayNode showPayment = Shown(6, Stage2);
+            DisplayNode showInterest = Shown(19, Stage3);
+
+            return Design([amount, rate, years, payment, interest, showPayment, showInterest],
+                (payment, showPayment, 0), (interest, showInterest, 0),
                 (amount, payment, 0), (rate, payment, 1), (years, payment, 2),
                 (payment, interest, 0), (amount, interest, 1), (years, interest, 2));
         }
 
         private static MainViewModel.DesignDocument Projectile()
         {
-            Float speed = Scalar(20, 5);
-            Float angle = Scalar(45, 13);
+            Float speed = Scalar(20, 9);
+            Float angle = Scalar(45, 19);
 
-            Function distance = Define("distance", "Float64", 3, Stage1, "v^2 * sind(2angle) / 9.81 # metres", ("v", "Float64"), ("angle", "Float64"));
-            Function peak = Define("peak", "Float64", 10, Stage1, "(v * sind(angle))^2 / (2 * 9.81) # metres", ("v", "Float64"), ("angle", "Float64"));
-            Function airtime = Define("airtime", "Float64", 17, Stage1, "2v * sind(angle) / 9.81 # seconds", ("v", "Float64"), ("angle", "Float64"));
+            Function distance = Define("distance", "Float64", 4, Stage1, "v^2 * sind(2angle) / 9.81 # metres", ("v", "Float64"), ("angle", "Float64"));
+            Function peak = Define("peak", "Float64", 14, Stage1, "(v * sind(angle))^2 / (2 * 9.81) # metres", ("v", "Float64"), ("angle", "Float64"));
+            Function airtime = Define("airtime", "Float64", 24, Stage1, "2v * sind(angle) / 9.81 # seconds", ("v", "Float64"), ("angle", "Float64"));
 
-            return Design([speed, angle, distance, peak, airtime],
+            DisplayNode[] shown = [Shown(4, Stage2), Shown(14, Stage2), Shown(24, Stage2)];
+
+            return Design([speed, angle, distance, peak, airtime, .. shown],
+                (distance, shown[0], 0), (peak, shown[1], 0), (airtime, shown[2], 0),
                 (speed, distance, 0), (angle, distance, 1),
                 (speed, peak, 0), (angle, peak, 1),
                 (speed, airtime, 0), (angle, airtime, 1));
@@ -103,11 +111,15 @@ namespace JuliaSynth.ViewModels
                 """,
                 ("x", "Vector{Float64}"), ("y", "Vector{Float64}"));
 
-            Function predict = Define("predict", "Float64", 17, Stage2,
+            Function predict = Define("predict", "Float64", 19, Stage2,
                 "line[1] * hours + line[2]",
                 ("line", "Vector{Float64}"), ("hours", "Float64"));
 
-            return Design([hours, scores, question, fit, predict],
+            DisplayNode showLine = Shown(6, Stage2);
+            DisplayNode showScore = Shown(19, Stage3);
+
+            return Design([hours, scores, question, fit, predict, showLine, showScore],
+                (fit, showLine, 0), (predict, showScore, 0),
                 (hours, fit, 0), (scores, fit, 1), (fit, predict, 0), (question, predict, 1));
         }
 
@@ -129,9 +141,13 @@ namespace JuliaSynth.ViewModels
                 """,
                 ("links", "Matrix{Float64}"), ("d", "Float64"));
 
-            Function top = Define("top", "Int64", 9, Stage2, "argmax(rank) # the most important page", ("rank", "Vector{Float64}"));
+            Function top = Define("top", "Int64", 19, Stage2, "argmax(rank) # the most important page", ("rank", "Vector{Float64}"));
 
-            return Design([links, damping, pagerank, top],
+            DisplayNode showRanks = Shown(6, Stage2);
+            DisplayNode showTop = Shown(19, Stage3);
+
+            return Design([links, damping, pagerank, top, showRanks, showTop],
+                (pagerank, showRanks, 0), (top, showTop, 0),
                 (links, pagerank, 0), (damping, pagerank, 1), (pagerank, top, 0));
         }
 
@@ -156,9 +172,12 @@ namespace JuliaSynth.ViewModels
                 """,
                 ("A", "AbstractMatrix{Float64}"), ("q", "Vector{Float64}"), ("L", "Float64"));
 
-            Function hottest = Define("hottest", "Float64", 9, 50, "maximum(T)", ("T", "Vector{Float64}"));
+            Function hottest = Define("hottest", "Float64", 9, Stage3, "maximum(T)", ("T", "Vector{Float64}"));
 
-            return Design([points, length, heat, laplacian, temperature, hottest],
+            DisplayNode showHottest = Shown(20, Stage3);
+
+            return Design([points, length, heat, laplacian, temperature, hottest, showHottest],
+                (hottest, showHottest, 0),
                 (points, laplacian, 0), (points, heat, "n"),
                 (laplacian, temperature, 0), (heat, temperature, 1), (length, temperature, 2),
                 (temperature, hottest, 0));
@@ -177,7 +196,10 @@ namespace JuliaSynth.ViewModels
                 """,
                 ("x", "Vector{Float64}"), ("y", "Vector{Float64}"));
 
-            return Design([samples, x, y, estimate],
+            DisplayNode showEstimate = Shown(9, Stage3);
+
+            return Design([samples, x, y, estimate, showEstimate],
+                (estimate, showEstimate, 0),
                 (samples, x, "n"), (samples, y, "n"), (x, estimate, 0), (y, estimate, 1));
         }
 
@@ -185,6 +207,14 @@ namespace JuliaSynth.ViewModels
         {
             // The bitness first: setting it resets the range.
             return new Float { SelectedType = "64-bit", Value = value, Row = row, Column = Inputs };
+        }
+
+        /// <summary>
+        /// A Display node, to see a result on the canvas after a run.
+        /// </summary>
+        private static DisplayNode Shown(int row, int column)
+        {
+            return new DisplayNode { Row = row, Column = column };
         }
 
         private static Integer Whole(long value, int row)

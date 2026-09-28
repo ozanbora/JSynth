@@ -8,6 +8,7 @@
              xmlns:jsViewModels="clr-namespace:JuliaSynth.ViewModels"
              xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
              xmlns:jsInputs="clr-namespace:JuliaSynth.Views.Inputs"
+             xmlns:jsOutputs="clr-namespace:JuliaSynth.Views.Outputs"
              xmlns:jsViews="clr-namespace:JuliaSynth.Views"
              xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"
              xmlns:jsModel="clr-namespace:JuliaSynth.Model"
@@ -65,6 +66,10 @@
                   <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Load from file (CSV, .mtx, JLD2)" Tag="ArrayFile" Click="AddAtPointer_Click"/>
+                  <Separator/>
+                  <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtPointer_Click"/>
+                  <Separator/>
                   <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtPointer_Click"/>
                 </MenuItem>
                 <Separator/>
@@ -146,6 +151,12 @@
               </DataTemplate>
               <DataTemplate DataType="jsModel:ArrayBuilder">
                 <jsInputs:ArrayBuilder DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:DisplayNode">
+                <jsOutputs:DisplayNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:SaveFile">
+                <jsOutputs:SaveFile DataContext="{Binding}"/>
               </DataTemplate>
               <DataTemplate DataType="jsModel:Function">
                 <jsViews:Function DataContext="{Binding}"/>
@@ -268,6 +279,10 @@
                 <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Load from file (CSV, .mtx, JLD2)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
+                <Separator/>
+                <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtCenter_Click"/>
+                <Separator/>
                 <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
               </MenuFlyout>
             </DropDownButton.Flyout>

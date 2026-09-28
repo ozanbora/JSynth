@@ -238,10 +238,20 @@ public partial class MainViewModel : ReactiveObject
     private static void DesignPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         // Selection, wiring state and run results aren't part of the design.
-        if (e.PropertyName is not (nameof(Node.IsSelected) or nameof(Parameter.IsWired)) && !(e.PropertyName is string name && Node.ResultProperties.Contains(name)))
+        if (e.PropertyName is string name
+            && ((sender is Node node && node.IsViewState(name)) || (sender is Parameter && name == nameof(Parameter.IsWired))))
         {
-            DesignChanged();
+            return;
         }
+
+        // Moving or recolouring a node changes the design, but not what it computes: keep the results.
+        if (e.PropertyName is nameof(Node.Row) or nameof(Node.Column) or nameof(Node.Color))
+        {
+            History.ScheduleCommit();
+            return;
+        }
+
+        DesignChanged();
     }
 
     private static string CaptureDesign()
@@ -279,7 +289,7 @@ public partial class MainViewModel : ReactiveObject
     #region Editing
     /// <summary>
     /// Adds a new node of <paramref name="kind"/> (Float, Integer, UnsignedInteger, VectorNode,
-    /// MatrixNode, SparseInput, ArrayBuilder, ArrayFile or Function)
+    /// MatrixNode, SparseInput, ArrayBuilder, ArrayFile, DisplayNode, SaveFile or Function)
     /// at the first free spot at or below the given cell, and selects it.
     /// </summary>
     public static Node AddNode(string kind, int row, int column)
@@ -294,6 +304,8 @@ public partial class MainViewModel : ReactiveObject
             nameof(ArrayBuilder) => new ArrayBuilder(),
             nameof(SparseInput) => new SparseInput(),
             nameof(ArrayFile) => new ArrayFile(),
+            nameof(DisplayNode) => new DisplayNode(),
+            nameof(SaveFile) => new SaveFile(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
 

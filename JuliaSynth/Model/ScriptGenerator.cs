@@ -78,7 +78,10 @@ namespace JuliaSynth.Model
 
                 if (!instrumented)
                 {
-                    _ = script.AppendLine(problem is null ? $"{variable} = {expression}" : $"# {variable}: {problem}");
+                    // Showing or saving a value is something to do, not a value to keep.
+                    _ = script.AppendLine(problem is not null ? $"# {variable}: {problem}"
+                        : node is OutputNode output ? output.Statement(variables[inputs[0].SourceID])
+                        : $"{variable} = {expression}");
                     continue;
                 }
 
@@ -179,6 +182,18 @@ namespace JuliaSynth.Model
                     return ($"{function.Name}({string.Join(", ", function.Parameters.Select(Input))})", null);
                 }
 
+                case OutputNode output:
+                {
+                    if (output.Problem is string problem)
+                    {
+                        return (null, problem);
+                    }
+
+                    return Input(output.Input) is string value
+                        ? (output.Julia(value), null)
+                        : (null, output is DisplayNode ? "Wire a value in to show it." : "Wire a value in to save it.");
+                }
+
                 default:
                     return (null, "This node can't be computed.");
             }
@@ -191,6 +206,7 @@ namespace JuliaSynth.Model
                 ArrayBuilder builder => builder.Package is string package ? [package] : [],
                 ArrayFile file => file.Package.Split(',', StringSplitOptions.TrimEntries),
                 SparseInput => ["SparseArrays"],
+                OutputNode output => output.Packages,
 
                 // A signature naming a sparse type needs SparseArrays to be defined at all.
                 Function function => function.Parameters.Select(p => p.Shape).Append(function.ReturnShape).Any(JuliaTypes.IsSparse) ? ["SparseArrays"] : [],
@@ -263,6 +279,8 @@ namespace JuliaSynth.Model
                     SparseInput => "S",
                     ArrayBuilder => "B",
                     ArrayFile => "D",
+                    DisplayNode => "shown",
+                    SaveFile => "saved",
                     Function f => $"{f.Name}_out",
                     _ => "value",
                 };
