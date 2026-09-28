@@ -165,6 +165,61 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void A_plot_writes_its_numbers_in_a_run_and_says_how_to_plot_in_a_script()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                ArrayBuilder y = new() { Kind = "range" };
+                VectorNode x = new();
+                PlotNode plot = new() { Kind = "Scatter" };
+                PlotNode lonely = new();
+                MainViewModel.Nodes.AddRange([y, x, plot, lonely]);
+                Assert.Null(MainViewModel.Connect(y, plot, plot.Y));
+                Assert.Null(MainViewModel.Connect(x, plot, plot.X));
+
+                string run = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true, @"C:\plots").Text;
+                string plain = MainViewModel.ExportScript();
+
+                Assert.Contains(PlotData.Prelude.TrimEnd(), run);
+                Assert.Contains($"global plot1 = _jsynth_plot(raw\"C:\\plots\\{plot.ID}.jsplot\", \"scatter\", B1, v1)", run);
+                Assert.Contains($"_jsynth_skip(\"{lonely.ID}\", \"Wire values in to plot them.\")", run);
+                Assert.Contains("# Plotted by JuliaSynth. With Plots.jl: using Plots; plot(v1, B1)", plain);
+            });
+        }
+
+        [Fact]
+        public void A_plot_takes_any_values_but_only_a_vector_for_x()
+        {
+            PlotNode plot = new();
+
+            Assert.False(plot.HasOutput);
+            Assert.Null(Wiring.Validate([], new MatrixNode(), plot, plot.Y));
+            Assert.Null(Wiring.Validate([], new VectorNode(), plot, plot.X));
+            Assert.NotNull(Wiring.Validate([], new MatrixNode(), plot, plot.X));
+            Assert.Equal("This node has no output to wire from.", Wiring.Validate([], plot, new DisplayNode(), new DisplayNode().Input));
+        }
+
+        [Fact]
+        public void A_plot_shows_what_to_do_until_it_has_numbers()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                PlotNode plot = new();
+                MainViewModel.Nodes.Add(plot);
+                MainViewModel.History.Commit();
+                Assert.StartsWith("Run the design", plot.Message);
+
+                plot.Result = new Report(plot.ID, ReportStatus.Error, string.Empty, "a heatmap needs a matrix");
+                Assert.Equal("a heatmap needs a matrix", plot.Message);
+
+                // The plot is what a run showed, not part of the design: changing it is no edit to undo.
+                Assert.True(plot.IsViewState(nameof(PlotNode.Plot)));
+            });
+        }
+
+        [Fact]
         public async Task Real_julia_shows_values_and_writes_files()
         {
             // Nothing to check against without Julia.

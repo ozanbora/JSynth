@@ -34,6 +34,7 @@ namespace JuliaSynth.ViewModels
             typeof(SparseInput),
             typeof(DisplayNode),
             typeof(SaveFile),
+            typeof(PlotNode),
             typeof(Argument),
             typeof(List<Argument>),
             typeof(Connection),

@@ -236,7 +236,8 @@ public partial class MainViewModel
         try
         {
             string folder = RunFolder;
-            JuliaScript script = ScriptGenerator.Generate(Nodes, Connections, instrumented: true);
+            ClearPlotFiles();
+            JuliaScript script = ScriptGenerator.Generate(Nodes, Connections, instrumented: true, PlotFolder);
             int version = _designVersion;
             Dictionary<string, Node> nodes = Nodes.ToDictionary(n => n.ID);
 
@@ -264,9 +265,15 @@ public partial class MainViewModel
                 }
 
                 node.Result = report;
+                if (node is PlotNode plot && report.Status == ReportStatus.Ok)
+                {
+                    _ = LoadPlotAsync(plot, report.Text, version);
+                }
+
                 Log(report.Status switch
                 {
                     ReportStatus.Ok when node is SaveFile => $"{variable}: saved to {report.Text}",
+                    ReportStatus.Ok when node is PlotNode => $"{variable}: plotted",
                     ReportStatus.Ok => $"{variable} = {Shorten(ValueLine(report))}   ({report.Type})",
                     ReportStatus.Error => $"{variable}: {Shorten(report.Text.Split('\n')[0])}",
                     _ => $"{variable} not run: {Shorten(report.Text.Split('\n')[0])}",
@@ -290,6 +297,100 @@ public partial class MainViewModel
         finally
         {
             Finish(cancellation);
+        }
+    }
+
+    /// <summary>
+    /// Where runs write the numbers of plots, one folder per running JuliaSynth.
+    /// </summary>
+    private static string PlotFolder { get; } = Path.Combine(Path.GetTempPath(), "JuliaSynth", $"plots-{Environment.ProcessId}");
+
+    /// <summary>
+    /// Empties <see cref="PlotFolder"/> for a new run; plots of the last one aren't shown any more.
+    /// </summary>
+    private static void ClearPlotFiles()
+    {
+        DeletePlotFiles();
+        _ = Directory.CreateDirectory(PlotFolder);
+    }
+
+    /// <summary>
+    /// Removes the plot files of this session; called when JuliaSynth closes.
+    /// </summary>
+    public static void DeletePlotFiles()
+    {
+        try
+        {
+            if (Directory.Exists(PlotFolder))
+            {
+                Directory.Delete(PlotFolder, recursive: true);
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Left for the system's temp clean-up.
+        }
+    }
+
+    /// <summary>
+    /// Removes plot files left behind by JuliaSynth sessions that ended without cleaning up (a crash).
+    /// </summary>
+    public static void DeleteOldPlotFiles()
+    {
+        string root = Path.GetDirectoryName(PlotFolder)!;
+        if (!Directory.Exists(root))
+        {
+            return;
+        }
+
+        foreach (string folder in Directory.GetDirectories(root, "plots-*"))
+        {
+            if (!int.TryParse(Path.GetFileName(folder)["plots-".Length..], out int id) || IsRunning(id))
+            {
+                continue;
+            }
+
+            try
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                // In use after all; next time.
+            }
+        }
+
+        static bool IsRunning(int processId)
+        {
+            try
+            {
+                using System.Diagnostics.Process process = System.Diagnostics.Process.GetProcessById(processId);
+                return !process.HasExited;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads the numbers of a plot a run wrote to <paramref name="path"/>, off the UI thread, and shows them
+    /// unless the design changed meanwhile.
+    /// </summary>
+    private async Task LoadPlotAsync(PlotNode plot, string path, int version)
+    {
+        try
+        {
+            PlotData data = await Task.Run(() => PlotData.Read(path));
+            if (version == _designVersion)
+            {
+                plot.Plot = data;
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            Log($"The plot couldn't be read: {e.Message}", OutputKind.Error);
         }
     }
 

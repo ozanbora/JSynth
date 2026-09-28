@@ -2,6 +2,7 @@ using JuliaSynth.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -25,8 +26,10 @@ namespace JuliaSynth.Model
     {
         private const string Indent = "    ";
 
-        public static JuliaScript Generate(IEnumerable<Node> designNodes, IEnumerable<Connection> designConnections, bool instrumented)
+        /// <param name="plotFolder">Where plots write their numbers for the app to read; JuliaSynth's temporary folder by default.</param>
+        public static JuliaScript Generate(IEnumerable<Node> designNodes, IEnumerable<Connection> designConnections, bool instrumented, string? plotFolder = null)
         {
+            plotFolder ??= Path.Combine(Path.GetTempPath(), "JuliaSynth");
             List<Node> nodes = designNodes.ToList();
             List<Connection> connections = designConnections.Where(c => Wiring.IsAttached(nodes, c)).ToList();
 
@@ -46,6 +49,10 @@ namespace JuliaSynth.Model
             if (instrumented)
             {
                 _ = script.AppendLine().AppendLine(Reports.Prelude.TrimEnd());
+                if (nodes.OfType<PlotNode>().Any())
+                {
+                    _ = script.AppendLine(PlotData.Prelude.TrimEnd());
+                }
             }
 
             List<string> packages = order.SelectMany(PackagesOf).Distinct().Order(StringComparer.Ordinal).ToList();
@@ -74,13 +81,15 @@ namespace JuliaSynth.Model
             {
                 List<Connection> inputs = connections.Where(c => c.TargetID == node.ID).ToList();
                 string variable = variables[node.ID];
-                (string? expression, string? problem) = Expression(node, inputs, variables);
+                (string? expression, string? problem) = Expression(node, inputs, variables, plotFolder);
 
                 if (!instrumented)
                 {
-                    // Showing or saving a value is something to do, not a value to keep.
+                    // Showing or saving a value is something to do, not a value to keep; plots are drawn by
+                    // JuliaSynth, so a plain script only says how to draw them in Julia.
                     _ = script.AppendLine(problem is not null ? $"# {variable}: {problem}"
                         : node is OutputNode output ? output.Statement(variables[inputs[0].SourceID])
+                        : node is PlotNode plot ? PlotHint(plot, inputs, variables)
                         : $"{variable} = {expression}");
                     continue;
                 }
@@ -137,7 +146,7 @@ namespace JuliaSynth.Model
         /// <summary>
         /// Julia code computing <paramref name="node"/>'s value from its wired inputs, or why it can't be computed.
         /// </summary>
-        private static (string? Expression, string? Problem) Expression(Node node, List<Connection> inputs, Dictionary<string, string> variables)
+        private static (string? Expression, string? Problem) Expression(Node node, List<Connection> inputs, Dictionary<string, string> variables, string plotFolder)
         {
             string? Input(Parameter parameter) => inputs.FirstOrDefault(c => c.ParameterID == parameter.ID) is Connection c ? variables[c.SourceID] : null;
 
@@ -182,6 +191,11 @@ namespace JuliaSynth.Model
                     return ($"{function.Name}({string.Join(", ", function.Parameters.Select(Input))})", null);
                 }
 
+                case PlotNode plot:
+                    return Input(plot.Y) is string y
+                        ? (plot.Julia(Path.Combine(plotFolder, $"{plot.ID}.jsplot"), y, Input(plot.X)), null)
+                        : (null, "Wire values in to plot them.");
+
                 case OutputNode output:
                 {
                     if (output.Problem is string problem)
@@ -197,6 +211,18 @@ namespace JuliaSynth.Model
                 default:
                     return (null, "This node can't be computed.");
             }
+        }
+
+        /// <summary>
+        /// How to draw a plot in Julia, as a comment: JuliaSynth draws its plots itself.
+        /// </summary>
+        private static string PlotHint(PlotNode plot, List<Connection> inputs, Dictionary<string, string> variables)
+        {
+            string Wired(Parameter parameter) => variables[inputs.First(c => c.ParameterID == parameter.ID).SourceID];
+
+            string y = Wired(plot.Y);
+            string call = plot.X.IsWired ? $"plot({Wired(plot.X)}, {y})" : $"plot({y})";
+            return $"# Plotted by JuliaSynth. With Plots.jl: using Plots; {call}";
         }
 
         private static IEnumerable<string> PackagesOf(Node node)
@@ -280,6 +306,7 @@ namespace JuliaSynth.Model
                     ArrayBuilder => "B",
                     ArrayFile => "D",
                     DisplayNode => "shown",
+                    PlotNode => "plot",
                     SaveFile => "saved",
                     Function f => $"{f.Name}_out",
                     _ => "value",

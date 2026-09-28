@@ -289,7 +289,7 @@ public partial class MainViewModel : ReactiveObject
     #region Editing
     /// <summary>
     /// Adds a new node of <paramref name="kind"/> (Float, Integer, UnsignedInteger, VectorNode,
-    /// MatrixNode, SparseInput, ArrayBuilder, ArrayFile, DisplayNode, SaveFile or Function)
+    /// MatrixNode, SparseInput, ArrayBuilder, ArrayFile, DisplayNode, SaveFile, PlotNode or Function)
     /// at the first free spot at or below the given cell, and selects it.
     /// </summary>
     public static Node AddNode(string kind, int row, int column)
@@ -306,6 +306,7 @@ public partial class MainViewModel : ReactiveObject
             nameof(ArrayFile) => new ArrayFile(),
             nameof(DisplayNode) => new DisplayNode(),
             nameof(SaveFile) => new SaveFile(),
+            nameof(PlotNode) => new PlotNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
 
@@ -653,6 +654,7 @@ public partial class MainViewModel : ReactiveObject
     public void StartUp()
     {
         _ = FindJuliaAsync();
+        DeleteOldPlotFiles();
 
         foreach (string? path in new[] { AppSettings.Load().LastFile, LegacyFile })
         {

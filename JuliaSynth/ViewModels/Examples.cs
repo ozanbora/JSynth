@@ -43,11 +43,11 @@ namespace JuliaSynth.ViewModels
                 PageRank),
             new("Heat in a rod",
                 "Engineering: the steady temperature along a rod heated evenly and kept cold at both ends, from a sparse "
-                + "matrix of 50 points. The hottest point should be close to 1/8, the exact answer.",
+                + "matrix of 50 points: the plot shows the temperature along the rod. The hottest point should be close to 1/8, the exact answer.",
                 HeatInARod),
             new("Monte Carlo π",
                 "Simulation: π estimated from 100,000 random points in a square, by counting those inside the quarter circle. "
-                + "More samples give a better estimate; run it a few times to see it vary.",
+                + "The plot shows the points. More samples give a better estimate; run it a few times to see it vary.",
                 MonteCarloPi),
         ];
 
@@ -174,9 +174,11 @@ namespace JuliaSynth.ViewModels
 
             Function hottest = Define("hottest", "Float64", 9, Stage3, "maximum(T)", ("T", "Vector{Float64}"));
 
-            DisplayNode showHottest = Shown(20, Stage3);
+            DisplayNode showHottest = Shown(9, Stage3 + 14);
+            PlotNode curve = new() { Title = "Temperature along the rod", Row = 24, Column = Stage3 };
 
-            return Design([points, length, heat, laplacian, temperature, hottest, showHottest],
+            return Design([points, length, heat, laplacian, temperature, hottest, showHottest, curve],
+                (temperature, curve, "y"),
                 (hottest, showHottest, 0),
                 (points, laplacian, 0), (points, heat, "n"),
                 (laplacian, temperature, 0), (heat, temperature, 1), (length, temperature, 2),
@@ -197,8 +199,10 @@ namespace JuliaSynth.ViewModels
                 ("x", "Vector{Float64}"), ("y", "Vector{Float64}"));
 
             DisplayNode showEstimate = Shown(9, Stage3);
+            PlotNode cloud = new() { Kind = "Scatter", Title = "Random points", Row = 24, Column = Stage2 };
 
-            return Design([samples, x, y, estimate, showEstimate],
+            return Design([samples, x, y, estimate, showEstimate, cloud],
+                (y, cloud, "y"), (x, cloud, "x"),
                 (estimate, showEstimate, 0),
                 (samples, x, "n"), (samples, y, "n"), (x, estimate, 0), (y, estimate, 1));
         }

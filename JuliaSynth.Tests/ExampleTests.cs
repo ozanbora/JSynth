@@ -26,7 +26,8 @@ namespace JuliaSynth.Tests
 
             // Everything computable: nothing unwired or invalid, so the plain script skips nothing.
             string script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: false).Text;
-            Assert.DoesNotContain("\n# ", script.Split("# Values")[1]);
+            // (A skipped node is a "# x1: why" comment; other comments, like how to plot in Julia, are fine.)
+            Assert.DoesNotMatch(@"\n# \w+: ", script.Split("# Values")[1]);
 
             // No node on top of another.
             foreach (Node a in design.Nodes)
@@ -42,14 +43,19 @@ namespace JuliaSynth.Tests
         }
 
         /// <summary>
-        /// Where a node sits, in cells: centred on its cell, 9×6 cells, except a Display (13×9) and nodes with
-        /// inputs, which grow down a cell per input past the second.
+        /// Where a node sits, in cells: centred on its cell, 9×6 cells (a Display 13×9, a Plot 16×13); nodes
+        /// with a row per input grow down a cell per input past the second.
         /// </summary>
         private static (double Top, double Left, double Bottom, double Right) Cells(Node node)
         {
-            (double width, double height) = node is DisplayNode ? (13, 9) : (9, 6);
+            (double width, double height) = node switch
+            {
+                DisplayNode => (13, 9),
+                PlotNode => (16, 13),
+                _ => (9, 6),
+            };
             double top = node.Row + 0.5 - (height / 2);
-            if (node is not DisplayNode && node.Inputs.Count > 2)
+            if (node is not (DisplayNode or PlotNode) && node.Inputs.Count > 2)
             {
                 height += node.Inputs.Count - 2;
             }
@@ -104,19 +110,35 @@ namespace JuliaSynth.Tests
                 return;
             }
 
-            MainViewModel.DesignDocument design = Named(name).Build();
-            JuliaScript script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: true);
-            JuliaRunner runner = new(julia.Path);
-            ConcurrentQueue<Report> reports = new();
-            runner.Reported += reports.Enqueue;
+            string folder = Path.Combine(Path.GetTempPath(), "JuliaSynth.Tests", Guid.NewGuid().ToString("N"));
+            _ = Directory.CreateDirectory(folder);
+            try
+            {
+                MainViewModel.DesignDocument design = Named(name).Build();
+                JuliaScript script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: true, folder);
+                JuliaRunner runner = new(julia.Path);
+                ConcurrentQueue<Report> reports = new();
+                runner.Reported += reports.Enqueue;
 
-            RunResult result = await runner.RunAsync(script.Text, Path.GetTempPath());
+                RunResult result = await runner.RunAsync(script.Text, folder);
 
-            Assert.True(result.Succeeded);
-            Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
-            Assert.Equal(design.Nodes.Count, reports.Count);
-            Report answer = reports.Single(r => script.Variables[r.Id] == variable);
-            Assert.InRange(double.Parse(answer.Text, CultureInfo.InvariantCulture), expected - tolerance, expected + tolerance);
+                Assert.True(result.Succeeded);
+                Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
+                Assert.Equal(design.Nodes.Count, reports.Count);
+                Report answer = reports.Single(r => script.Variables[r.Id] == variable);
+                Assert.InRange(double.Parse(answer.Text, CultureInfo.InvariantCulture), expected - tolerance, expected + tolerance);
+
+                // Plots wrote their numbers where the app reads them.
+                foreach (PlotNode plot in design.Nodes.OfType<PlotNode>())
+                {
+                    PlotData data = PlotData.Read(reports.Single(r => r.Id == plot.ID).Text);
+                    Assert.Equal(name == "Heat in a rod" ? 50 : 100_000, data.Y.Length);
+                }
+            }
+            finally
+            {
+                Directory.Delete(folder, recursive: true);
+            }
         }
     }
 }
