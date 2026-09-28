@@ -2,7 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Dialogs;
 using Avalonia.Headless;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using Avalonia.Win32;
 using Serilog;
 using Splat;
@@ -105,6 +105,6 @@ internal class Program
                 .UsePlatformDetect()
                 .WithInterFont()
                 .LogToTrace()
-                .UseReactiveUI();
+                .UseReactiveUI(_ => { });
     }
 }

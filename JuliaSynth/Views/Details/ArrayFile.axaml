@@ -38,7 +38,7 @@
           >
       <TextBox Grid.Column="0"
                Text="{Binding Path=Path}"
-               Watermark="C:\data\signal.csv"
+               PlaceholderText="C:\data\signal.csv"
                ToolTip.Tip="Where Julia finds the file. A relative path is relative to the folder Julia runs in."
                />
       <Button Grid.Column="1"

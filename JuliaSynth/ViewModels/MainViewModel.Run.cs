@@ -3,12 +3,11 @@ using Avalonia.Threading;
 using JuliaSynth.Model;
 using JuliaSynth.Runtime;
 using ReactiveUI;
+using ReactiveUI.Primitives;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -120,22 +119,22 @@ public partial class MainViewModel
         : Julia is null ? "Julia not found"
         : $"Julia {Julia.Version}";
 
-    public ReactiveCommand<Unit, Unit> Run { get; private set; } = null!;
+    public ReactiveCommand<RxVoid, RxVoid> Run { get; private set; } = null!;
 
-    public ReactiveCommand<Unit, Unit> Stop { get; private set; } = null!;
+    public ReactiveCommand<RxVoid, RxVoid> Stop { get; private set; } = null!;
 
-    public ReactiveCommand<Unit, Unit> InstallPackages { get; private set; } = null!;
+    public ReactiveCommand<RxVoid, RxVoid> InstallPackages { get; private set; } = null!;
 
-    public ReactiveCommand<Unit, Unit> ClearOutput { get; private set; } = null!;
+    public ReactiveCommand<RxVoid, RxVoid> ClearOutput { get; private set; } = null!;
 
-    public ReactiveCommand<Unit, Unit> ToggleOutput { get; private set; } = null!;
+    public ReactiveCommand<RxVoid, RxVoid> ToggleOutput { get; private set; } = null!;
 
     private void CreateRunCommands()
     {
         IObservable<bool> running = this.WhenAnyValue(x => x.IsRunning);
-        Run = ReactiveCommand.CreateFromTask(RunDesignAsync, running.Select(r => !r));
+        Run = ReactiveCommand.CreateFromTask(RunDesignAsync, this.WhenAnyValue(x => x.IsRunning, busy => !busy));
         Stop = ReactiveCommand.Create(() => _runCancellation?.Cancel(), running);
-        InstallPackages = ReactiveCommand.CreateFromTask(InstallMissingPackagesAsync, running.Select(r => !r));
+        InstallPackages = ReactiveCommand.CreateFromTask(InstallMissingPackagesAsync, this.WhenAnyValue(x => x.IsRunning, busy => !busy));
         ClearOutput = ReactiveCommand.Create(Output.Clear);
         ToggleOutput = ReactiveCommand.Create(() => { IsOutputVisible = !IsOutputVisible; });
     }

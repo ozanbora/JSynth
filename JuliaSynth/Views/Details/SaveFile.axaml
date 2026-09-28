@@ -38,7 +38,7 @@
           >
       <TextBox Grid.Column="0"
                Text="{Binding Path=Path}"
-               Watermark="result.csv"
+               PlaceholderText="result.csv"
                ToolTip.Tip="Where to write. A relative path is relative to the design's folder. The file is replaced on every run."
                />
       <Button Grid.Column="1"

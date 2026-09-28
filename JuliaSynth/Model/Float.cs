@@ -1,6 +1,7 @@
 ﻿using Avalonia.Media;
 using Newtonsoft.Json;
 using ReactiveUI;
+using ReactiveUI.Primitives;
 using System;
 using System.Collections.ObjectModel;
 

@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using JuliaSynth.ViewModels;
 using System;
@@ -15,9 +16,53 @@ public partial class MainView : UserControl
 
     private MainViewModel? _viewModel;
 
+    // Where a Ctrl + drag pan was last, relative to the scroll viewer; null when not panning.
+    private Point? _panPoint;
+
     public MainView()
     {
         InitializeComponent();
+
+        // Ctrl + wheel zooms. Seen on the way down (tunnel), before the scroll viewer scrolls with it.
+        CanvasScroll.AddHandler(PointerWheelChangedEvent, Canvas_PointerWheelChanged, RoutingStrategies.Tunnel);
+
+        // Ctrl + drag pans; presses on nodes and ports are theirs (handled), so only the empty canvas pans.
+        CanvasScroll.PointerPressed += Canvas_PointerPressed;
+        CanvasScroll.PointerMoved += Canvas_PointerMoved;
+        CanvasScroll.PointerReleased += Canvas_PointerReleased;
+    }
+
+    private void Canvas_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (e.KeyModifiers == KeyModifiers.Control && _viewModel is not null)
+        {
+            _viewModel.ZoomByWheel(e.Delta);
+            e.Handled = true;
+        }
+    }
+
+    private void Canvas_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.KeyModifiers == KeyModifiers.Control && e.GetCurrentPoint(CanvasScroll).Properties.IsLeftButtonPressed)
+        {
+            _panPoint = e.GetPosition(CanvasScroll);
+        }
+    }
+
+    private void Canvas_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_panPoint is Point last && e.KeyModifiers == KeyModifiers.Control)
+        {
+            Point point = e.GetPosition(CanvasScroll);
+            _viewModel?.PanBy(point - last);
+            _panPoint = point;
+        }
+    }
+
+    private void Canvas_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        // Always end the pan, even when Ctrl was let go first.
+        _panPoint = null;
     }
 
     protected override void OnDataContextChanged(EventArgs e)

@@ -2,9 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
-             xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
-             xmlns:jsInteractions="clr-namespace:JuliaSynth.Interactions"
              xmlns:jsViewModels="clr-namespace:JuliaSynth.ViewModels"
              xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
              xmlns:jsInputs="clr-namespace:JuliaSynth.Views.Inputs"
@@ -38,12 +35,7 @@
                     Offset="{ Binding Path=ScrollViewerOffset, Mode=TwoWay}"
                     AllowAutoHide="True"
                     >
-        <i:Interaction.Behaviors>
-          <jsInteractions:UserControlTriggerBehavior KeyModifiers="Control">
-            <ia:InvokeCommandAction Command="{Binding CtrlPan}" PassEventArgsToCommand="True"/>
-          </jsInteractions:UserControlTriggerBehavior>
-        </i:Interaction.Behaviors>
-
+        <!-- Ctrl + drag pans and Ctrl + wheel zooms: see MainView.axaml.cs. -->
         <LayoutTransformControl>
           <LayoutTransformControl.LayoutTransform>
             <ScaleTransform ScaleX="{Binding Path=SelectedZoomLevel, Mode=OneWay}"
@@ -94,15 +86,7 @@
                             GridLineThickness="0.5"
                             Focusable="True"
                             Background="{DynamicResource CanvasBackgroundBrush}"
-                            >
-
-                  <i:Interaction.Behaviors>
-                    <jsInteractions:UserControlMouseWheelEventTriggerBehavior KeyModifiers="Control">
-                      <ia:InvokeCommandAction Command="{Binding CtrlZoom}" PassEventArgsToCommand="True"/>
-                    </jsInteractions:UserControlMouseWheelEventTriggerBehavior>
-                  </i:Interaction.Behaviors>
-
-                </jsControls:DesignerGrid>
+                            />
                 
               </ItemsPanelTemplate>
               

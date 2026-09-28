@@ -5,14 +5,13 @@ using JuliaSynth.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ReactiveUI;
+using ReactiveUI.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Linq;
 
 namespace JuliaSynth.ViewModels;
 
@@ -21,15 +20,11 @@ public partial class MainViewModel : ReactiveObject
     private Vector _scrollViewerOffset = Vector.Zero;
     private double _selectedZoomLevel = 1.0;
 
-    public ReactiveCommand<Vector, Unit> CtrlPan { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ZoomIn { get; }
 
-    public ReactiveCommand<Vector, Unit> CtrlZoom { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ZoomOut { get; }
 
-    public ReactiveCommand<Unit, Unit> ZoomIn { get; }
-
-    public ReactiveCommand<Unit, Unit> ZoomOut { get; }
-
-    public ReactiveCommand<Unit, Unit> ResetZoom { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ResetZoom { get; }
 
     // Capped at 3x: a node is 180x120, so beyond that a single node no longer fits on screen.
     public AvaloniaList<double> ZoomLevels { get; } = new([
@@ -523,17 +518,12 @@ public partial class MainViewModel : ReactiveObject
 
     public MainViewModel()
     {
-        CtrlPan = ReactiveCommand.Create<Vector>(CtrlPanMove);
-        CtrlZoom = ReactiveCommand.Create<Vector>(CtrlZoomMove);
         ZoomIn = ReactiveCommand.Create(() => StepZoom(1));
         ZoomOut = ReactiveCommand.Create(() => StepZoom(-1));
         ResetZoom = ReactiveCommand.Create(() => { SelectedZoomLevel = 1.0; });
 
-        IObservable<Unit> historyChanged = Observable.FromEventPattern(h => History.Changed += h, h => History.Changed -= h)
-            .Select(_ => Unit.Default)
-            .StartWith(Unit.Default);
-        Undo = ReactiveCommand.Create(History.Undo, historyChanged.Select(_ => History.CanUndo));
-        Redo = ReactiveCommand.Create(History.Redo, historyChanged.Select(_ => History.CanRedo));
+        Undo = ReactiveCommand.Create(History.Undo, this.WhenAnyValue(x => x.CanUndo));
+        Redo = ReactiveCommand.Create(History.Redo, this.WhenAnyValue(x => x.CanRedo));
         DeleteSelected = ReactiveCommand.Create(DeleteSelectedNodes);
         SelectAll = ReactiveCommand.Create(() => { foreach (Node node in Nodes) { node.IsSelected = true; } });
         ClearSelection = ReactiveCommand.Create(() => SelectOnly(null));
@@ -547,33 +537,51 @@ public partial class MainViewModel : ReactiveObject
         {
             this.RaisePropertyChanged(nameof(IsDirty));
             this.RaisePropertyChanged(nameof(Title));
+            this.RaisePropertyChanged(nameof(CanUndo));
+            this.RaisePropertyChanged(nameof(CanRedo));
         };
     }
 
-    public ReactiveCommand<Unit, Unit> Undo { get; }
+    /// <summary>
+    /// Whether there is something to undo; enables the Undo command.
+    /// </summary>
+    public bool CanUndo => History.CanUndo;
 
-    public ReactiveCommand<Unit, Unit> Redo { get; }
+    /// <summary>
+    /// Whether there is something to redo; enables the Redo command.
+    /// </summary>
+    public bool CanRedo => History.CanRedo;
 
-    public ReactiveCommand<Unit, Unit> DeleteSelected { get; }
+    public ReactiveCommand<RxVoid, RxVoid> Undo { get; }
 
-    public ReactiveCommand<Unit, Unit> SelectAll { get; }
+    public ReactiveCommand<RxVoid, RxVoid> Redo { get; }
 
-    public ReactiveCommand<Unit, Unit> ClearSelection { get; }
+    public ReactiveCommand<RxVoid, RxVoid> DeleteSelected { get; }
 
-    public ReactiveCommand<Unit, Unit> Copy { get; }
+    public ReactiveCommand<RxVoid, RxVoid> SelectAll { get; }
 
-    public ReactiveCommand<Unit, Unit> Cut { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearSelection { get; }
 
-    public ReactiveCommand<Unit, Unit> Paste { get; }
+    public ReactiveCommand<RxVoid, RxVoid> Copy { get; }
 
-    public ReactiveCommand<Unit, Unit> Duplicate { get; }
+    public ReactiveCommand<RxVoid, RxVoid> Cut { get; }
 
-    private void CtrlPanMove(Vector offset)
+    public ReactiveCommand<RxVoid, RxVoid> Paste { get; }
+
+    public ReactiveCommand<RxVoid, RxVoid> Duplicate { get; }
+
+    /// <summary>
+    /// Moves the view with the pointer: dragging the canvas by <paramref name="offset"/> (Ctrl + drag).
+    /// </summary>
+    public void PanBy(Vector offset)
     {
         ScrollViewerOffset -= offset;
     }
 
-    private void CtrlZoomMove(Vector delta)
+    /// <summary>
+    /// Zooms one level in (wheel up) or out (wheel down): Ctrl + wheel.
+    /// </summary>
+    public void ZoomByWheel(Vector delta)
     {
         if (delta.Y != 0)
         {

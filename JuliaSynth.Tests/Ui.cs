@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Headless;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +25,7 @@ namespace JuliaSynth.Tests
             return AppBuilder.Configure<App>()
                 .UseSkia()
                 .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-                .UseReactiveUI();
+                .UseReactiveUI(_ => { });
         }
 
         public static void Run(Action action)
