@@ -14,6 +14,8 @@ dotnet run --project JuliaSynth.Desktop
 dotnet test JuliaSynth.Tests
 ```
 
+Run `dotnet run --project JuliaSynth.Desktop -- --help` for rendering and headless options.
+
 ## Linux and WSL
 
 JuliaSynth runs on Linux, including Ubuntu under WSL 2 with WSLg (Windows 11 shows the window on the Windows desktop).
