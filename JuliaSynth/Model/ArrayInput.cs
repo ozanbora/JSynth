@@ -143,7 +143,7 @@ namespace JuliaSynth.Model
     {
         public VectorNode()
         {
-            Color = Avalonia.Media.Colors.Teal;
+            Color = NodePalette.Vector;
             Text = "[1.0, 2.0, 3.0]";
         }
 
@@ -154,7 +154,7 @@ namespace JuliaSynth.Model
     {
         public MatrixNode()
         {
-            Color = Avalonia.Media.Colors.SlateBlue;
+            Color = NodePalette.Matrix;
             Text = "[1.0 0.0; 0.0 1.0]";
         }
 

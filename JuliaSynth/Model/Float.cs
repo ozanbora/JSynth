@@ -44,7 +44,7 @@ namespace JuliaSynth.Model
         public Float() : base()
         {
             _selectedType = "32-bit";
-            Color = Colors.DarkOrange;
+            Color = NodePalette.Float;
             HardMax = float.MaxValue;
             HardMin = float.MinValue;
             Min = HardMin;

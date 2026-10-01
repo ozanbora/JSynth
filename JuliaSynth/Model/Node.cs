@@ -46,6 +46,16 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
+        /// A node read from a design saved before the pastel colours gets its kind's pastel, unless its
+        /// colour was picked by hand.
+        /// </summary>
+        [System.Runtime.Serialization.OnDeserialized]
+        private void Deserialized(System.Runtime.Serialization.StreamingContext context)
+        {
+            Color = NodePalette.Upgrade(this, Color);
+        }
+
+        /// <summary>
         /// Selected on the designer; not saved.
         /// </summary>
         public bool IsSelected

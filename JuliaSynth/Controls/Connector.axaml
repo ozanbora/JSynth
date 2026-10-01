@@ -13,21 +13,21 @@
   <UserControl.Styles>
     <!-- A round port: accent fill with a ring in the canvas color so it stands out on any node color. -->
     <Style Selector="Ellipse#Port">
-      <Setter Property="Fill" Value="{DynamicResource SystemAccentColor}"/>
+      <Setter Property="Fill" Value="{DynamicResource PortBrush}"/>
       <Setter Property="Stroke" Value="{DynamicResource CanvasBackgroundBrush}"/>
       <Setter Property="StrokeThickness" Value="2"/>
     </Style>
     <Style Selector=":is(UserControl):pointerover > Ellipse#Port">
-      <Setter Property="Fill" Value="{DynamicResource SystemAccentColorLight1}"/>
+      <Setter Property="Fill" Value="{DynamicResource PortHoverBrush}"/>
     </Style>
 
     <!-- Drop target feedback while a wire is dragged over the port. -->
     <Style Selector=":is(UserControl).accept > Ellipse#Port">
-      <Setter Property="Fill" Value="#16C60C"/>
+      <Setter Property="Fill" Value="{DynamicResource AcceptBrush}"/>
       <Setter Property="StrokeThickness" Value="3"/>
     </Style>
     <Style Selector=":is(UserControl).reject > Ellipse#Port">
-      <Setter Property="Fill" Value="#E81123"/>
+      <Setter Property="Fill" Value="{DynamicResource RejectBrush}"/>
       <Setter Property="StrokeThickness" Value="3"/>
     </Style>
   </UserControl.Styles>

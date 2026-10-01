@@ -41,6 +41,24 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void A_design_saved_before_the_pastels_opens_in_them_keeping_picked_colours()
+        {
+            Run(viewModel =>
+            {
+                Function f = MainViewModel.Nodes.OfType<Function>().Single(n => n.Name == "f");
+                Function g = MainViewModel.Nodes.OfType<Function>().Single(n => n.Name == "g");
+                f.Color = Avalonia.Media.Colors.DarkOrchid;
+                g.Color = Avalonia.Media.Colors.Gold;
+                viewModel.SaveDesign(PathOf("old.jsynth"));
+
+                viewModel.OpenDesign(PathOf("old.jsynth"));
+
+                Assert.Equal(NodePalette.Function, MainViewModel.Nodes.OfType<Function>().Single(n => n.Name == "f").Color);
+                Assert.Equal(Avalonia.Media.Colors.Gold, MainViewModel.Nodes.OfType<Function>().Single(n => n.Name == "g").Color);
+            });
+        }
+
+        [Fact]
         public void A_saved_design_opens_the_same()
         {
             Run(viewModel =>

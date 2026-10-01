@@ -88,7 +88,7 @@ namespace JuliaSynth.Model
 
         public PlotNode()
         {
-            Color = Colors.DarkSlateGray;
+            Color = NodePalette.Plot;
         }
 
         /// <summary>

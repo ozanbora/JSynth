@@ -101,14 +101,14 @@
 
               </Style>
               <Style Selector="ItemsControl.shadows Border.node">
-                <Setter Property="BoxShadow" Value="0 6 18 0 #73000000"/>
+                <Setter Property="BoxShadow" Value="0 6 18 0 #40000000"/>
               </Style>
               <!-- Selection ring: a spread shadow without blur, so it costs nothing and moves nothing. -->
               <Style Selector="Border.node.selected">
-                <Setter Property="BoxShadow" Value="0 0 0 3 #0078D4"/>
+                <Setter Property="BoxShadow" Value="0 0 0 3 #6F9FD8"/>
               </Style>
               <Style Selector="ItemsControl.shadows Border.node.selected">
-                <Setter Property="BoxShadow" Value="0 0 0 3 #0078D4, 0 6 18 0 #73000000"/>
+                <Setter Property="BoxShadow" Value="0 0 0 3 #6F9FD8, 0 6 18 0 #40000000"/>
               </Style>
             </ItemsControl.Styles>
             
@@ -202,13 +202,13 @@
               <Setter Property="MinHeight" Value="0"/>
             </Style>
             <Style Selector="SelectableTextBlock.error">
-              <Setter Property="Foreground" Value="#FF6B6B"/>
+              <Setter Property="Foreground" Value="{DynamicResource ConsoleErrorBrush}"/>
             </Style>
             <Style Selector="SelectableTextBlock.info">
               <Setter Property="Opacity" Value="0.65"/>
             </Style>
             <Style Selector="SelectableTextBlock.value">
-              <Setter Property="Foreground" Value="#7BD88F"/>
+              <Setter Property="Foreground" Value="{DynamicResource ConsoleValueBrush}"/>
             </Style>
           </ListBox.Styles>
           <ListBox.ItemTemplate>

@@ -19,7 +19,7 @@ namespace JuliaSynth.Controls
     {
         private const double SnapDistance = 16;
 
-        private static readonly IBrush InvalidWireBrush = new ImmutableSolidColorBrush(Color.Parse("#E81123"));
+        private static readonly IBrush InvalidWireBrush = new ImmutableSolidColorBrush(Color.Parse("#E07A7A"));
 
         private readonly HashSet<Connector> _connectors = [];
         private WiresRenderer? _wiresRenderer;

@@ -108,7 +108,7 @@
               Grid.ColumnSpan="2"
               Margin="6 2 6 6"
               CornerRadius="4"
-              Background="#26000000"
+              Background="{StaticResource NodeInsetBrush}"
               ClipToBounds="True"
               >
         <Panel>

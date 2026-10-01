@@ -174,7 +174,7 @@ namespace JuliaSynth.Model
 
         public SparseInput()
         {
-            Color = Colors.DarkSlateBlue;
+            Color = NodePalette.Sparse;
             Text = "1 1 1.0\n2 2 2.0\n4 1 -0.5";
         }
 

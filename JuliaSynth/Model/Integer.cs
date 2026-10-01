@@ -37,7 +37,7 @@ namespace JuliaSynth.Model
         public Integer() : base()
         {
             _selectedType = "32-bit";
-            Color = Colors.DarkGreen;
+            Color = NodePalette.Integer;
             HardMax = long.MaxValue;
             HardMin = long.MinValue;
             Min = HardMin;

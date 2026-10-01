@@ -173,7 +173,7 @@ namespace JuliaSynth.Model
 
         public Function() : base()
         {
-            Color = Colors.DarkOrchid;
+            Color = NodePalette.Function;
 
             Parameters.CollectionChanged += ParametersChanged;
             _ = this.WhenAnyValue(x => x.Name, x => x.ReturnType, x => x.Body, x => x.Packages)

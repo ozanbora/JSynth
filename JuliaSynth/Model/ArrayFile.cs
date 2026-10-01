@@ -205,7 +205,7 @@ namespace JuliaSynth.Model
 
         public ArrayFile()
         {
-            Color = Colors.Sienna;
+            Color = NodePalette.ArrayFile;
             Update();
         }
 

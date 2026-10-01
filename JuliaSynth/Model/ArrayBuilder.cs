@@ -285,7 +285,7 @@ namespace JuliaSynth.Model
 
         public ArrayBuilder()
         {
-            Color = Colors.SeaGreen;
+            Color = NodePalette.ArrayBuilder;
             Arguments = [];
         }
 

@@ -75,7 +75,9 @@ public static class PlotRenderer
     private static void Style(Plot plot, Color foreground, bool compact)
     {
         plot.FigureBackground.Color = Colors.Transparent;
-        plot.DataBackground.Color = Colors.Black.WithAlpha(0.2);
+        // A light area behind dark text (pastel nodes, light windows), a dark one behind light text.
+        bool darkText = (0.299 * foreground.R) + (0.587 * foreground.G) + (0.114 * foreground.B) < 128;
+        plot.DataBackground.Color = darkText ? Colors.White.WithAlpha(0.4) : Colors.Black.WithAlpha(0.2);
         plot.Axes.Color(foreground);
         plot.Grid.MajorLineColor = foreground.WithAlpha(0.15);
 

@@ -52,7 +52,7 @@ namespace JuliaSynth.Model
 
         public DisplayNode()
         {
-            Color = Colors.DimGray;
+            Color = NodePalette.Display;
         }
 
         /// <summary>
@@ -187,7 +187,7 @@ namespace JuliaSynth.Model
 
         public SaveFile()
         {
-            Color = Colors.SaddleBrown;
+            Color = NodePalette.SaveFile;
             Update();
         }
 

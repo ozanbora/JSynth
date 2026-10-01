@@ -18,8 +18,8 @@ namespace JuliaSynth.Controls
     {
         private const double BoxThreshold = 3;
 
-        private static readonly IBrush BoxFill = new ImmutableSolidColorBrush(Color.Parse("#0078D4"), 0.12);
-        private static readonly IPen BoxPen = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#0078D4")), 1);
+        private static readonly IBrush BoxFill = new ImmutableSolidColorBrush(Color.Parse("#6F9FD8"), 0.12);
+        private static readonly IPen BoxPen = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#6F9FD8")), 1);
 
         private SelectionRenderer? _selectionRenderer;
         private bool _isSelecting;

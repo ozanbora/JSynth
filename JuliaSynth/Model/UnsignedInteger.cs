@@ -38,7 +38,7 @@ namespace JuliaSynth.Model
         public UnsignedInteger() : base()
         {
             _selectedType = "32-bit";
-            Color = Colors.DarkBlue;
+            Color = NodePalette.Unsigned;
             HardMax = uint.MaxValue;
             HardMin = uint.MinValue;
             Min = HardMin;

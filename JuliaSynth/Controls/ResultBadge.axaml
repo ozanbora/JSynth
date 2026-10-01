@@ -13,18 +13,18 @@
       <Setter Property="Width" Value="18"/>
       <Setter Property="Height" Value="18"/>
       <Setter Property="CornerRadius" Value="9"/>
-      <Setter Property="BorderBrush" Value="#E6FFFFFF"/>
+      <Setter Property="BorderBrush" Value="{StaticResource NodeBorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="Background" Value="#616161"/>
+      <Setter Property="Background" Value="{StaticResource BadgeSkippedBrush}"/>
     </Style>
     <Style Selector="Border.badge.ok">
-      <Setter Property="Background" Value="#2E7D32"/>
+      <Setter Property="Background" Value="{StaticResource BadgeOkBrush}"/>
     </Style>
     <Style Selector="Border.badge.error">
-      <Setter Property="Background" Value="#C62828"/>
+      <Setter Property="Background" Value="{StaticResource BadgeErrorBrush}"/>
     </Style>
     <Style Selector="Border.badge > TextBlock">
-      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Foreground" Value="{StaticResource BadgeForegroundBrush}"/>
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="FontWeight" Value="Bold"/>
       <Setter Property="HorizontalAlignment" Value="Center"/>

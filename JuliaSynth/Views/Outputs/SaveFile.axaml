@@ -42,7 +42,7 @@
         <TextBlock Text="⚠"
                    VerticalAlignment="Center"
                    Margin="0 0 4 0"
-                   Foreground="Gold"
+                   Foreground="{StaticResource NodeWarningBrush}"
                    IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
                    ToolTip.Tip="{Binding Path=Error}"
                    />

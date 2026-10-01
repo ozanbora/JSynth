@@ -87,7 +87,7 @@
               Margin="8 2 8 8"
               Padding="6 4"
               CornerRadius="4"
-              Background="#33000000"
+              Background="{StaticResource NodeInsetBrush}"
               ClipToBounds="True"
               >
         <TextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
