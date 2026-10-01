@@ -5,10 +5,15 @@ namespace JuliaSynth.Desktop
 {
     public class CommandLineInterface
     {
-        public static CLISettings GetCLISettings(string[] args)
+        /// <summary>
+        /// The settings <paramref name="args"/> ask for, or null when the app shouldn't start: after
+        /// printing help or the version, or an error about the arguments. <paramref name="exitCode"/>
+        /// is what the process should exit with then.
+        /// </summary>
+        public static CLISettings? GetCLISettings(string[] args, out int exitCode)
         {
             CLISettingsBinder binder = new();
-            CLISettings parsedSettings = new();
+            CLISettings? parsedSettings = null;
 
             RootCommand rootCommand = new()
             {
@@ -31,7 +36,8 @@ namespace JuliaSynth.Desktop
 
             LogHost.Default.Info("Parsing arguments.");
 
-            _ = rootCommand.Invoke(args);
+            // The handler only runs when the arguments are for starting the app.
+            exitCode = rootCommand.Invoke(args);
 
             LogHost.Default.Info("Command line interface settings parsed.");
 

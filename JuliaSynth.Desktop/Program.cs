@@ -17,16 +17,21 @@ internal class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
-        Console.WriteLine("Running Julia Synth..");
-
         Log.Logger = new LoggerConfiguration()
             .WriteTo.File("Logs/JuliaSynth-.log", rollingInterval: RollingInterval.Day, shared: true)
             .CreateLogger();
         Locator.CurrentMutable.UseSerilogFullLogger();
 
-        StartApp(CommandLineInterface.GetCLISettings(args), args);
+        if (CommandLineInterface.GetCLISettings(args, out int exitCode) is not CLISettings settings)
+        {
+            return exitCode;
+        }
+
+        Console.WriteLine("Running Julia Synth..");
+        StartApp(settings, args);
+        return 0;
     }
 
     private static void StartApp(CLISettings settings, string[] args)
