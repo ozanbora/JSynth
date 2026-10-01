@@ -44,3 +44,9 @@ Alternatively, publish a self-contained build from Windows and run it in WSL wit
 ```sh
 dotnet publish JuliaSynth.Desktop -c Release -r linux-x64 --self-contained -o publish/linux-x64
 ```
+
+### Troubleshooting
+
+- **The window has a taskbar icon but nothing shows, and its title starts with `[WARN:COPY MODE]`.** WSLg couldn't set up the shared memory it uses to send windows to Windows; `/mnt/wslg/weston.log` shows `rdp_allocate_shared_memory: Failed to open ...`. This affects every Linux app, not only JuliaSynth. Restart WSL from Windows with `wsl --shutdown` (this stops all running distros), then start JuliaSynth again.
+- **The app exits at startup with `Unable to load shared library 'libSkiaSharp'`.** Install `libfontconfig1` (step 1 above).
+- **The build fails with `The name 'InitializeComponent' does not exist`.** The .NET SDK is older than 9.0.300; check with `dotnet --version` and install a newer one (step 2 above).
