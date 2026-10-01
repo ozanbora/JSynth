@@ -7,6 +7,8 @@
              Classes="details"
 
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+             xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
+             xmlns:aeEditing="clr-namespace:AvaloniaEdit.Editing;assembly=AvaloniaEdit"
 
              x:DataType="jsModel:Function"
              Width="580"
@@ -22,6 +24,14 @@
   <UserControl.Resources>
     <FontFamily x:Key="CodeFont">Cascadia Mono,Consolas,Menlo,monospace</FontFamily>
   </UserControl.Resources>
+
+  <UserControl.Styles>
+    <!-- Room between the line numbers and the code. -->
+    <Style Selector="aeEditing|LineNumberMargin">
+      <Setter Property="Margin" Value="0 0 8 0"/>
+      <Setter Property="Opacity" Value="0.6"/>
+    </Style>
+  </UserControl.Styles>
 
   <Grid RowDefinitions="auto,auto,auto,auto,auto,auto"
         ColumnDefinitions="auto,*"
@@ -127,16 +137,24 @@
            VerticalAlignment="Top"
            Content="Body"
            />
-    <TextBox Grid.Row="3"
-             Grid.Column="1"
-             Height="100"
-             AcceptsReturn="True"
-             AcceptsTab="True"
-             TextWrapping="NoWrap"
-             FontFamily="{StaticResource CodeFont}"
-             Text="{Binding Path=Body}"
-             ToolTip.Tip="Julia code of the function body. The value of the last expression is returned."
-             />
+    <Border Grid.Row="3"
+            Grid.Column="1"
+            BorderThickness="1"
+            CornerRadius="4"
+            ClipToBounds="True"
+            BorderBrush="{DynamicResource TextControlBorderBrush}"
+            ToolTip.Tip="Julia code of the function body. The value of the last expression is returned. Ctrl+Space suggests names."
+            >
+      <jsControls:JuliaCodeEditor x:Name="BodyEditor"
+                                  Height="140"
+                                  Padding="4 2"
+                                  ShowLineNumbers="True"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  FontFamily="{StaticResource CodeFont}"
+                                  Code="{Binding Path=Body}"
+                                  />
+    </Border>
 
     <TextBlock Grid.Row="4"
                Grid.Column="1"
