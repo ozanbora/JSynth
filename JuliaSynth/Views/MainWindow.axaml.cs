@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using JuliaSynth.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,18 @@ public partial class MainWindow : Window
                 }
             };
             ExamplesMenu.Items.Add(item);
+        }
+
+        // The window's shortcuts edit the design; while a text field has the keyboard, its keys are the text's.
+        AddHandler(GotFocusEvent, (_, e) => SetTyping(e.Source), RoutingStrategies.Bubble, handledEventsToo: true);
+        AddHandler(LostFocusEvent, (_, _) => Dispatcher.UIThread.Post(() => SetTyping(FocusManager?.GetFocusedElement())), RoutingStrategies.Bubble, handledEventsToo: true);
+    }
+
+    private void SetTyping(object? focused)
+    {
+        if (ViewModel is MainViewModel viewModel)
+        {
+            viewModel.IsTypingText = focused is TextBox or AvaloniaEdit.Editing.TextArea;
         }
     }
 

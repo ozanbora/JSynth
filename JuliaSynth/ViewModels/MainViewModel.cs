@@ -232,6 +232,11 @@ public partial class MainViewModel : ReactiveObject
 
     private static void DesignPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(Node.IsSelected))
+        {
+            SelectionChanged?.Invoke();
+        }
+
         // Selection, wiring state and run results aren't part of the design.
         if (e.PropertyName is string name
             && ((sender is Node node && node.IsViewState(name)) || (sender is Parameter && name == nameof(Parameter.IsWired))))
@@ -273,11 +278,21 @@ public partial class MainViewModel : ReactiveObject
 
     private static void Load(DesignDocument document)
     {
-        Nodes.Clear();
-        Connections.Clear();
-        Nodes.AddRange(document.Nodes);
-        Connections.AddRange(document.Connections);
-        PruneConnections();
+        _loading = true;
+        try
+        {
+            Nodes.Clear();
+            Connections.Clear();
+            Nodes.AddRange(document.Nodes);
+            Connections.AddRange(document.Connections);
+            PruneConnections();
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        DesignLoaded?.Invoke();
     }
     #endregion
 
@@ -522,16 +537,19 @@ public partial class MainViewModel : ReactiveObject
         ZoomOut = ReactiveCommand.Create(() => StepZoom(-1));
         ResetZoom = ReactiveCommand.Create(() => { SelectedZoomLevel = 1.0; });
 
-        Undo = ReactiveCommand.Create(History.Undo, this.WhenAnyValue(x => x.CanUndo));
-        Redo = ReactiveCommand.Create(History.Redo, this.WhenAnyValue(x => x.CanRedo));
-        DeleteSelected = ReactiveCommand.Create(DeleteSelectedNodes);
-        SelectAll = ReactiveCommand.Create(() => { foreach (Node node in Nodes) { node.IsSelected = true; } });
-        ClearSelection = ReactiveCommand.Create(() => SelectOnly(null));
-        Copy = ReactiveCommand.Create(() => { _ = CopySelection(); });
-        Cut = ReactiveCommand.Create(CutSelection);
-        Paste = ReactiveCommand.Create(PasteClipboard);
-        Duplicate = ReactiveCommand.Create(DuplicateSelection);
+        // Editing the design waits while text is being typed: Delete, Ctrl+Z and the like are the text's then.
+        IObservable<bool> notTyping = this.WhenAnyValue(x => x.IsTypingText, typing => !typing);
+        Undo = ReactiveCommand.Create(History.Undo, this.WhenAnyValue(x => x.CanUndo, x => x.IsTypingText, (can, typing) => can && !typing));
+        Redo = ReactiveCommand.Create(History.Redo, this.WhenAnyValue(x => x.CanRedo, x => x.IsTypingText, (can, typing) => can && !typing));
+        DeleteSelected = ReactiveCommand.Create(DeleteSelectedNodes, notTyping);
+        SelectAll = ReactiveCommand.Create(() => { foreach (Node node in Nodes) { node.IsSelected = true; } }, notTyping);
+        ClearSelection = ReactiveCommand.Create(() => SelectOnly(null), notTyping);
+        Copy = ReactiveCommand.Create(() => { _ = CopySelection(); }, notTyping);
+        Cut = ReactiveCommand.Create(CutSelection, notTyping);
+        Paste = ReactiveCommand.Create(PasteClipboard, notTyping);
+        Duplicate = ReactiveCommand.Create(DuplicateSelection, notTyping);
         CreateRunCommands();
+        CreateInspectorCommands();
 
         History.Changed += (_, _) =>
         {
@@ -540,6 +558,18 @@ public partial class MainViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(CanUndo));
             this.RaisePropertyChanged(nameof(CanRedo));
         };
+    }
+
+    private bool _isTypingText;
+
+    /// <summary>
+    /// Whether the keyboard is in a text field (a code editor, a name): set by the window. Commands
+    /// editing the design wait meanwhile, so their keys reach the text.
+    /// </summary>
+    public bool IsTypingText
+    {
+        get => _isTypingText;
+        set => this.RaiseAndSetIfChanged(ref _isTypingText, value);
     }
 
     /// <summary>

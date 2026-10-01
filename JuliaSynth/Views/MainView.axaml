@@ -9,6 +9,7 @@
              xmlns:jsViews="clr-namespace:JuliaSynth.Views"
              xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"
              xmlns:jsModel="clr-namespace:JuliaSynth.Model"
+             xmlns:jsDetails="clr-namespace:JuliaSynth.Views.Details"
              mc:Ignorable="d"
              d:DesignWidth="800" 
              d:DesignHeight="600"
@@ -26,7 +27,10 @@
       <jsConverters:PercentConverter x:Key="PercentConverter"/>
     </Grid.Resources>
 
-    <Border Grid.Row="0"
+    <Grid Grid.Row="0"
+          ColumnDefinitions="*,Auto"
+          >
+    <Border Grid.Column="0"
             Background="{DynamicResource CanvasBackgroundBrush}"
             >
       <ScrollViewer x:Name="CanvasScroll"
@@ -158,7 +162,59 @@
         
       </ScrollViewer>
     </Border>
-    
+
+    <!-- The function panel: a function's settings and code, docked so it stays open while you work. -->
+    <Border Grid.Column="1"
+            x:Name="InspectorPanel"
+            Width="480"
+            IsVisible="{Binding Path=IsInspectorOpen}"
+            Background="{DynamicResource StatusBarBackgroundBrush}"
+            BorderBrush="{DynamicResource StatusBarBorderBrush}"
+            BorderThickness="1 0 0 0"
+            >
+      <Panel>
+        <DockPanel>
+          <Grid DockPanel.Dock="Top"
+                ColumnDefinitions="*,Auto"
+                Margin="12 2 4 0"
+                >
+            <TextBlock Grid.Column="0"
+                       VerticalAlignment="Center"
+                       FontWeight="SemiBold"
+                       TextTrimming="CharacterEllipsis"
+                       Text="{Binding Path=Inspected.Signature, StringFormat=Function {0}, FallbackValue=Function}"
+                       />
+            <Button Grid.Column="1"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Content="✕"
+                    Command="{Binding Path=CloseInspector}"
+                    ToolTip.Tip="Close the function panel"
+                    />
+          </Grid>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto"
+                        >
+            <jsDetails:Function Classes="docked"
+                                Width="NaN"
+                                Margin="12 4 12 12"
+                                DataContext="{Binding Path=Inspected}"
+                                />
+          </ScrollViewer>
+        </DockPanel>
+
+        <!-- Drag the left edge to resize. -->
+        <Border x:Name="InspectorGrip"
+                Width="6"
+                HorizontalAlignment="Left"
+                Background="Transparent"
+                Cursor="SizeWestEast"
+                ToolTip.Tip="Drag to resize"
+                />
+      </Panel>
+    </Border>
+    </Grid>
+
     <!-- Output of runs: printed lines, values and errors -->
     <Border Grid.Row="1"
             Height="200"

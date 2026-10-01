@@ -30,6 +30,30 @@ public partial class MainView : UserControl
         CanvasScroll.PointerPressed += Canvas_PointerPressed;
         CanvasScroll.PointerMoved += Canvas_PointerMoved;
         CanvasScroll.PointerReleased += Canvas_PointerReleased;
+
+        InspectorGrip.PointerPressed += Grip_PointerPressed;
+        InspectorGrip.PointerMoved += Grip_PointerMoved;
+        InspectorGrip.PointerReleased += (_, _) => _gripStart = null;
+    }
+
+    // Where a resize of the function panel started (pointer x in this view, panel width); null when not resizing.
+    private (double X, double Width)? _gripStart;
+
+    private void Grip_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _gripStart = (e.GetPosition(this).X, InspectorPanel.Bounds.Width);
+        e.Pointer.Capture(InspectorGrip);
+        e.Handled = true;
+    }
+
+    private void Grip_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_gripStart is (double x, double width))
+        {
+            // Wide enough for the settings, and always leaving some canvas.
+            double wanted = width - (e.GetPosition(this).X - x);
+            InspectorPanel.Width = Math.Clamp(wanted, 340, Math.Max(340, Bounds.Width * 0.75));
+        }
     }
 
     private void Canvas_PointerWheelChanged(object? sender, PointerWheelEventArgs e)

@@ -8,7 +8,6 @@
              xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
              xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
-             xmlns:jsDetails="clr-namespace:JuliaSynth.Views.Details"
 
              x:DataType="jsModel:Function"
              Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
@@ -22,6 +21,7 @@
   </UserControl.Resources>
 
   <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+          DoubleTapped="Node_DoubleTapped"
           Classes="node"
           Classes.selected="{Binding Path=IsSelected}"
           >
@@ -49,18 +49,12 @@
                    ToolTip.Tip="{Binding Path=Error}"
                    />
 
+        <!-- A function has too much to edit for a flyout: it opens in the panel beside the designer. -->
         <Button Classes="nodeAction"
                 Content="Ξ"
-                ToolTip.Tip="Edit"
-              >
-          <Button.Flyout>
-            <Flyout Placement="Top"
-                    ShowMode="Transient"
-                    >
-              <jsDetails:Function/>
-            </Flyout>
-          </Button.Flyout>
-        </Button>
+                ToolTip.Tip="Edit in the function panel (or double-click the node)"
+                Click="Edit_Click"
+                />
 
         <TextBlock Classes="nodeInfo"
                    Text="𝑖"

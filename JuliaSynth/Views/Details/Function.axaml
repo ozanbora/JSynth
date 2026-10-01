@@ -9,6 +9,7 @@
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
              xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
              xmlns:aeEditing="clr-namespace:AvaloniaEdit.Editing;assembly=AvaloniaEdit"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
 
              x:DataType="jsModel:Function"
              Width="580"
@@ -26,6 +27,14 @@
   </UserControl.Resources>
 
   <UserControl.Styles>
+    <!-- More room for the code in the function panel than in a flyout. -->
+    <Style Selector=":is(ae|TextEditor)#BodyEditor">
+      <Setter Property="Height" Value="140"/>
+    </Style>
+    <Style Selector=":is(UserControl).docked :is(ae|TextEditor)#BodyEditor">
+      <Setter Property="Height" Value="360"/>
+    </Style>
+
     <!-- Room between the line numbers and the code. -->
     <Style Selector="aeEditing|LineNumberMargin">
       <Setter Property="Margin" Value="0 0 8 0"/>
@@ -160,7 +169,6 @@
             ToolTip.Tip="Julia code of the function body. The value of the last expression is returned. Ctrl+Space suggests names."
             >
       <jsControls:JuliaCodeEditor x:Name="BodyEditor"
-                                  Height="140"
                                   Padding="4 2"
                                   ShowLineNumbers="True"
                                   HorizontalScrollBarVisibility="Auto"
