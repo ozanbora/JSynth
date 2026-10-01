@@ -50,6 +50,11 @@ public class JuliaCodeEditor : TextEditor
     public Func<IReadOnlyList<JuliaCompletion>>? Completions { get; set; }
 
     /// <summary>
+    /// Called after a suggestion is put in, with the suggestion.
+    /// </summary>
+    public event Action<JuliaCompletion>? Chosen;
+
+    /// <summary>
     /// The open suggestion list, if any; tests look at it.
     /// </summary>
     internal CompletionWindow? Completion => _completion;
@@ -87,7 +92,7 @@ public class JuliaCodeEditor : TextEditor
         IList<ICompletionData> items = window.CompletionList.CompletionData;
         foreach (JuliaCompletion completion in matching)
         {
-            items.Add(new Suggestion(completion));
+            items.Add(new Suggestion(completion, chosen => Chosen?.Invoke(chosen)));
         }
 
         window.Closed += (_, _) =>
@@ -173,7 +178,7 @@ public class JuliaCodeEditor : TextEditor
     /// <summary>
     /// One suggestion as the completion list shows it: the name, with its line as the tooltip.
     /// </summary>
-    private sealed class Suggestion(JuliaCompletion completion) : ICompletionData
+    private sealed class Suggestion(JuliaCompletion completion, Action<JuliaCompletion> chosen) : ICompletionData
     {
         public IImage? Image => null;
 
@@ -194,6 +199,7 @@ public class JuliaCodeEditor : TextEditor
         public void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
         {
             textArea.Document.Replace(completionSegment, completion.Text);
+            chosen(completion);
         }
     }
 }

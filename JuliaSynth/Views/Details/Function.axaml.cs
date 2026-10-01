@@ -16,6 +16,23 @@ public partial class Function : UserControl
         BodyEditor.Completions = () => DataContext is Model.Function function
             ? JuliaCompletions.All(function, MainViewModel.Nodes.OfType<Model.Function>().Where(f => f != function))
             : [];
+
+        // Picking a standard library function the function doesn't load adds its package.
+        BodyEditor.Chosen += completion =>
+        {
+            if (completion.Package is string package)
+            {
+                (DataContext as Model.Function)?.AddPackage(package);
+            }
+        };
+    }
+
+    private void AddPackage_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: PackageHint hint })
+        {
+            (DataContext as Model.Function)?.AddPackage(hint.Package);
+        }
     }
 
     private void AddParameter_Click(object? sender, RoutedEventArgs e)

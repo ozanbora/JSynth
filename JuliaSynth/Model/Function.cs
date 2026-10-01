@@ -35,6 +35,7 @@ namespace JuliaSynth.Model
         private string _body = string.Empty;
         private string _packages = string.Empty;
         private IReadOnlyList<string> _requiredPackages = [];
+        private IReadOnlyList<PackageHint> _packageHints = [];
         private string _signature = string.Empty;
         private string _code = string.Empty;
         private string? _error;
@@ -119,6 +120,15 @@ namespace JuliaSynth.Model
             private set => this.RaiseAndSetIfChanged(ref _requiredPackages, value);
         }
 
+        /// <summary>
+        /// Names the body uses from standard libraries the function doesn't load (mean without Statistics).
+        /// </summary>
+        public IReadOnlyList<PackageHint> PackageHints
+        {
+            get => _packageHints;
+            private set => this.RaiseAndSetIfChanged(ref _packageHints, value);
+        }
+
         // Get-only on purpose: the constructor adds no parameters, so the deserializer
         // populating this existing collection doesn't produce duplicates.
         [JsonProperty]
@@ -186,6 +196,24 @@ namespace JuliaSynth.Model
             _ = Parameters.Remove(parameter);
         }
 
+        /// <summary>
+        /// Adds <paramref name="package"/> to <see cref="Packages"/>, unless the function loads it already.
+        /// </summary>
+        public void AddPackage(string package)
+        {
+            if (!LoadedPackages.Contains(package))
+            {
+                Packages = Packages.Trim().Length == 0 ? package : $"{Packages.Trim().TrimEnd(',')}, {package}";
+            }
+        }
+
+        /// <summary>
+        /// Packages whose names the body can use: its own, and SparseArrays when the signature is sparse.
+        /// </summary>
+        public IEnumerable<string> LoadedPackages => Parameters.Select(p => p.Shape).Append(ReturnShape).Any(JuliaTypes.IsSparse)
+            ? RequiredPackages.Append("SparseArrays")
+            : RequiredPackages;
+
         private void ParametersChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.OldItems is not null)
@@ -247,6 +275,7 @@ namespace JuliaSynth.Model
                 : $"function {Signature}\n{body}\nend";
             Code = header.Count == 0 ? definition : $"{string.Join("\n", header)}\n{definition}";
 
+            PackageHints = JuliaStdlib.Hints(rest, LoadedPackages, Parameters.Select(p => p.Name).Append(Name));
             Error = Validate(imports);
         }
 

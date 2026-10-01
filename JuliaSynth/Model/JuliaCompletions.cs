@@ -19,11 +19,12 @@ namespace JuliaSynth.Model
     /// <summary>
     /// A word to suggest while typing a function body, with a line about it.
     /// </summary>
-    public sealed record JuliaCompletion(string Text, string Detail, CompletionKind Kind);
+    /// <param name="Package">The package choosing it adds to the function; null when nothing needs adding.</param>
+    public sealed record JuliaCompletion(string Text, string Detail, CompletionKind Kind, string? Package = null);
 
     /// <summary>
     /// Suggestions for a function body: its parameters, the design's other functions, Julia's keywords
-    /// and constants, and common functions of Base (the only module a body can count on being loaded).
+    /// and constants, common functions of Base, then of the standard libraries (see <see cref="JuliaStdlib"/>).
     /// </summary>
     public static class JuliaCompletions
     {
@@ -155,6 +156,8 @@ namespace JuliaSynth.Model
             ("cat", "cat(A, B; dims): concatenated along dims."),
             ("repeat", "repeat(A, counts…): A tiled."),
             ("transpose", "transpose(A): rows become columns."),
+            ("inv", "inv(A): inverse, of a number or a matrix (prefer A \\ b to solve)."),
+            ("kron", "kron(A, B): Kronecker product."),
             ("permutedims", "permutedims(A): transpose that isn't recursive."),
             ("reverse", "reverse(v): elements in reverse order."),
             ("diff", "diff(v): differences of neighbours."),
@@ -248,11 +251,17 @@ namespace JuliaSynth.Model
                 .Where(f => f.Error is null)
                 .Select(f => new JuliaCompletion(f.Name, f.Signature, CompletionKind.Function));
 
+            HashSet<string> loaded = function.LoadedPackages.ToHashSet();
+            IEnumerable<JuliaCompletion> library = JuliaStdlib.Functions.Select(f => loaded.Contains(f.Package)
+                ? new JuliaCompletion(f.Name, $"{f.Package}: {f.Detail}", CompletionKind.Builtin)
+                : new JuliaCompletion(f.Name, $"{f.Package}: {f.Detail} Picking it adds {f.Package} to Packages.", CompletionKind.Builtin, f.Package));
+
             return parameters
                 .Concat(functions)
                 .Concat(Keywords)
                 .Concat(Constants)
                 .Concat(Builtins)
+                .Concat(library)
                 .DistinctBy(c => c.Text)
                 .ToList();
         }

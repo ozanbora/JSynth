@@ -33,7 +33,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto,auto"
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto,auto,auto"
         ColumnDefinitions="auto,*"
         >
 
@@ -170,7 +170,37 @@
                                   />
     </Border>
 
-    <TextBlock Grid.Row="5"
+    <!-- Names from standard libraries the function doesn't load yet. -->
+    <ItemsControl Grid.Row="5"
+                  Grid.Column="1"
+                  x:Name="HintList"
+                  ItemsSource="{Binding Path=PackageHints}"
+                  >
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="jsModel:PackageHint">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="6"
+                      Margin="0 4 0 0"
+                      >
+            <TextBlock VerticalAlignment="Center"
+                       Foreground="Goldenrod"
+                       Text="⚠"
+                       />
+            <TextBlock VerticalAlignment="Center">
+              <Run FontFamily="{StaticResource CodeFont}" Text="{Binding Path=Uses}"/>
+              <Run Text="{Binding Path=Verb}"/>
+              <Run FontFamily="{StaticResource CodeFont}" Text="{Binding Path=Package}"/>
+            </TextBlock>
+            <Button Content="{Binding Path=Package, StringFormat=Add \{0\}}"
+                    Click="AddPackage_Click"
+                    ToolTip.Tip="Add it to Packages, so the function can use it."
+                    />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <TextBlock Grid.Row="6"
                Grid.Column="1"
                Margin="0 4"
                Foreground="OrangeRed"
@@ -179,12 +209,12 @@
                IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
                />
 
-    <Label Grid.Row="6"
+    <Label Grid.Row="7"
            Grid.Column="0"
            VerticalAlignment="Top"
            Content="Julia"
            />
-    <Border Grid.Row="6"
+    <Border Grid.Row="7"
             Grid.Column="1"
             Padding="6"
             CornerRadius="4"
