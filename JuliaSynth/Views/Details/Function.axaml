@@ -33,7 +33,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto"
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto,auto"
         ColumnDefinitions="auto,*"
         >
 
@@ -134,10 +134,24 @@
 
     <Label Grid.Row="3"
            Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Packages"
+           />
+    <TextBox Grid.Row="3"
+             Grid.Column="1"
+             Margin="0 2"
+             FontFamily="{StaticResource CodeFont}"
+             Text="{Binding Path=Packages}"
+             PlaceholderText="e.g. LinearAlgebra, Statistics"
+             ToolTip.Tip="Packages the body uses, loaded with using before the function. A using or import line typed in the body works too."
+             />
+
+    <Label Grid.Row="4"
+           Grid.Column="0"
            VerticalAlignment="Top"
            Content="Body"
            />
-    <Border Grid.Row="3"
+    <Border Grid.Row="4"
             Grid.Column="1"
             BorderThickness="1"
             CornerRadius="4"
@@ -156,7 +170,7 @@
                                   />
     </Border>
 
-    <TextBlock Grid.Row="4"
+    <TextBlock Grid.Row="5"
                Grid.Column="1"
                Margin="0 4"
                Foreground="OrangeRed"
@@ -165,12 +179,12 @@
                IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
                />
 
-    <Label Grid.Row="5"
+    <Label Grid.Row="6"
            Grid.Column="0"
            VerticalAlignment="Top"
            Content="Julia"
            />
-    <Border Grid.Row="5"
+    <Border Grid.Row="6"
             Grid.Column="1"
             Padding="6"
             CornerRadius="4"

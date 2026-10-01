@@ -55,11 +55,17 @@ namespace JuliaSynth.Model
                 }
             }
 
-            List<string> packages = order.SelectMany(PackagesOf).Distinct().Order(StringComparer.Ordinal).ToList();
-            if (packages.Count > 0)
+            // Functions bring their packages into scope themselves (their code starts with its using
+            // statements); the rest come from here. Running checks them all first.
+            List<string> usings = order.SelectMany(PackagesOf).Distinct().Order(StringComparer.Ordinal).ToList();
+            List<string> packages = order.SelectMany(NeededPackages).Distinct().Order(StringComparer.Ordinal).ToList();
+            if (instrumented && packages.Count > 0)
             {
-                _ = script.AppendLine();
-                _ = instrumented ? script.Append(LoadPackages(packages)) : script.AppendLine($"using {string.Join(", ", packages)}");
+                _ = script.AppendLine().Append(LoadPackages(usings, packages.Except(usings)));
+            }
+            else if (usings.Count > 0)
+            {
+                _ = script.AppendLine().AppendLine($"using {string.Join(", ", usings)}");
             }
 
             List<Function> functions = order.OfType<Function>().Where(f => f.Error is null).ToList();
@@ -68,7 +74,7 @@ namespace JuliaSynth.Model
                 // Each definition is evaluated on its own, so a syntax error in one body only fails that function.
                 _ = script.AppendLine().AppendLine("# Functions");
                 _ = instrumented
-                    ? script.AppendJoin(string.Empty, functions.Select(f => Guarded(f.ID, $"include_string(Main, {StringLiteral(f.Code)}, {StringLiteral(f.Name)})", report: false)))
+                    ? script.AppendJoin(string.Empty, functions.Select(Definition))
                     : script.AppendJoin("\n\n", functions.Select(f => f.Code)).AppendLine();
             }
 
@@ -103,7 +109,7 @@ namespace JuliaSynth.Model
 
                 string id = StringLiteral(node.ID);
                 string[] blockers = inputs.Select(c => StringLiteral(c.SourceID)).Distinct().ToArray();
-                string[] needed = PackagesOf(node).Select(StringLiteral).ToArray();
+                string[] needed = NeededPackages(node).Select(StringLiteral).ToArray();
                 List<(string Condition, string Then)> conditions = [];
 
                 // A function whose definition failed has nothing to call; its error is already reported.
@@ -225,6 +231,35 @@ namespace JuliaSynth.Model
             return $"# Plotted by JuliaSynth. With Plots.jl: using Plots; {call}";
         }
 
+        /// <summary>
+        /// A function's definition for running: evaluated on its own, after checking its packages loaded.
+        /// </summary>
+        private static string Definition(Function function)
+        {
+            string id = StringLiteral(function.ID);
+            string define = Guarded(function.ID, $"include_string(Main, {StringLiteral(function.Code)}, {StringLiteral(function.Name)})", report: false);
+            if (function.RequiredPackages.Count == 0)
+            {
+                return define;
+            }
+
+            // Skipping the definition skips the calls too, with the reason on the node.
+            string needed = string.Join(", ", function.RequiredPackages.Select(StringLiteral));
+            return $"if (_why = _jsynth_package_problem({needed})) !== nothing\n{Indent}_jsynth_skip({id}, _why)\nelse\n{Indented(define)}end\n";
+        }
+
+        /// <summary>
+        /// Every package <paramref name="node"/> can't do without: those loaded for it and, for a
+        /// function, those its own code loads.
+        /// </summary>
+        private static IEnumerable<string> NeededPackages(Node node)
+        {
+            return node is Function function ? PackagesOf(node).Concat(function.RequiredPackages).Distinct() : PackagesOf(node);
+        }
+
+        /// <summary>
+        /// The packages loaded with <c>using</c> for <paramref name="node"/>, before any function is defined.
+        /// </summary>
         private static IEnumerable<string> PackagesOf(Node node)
         {
             IEnumerable<string> packages = node switch
@@ -242,15 +277,20 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
-        /// Loads each package on its own, so one that isn't installed only affects the nodes needing it.
+        /// Loads each package on its own, so one that isn't installed only affects the nodes needing it:
+        /// <paramref name="usings"/> with <c>using</c>, <paramref name="imports"/> with <c>import</c>
+        /// (their functions say with <c>using</c> or <c>import</c> what to take from them).
         /// </summary>
-        private static string LoadPackages(IEnumerable<string> packages)
+        private static string LoadPackages(IEnumerable<string> usings, IEnumerable<string> imports)
         {
+            IEnumerable<string> loads = usings.Select(p => $"({StringLiteral(p)}, \"using\")")
+                .Concat(imports.Select(p => $"({StringLiteral(p)}, \"import\")"));
+
             return $$"""
                 const _jsynth_missing = Dict{String, String}()
-                for _p in ({{string.Join(", ", packages.Select(StringLiteral))}},)
+                for (_p, _how) in ({{string.Join(", ", loads)}},)
                     try
-                        Core.eval(Main, Meta.parse("using $_p"))
+                        Core.eval(Main, Meta.parse("$_how $_p"))
                     catch e
                         _jsynth_missing[_p] = sprint(showerror, e)
                     end

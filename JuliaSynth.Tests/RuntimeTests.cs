@@ -170,7 +170,7 @@ namespace JuliaSynth.Tests
                 Assert.Contains("using MatrixMarket, SparseArrays\n", plain);
                 Assert.Contains("B1 = let m = z1\n    sprand(Float64, m, 100, 0.01)\nend\n", plain);
                 Assert.Contains("D1 = SparseMatrixCSC{Float64, Int64}(MatrixMarket.mmread(raw\"data/a.mtx\"))", plain);
-                Assert.Contains("for _p in (\"MatrixMarket\", \"SparseArrays\",)", run);
+                Assert.Contains("for (_p, _how) in ((\"MatrixMarket\", \"using\"), (\"SparseArrays\", \"using\"),)", run);
                 Assert.Contains("_jsynth_package_problem(\"MatrixMarket\", \"SparseArrays\")", run);
             });
         }

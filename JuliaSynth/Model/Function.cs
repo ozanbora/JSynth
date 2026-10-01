@@ -33,6 +33,8 @@ namespace JuliaSynth.Model
         private string _name = "f";
         private string _returnType = AnyType;
         private string _body = string.Empty;
+        private string _packages = string.Empty;
+        private IReadOnlyList<string> _requiredPackages = [];
         private string _signature = string.Empty;
         private string _code = string.Empty;
         private string? _error;
@@ -97,6 +99,26 @@ namespace JuliaSynth.Model
             set => this.RaiseAndSetIfChanged(ref _body, value);
         }
 
+        /// <summary>
+        /// Packages the body uses, as typed: names separated by commas or spaces, loaded with <c>using</c>.
+        /// </summary>
+        [JsonProperty]
+        public string Packages
+        {
+            get => _packages;
+            set => this.RaiseAndSetIfChanged(ref _packages, value ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Every package the function needs: those in <see cref="Packages"/> and those its body's
+        /// <c>using</c>/<c>import</c> statements load.
+        /// </summary>
+        public IReadOnlyList<string> RequiredPackages
+        {
+            get => _requiredPackages;
+            private set => this.RaiseAndSetIfChanged(ref _requiredPackages, value);
+        }
+
         // Get-only on purpose: the constructor adds no parameters, so the deserializer
         // populating this existing collection doesn't produce duplicates.
         [JsonProperty]
@@ -120,7 +142,8 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
-        /// Full Julia function definition.
+        /// Full Julia function definition, after the <c>using</c> and <c>import</c> statements it needs
+        /// (Julia doesn't allow them inside a function, so any typed in the body come first).
         /// </summary>
         public string Code
         {
@@ -143,7 +166,7 @@ namespace JuliaSynth.Model
             Color = Colors.DarkOrchid;
 
             Parameters.CollectionChanged += ParametersChanged;
-            _ = this.WhenAnyValue(x => x.Name, x => x.ReturnType, x => x.Body)
+            _ = this.WhenAnyValue(x => x.Name, x => x.ReturnType, x => x.Body, x => x.Packages)
                 .Subscribe(_ => Update());
         }
 
@@ -195,8 +218,21 @@ namespace JuliaSynth.Model
             string returnType = ReturnType == AnyType ? string.Empty : $"::{ReturnType}";
             Signature = $"{Name}({parameters}){returnType}";
 
-            IEnumerable<string> lines = (Body ?? string.Empty)
-                .Replace("\r\n", "\n")
+            (IReadOnlyList<string> imports, string rest) = JuliaImports.Split(Body ?? string.Empty);
+            (IReadOnlyList<string> listed, _) = JuliaImports.ParseList(Packages);
+
+            List<string> header = imports.ToList();
+            if (listed.Count > 0)
+            {
+                header.Insert(0, $"using {string.Join(", ", listed)}");
+            }
+
+            RequiredPackages = listed
+                .Concat(imports.SelectMany(s => JuliaImports.PackagesIn(s).Packages))
+                .Distinct()
+                .ToList();
+
+            IEnumerable<string> lines = rest
                 .Split('\n')
                 .Select(line => line.TrimEnd())
                 .SkipWhile(string.IsNullOrEmpty)
@@ -206,15 +242,26 @@ namespace JuliaSynth.Model
                 .Select(line => line.Length == 0 ? line : "    " + line);
 
             string body = string.Join("\n", lines);
-            Code = body.Length == 0
+            string definition = body.Length == 0
                 ? $"function {Signature}\nend"
                 : $"function {Signature}\n{body}\nend";
+            Code = header.Count == 0 ? definition : $"{string.Join("\n", header)}\n{definition}";
 
-            Error = Validate();
+            Error = Validate(imports);
         }
 
-        private string? Validate()
+        private string? Validate(IReadOnlyList<string> imports)
         {
+            if (JuliaImports.ParseList(Packages).Invalid is string invalid)
+            {
+                return $"'{invalid}' is not a package name.";
+            }
+
+            if (imports.Select(s => JuliaImports.PackagesIn(s).Problem).FirstOrDefault(p => p is not null) is string problem)
+            {
+                return problem;
+            }
+
             if (!IsIdentifier(Name))
             {
                 return $"'{Name}' is not a valid function name.";
