@@ -178,11 +178,12 @@ namespace JuliaSynth.Tests
                 Assert.Null(MainViewModel.Connect(y, plot, plot.Y));
                 Assert.Null(MainViewModel.Connect(x, plot, plot.X));
 
-                string run = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true, @"C:\plots").Text;
+                string folder = Path.Combine(Path.GetTempPath(), "plots");
+                string run = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true, folder).Text;
                 string plain = MainViewModel.ExportScript();
 
                 Assert.Contains(PlotData.Prelude.TrimEnd(), run);
-                Assert.Contains($"global plot1 = _jsynth_plot(raw\"C:\\plots\\{plot.ID}.jsplot\", \"scatter\", B1, v1)", run);
+                Assert.Contains($"global plot1 = _jsynth_plot(raw\"{Path.Combine(folder, $"{plot.ID}.jsplot")}\", \"scatter\", B1, v1)", run);
                 Assert.Contains($"_jsynth_skip(\"{lonely.ID}\", \"Wire values in to plot them.\")", run);
                 Assert.Contains("# Plotted by JuliaSynth. With Plots.jl: using Plots; plot(v1, B1)", plain);
             });
