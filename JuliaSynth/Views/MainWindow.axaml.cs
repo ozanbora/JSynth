@@ -97,32 +97,36 @@ public partial class MainWindow : Window
         }
 
         // Data that isn't bundled is downloaded first, if the user agrees, to where they like.
-        if (example.Data is ExampleData data && !data.IsIn(data.Folder))
+        if (example.Data is ExampleData data && data.DownloadedFolder is null)
         {
+            const string ChangeFolder = "Change folder…";
             string folder = data.Folder;
-            string? answer = await MessageDialog.ShowAsync(this, $"Download {data.Name}?",
-                $"{example.Name} reads {data.Name}, which isn't on this computer yet.\n\n{data.About}\n\n{data.Credit}\n\n"
-                + $"Download them ({data.Size}) to {folder}?",
-                "Download", "Choose folder…", "Cancel");
-            if (answer == "Choose folder…")
+            ExampleDataSet? set = null;
+            while (set is null)
             {
-                IReadOnlyList<IStorageFolder> folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                string sets = string.Join("\n", data.Sets.Select(s => $"{s.Name}: {s.Description}"));
+                string? answer = await MessageDialog.ShowAsync(this, $"Download {data.Name}?",
+                    $"{example.Name} reads {data.Name}, which isn't on this computer yet.\n\n{data.About}\n\n{sets}\n\n{data.Credit}\n\n"
+                    + $"Download them to {folder}?",
+                    [.. data.Sets.Select(s => s.Label), ChangeFolder, "Cancel"]);
+                if (answer == ChangeFolder)
                 {
-                    Title = $"Download {data.Name} to",
-                });
-                if (folders.FirstOrDefault()?.TryGetLocalPath() is not string picked)
+                    IReadOnlyList<IStorageFolder> folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                    {
+                        Title = $"Download {data.Name} to",
+                    });
+                    folder = folders.FirstOrDefault()?.TryGetLocalPath() ?? folder;
+                    continue;
+                }
+
+                set = data.Sets.FirstOrDefault(s => s.Label == answer);
+                if (set is null)
                 {
                     return;
                 }
-
-                folder = picked;
-            }
-            else if (answer != "Download")
-            {
-                return;
             }
 
-            if (!await viewModel.DownloadExampleDataAsync(data, folder))
+            if (!await viewModel.DownloadExampleDataAsync(data, set, folder))
             {
                 return;
             }

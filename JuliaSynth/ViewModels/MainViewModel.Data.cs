@@ -38,10 +38,10 @@ public partial class MainViewModel
     }
 
     /// <summary>
-    /// Downloads <paramref name="data"/> into <paramref name="folder"/>, saying how it goes; Stop ends it.
+    /// Downloads <paramref name="set"/> of <paramref name="data"/> into <paramref name="folder"/>, saying how it goes; Stop ends it.
     /// True once every file is there.
     /// </summary>
-    public async Task<bool> DownloadExampleDataAsync(ExampleData data, string folder)
+    public async Task<bool> DownloadExampleDataAsync(ExampleData data, ExampleDataSet set, string folder)
     {
         if (IsRunning)
         {
@@ -57,11 +57,11 @@ public partial class MainViewModel
             Log(string.Empty, OutputKind.Info);
         }
 
-        Log($"Downloading {data.Name} ({data.Size}) to {folder}…", OutputKind.Info);
+        Log($"Downloading {data.Name}, {set.Name.ToLowerInvariant()} set ({set.Size}), to {folder}…", OutputKind.Info);
         void Show(int done)
         {
-            _downloadText = $"Downloading {data.Name}: {done} of {data.Files.Count} files. Stop ends it; what is downloaded stays for next time.";
-            DownloadProgress = 100.0 * done / data.Files.Count;
+            _downloadText = $"Downloading {data.Name} ({set.Name.ToLowerInvariant()}): {done} of {set.Files.Count} files. Stop ends it; what is downloaded stays for next time.";
+            DownloadProgress = 100.0 * done / set.Files.Count;
             this.RaisePropertyChanged(nameof(IsDownloading));
             this.RaisePropertyChanged(nameof(DownloadText));
         }
@@ -69,7 +69,7 @@ public partial class MainViewModel
         Show(0);
         try
         {
-            await data.DownloadAsync(Http, folder, Show, cancellation.Token);
+            await data.DownloadAsync(Http, folder, set, Show, cancellation.Token);
             Log($"Downloaded {data.Name} to {folder}. {data.Credit}", OutputKind.Info);
             return true;
         }

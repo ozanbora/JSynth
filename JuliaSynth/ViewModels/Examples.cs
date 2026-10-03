@@ -56,11 +56,54 @@ namespace JuliaSynth.ViewModels
         private const int Stage3 = 50;
 
         /// <summary>
-        /// 12 scans of the Boreas dataset's radar while its car stood still for 53 s, about 4.5 s apart.
+        /// The scans of the Boreas dataset's radar while its car stood still for 53 s, one every quarter second.
+        /// </summary>
+        private static readonly long[] StopScans =
+        [
+            1606417888039363, 1606417888289369, 1606417888539372, 1606417888789377, 1606417889039375, 1606417889290004,
+            1606417889540012, 1606417889790012, 1606417890040020, 1606417890289392, 1606417890539398, 1606417890789406,
+            1606417891039412, 1606417891289407, 1606417891539413, 1606417891789415, 1606417892040043, 1606417892290048,
+            1606417892540051, 1606417892790064, 1606417893039433, 1606417893289440, 1606417893539442, 1606417893789448,
+            1606417894039447, 1606417894289447, 1606417894539456, 1606417894790087, 1606417895039463, 1606417895289463,
+            1606417895539466, 1606417895789474, 1606417896039477, 1606417896289487, 1606417896539483, 1606417896789487,
+            1606417897039495, 1606417897289498, 1606417897538869, 1606417897789495, 1606417898039510, 1606417898290140,
+            1606417898540140, 1606417898790762, 1606417899040761, 1606417899290776, 1606417899540154, 1606417899790155,
+            1606417900040155, 1606417900290157, 1606417900540164, 1606417900790177, 1606417901039544, 1606417901289548,
+            1606417901539558, 1606417901788937, 1606417902038936, 1606417902289561, 1606417902540190, 1606417902790201,
+            1606417903040197, 1606417903290204, 1606417903539585, 1606417903789585, 1606417904038961, 1606417904288973,
+            1606417904539598, 1606417904789597, 1606417905040227, 1606417905290857, 1606417905540239, 1606417905790244,
+            1606417906040239, 1606417906290242, 1606417906539626, 1606417906789632, 1606417907039631, 1606417907289635,
+            1606417907539640, 1606417907789646, 1606417908040302, 1606417908290895, 1606417908540277, 1606417908790288,
+            1606417909040290, 1606417909290292, 1606417909540294, 1606417909790296, 1606417910040302, 1606417910289682,
+            1606417910539683, 1606417910789688, 1606417911039688, 1606417911289070, 1606417911539072, 1606417911789701,
+            1606417912039700, 1606417912290339, 1606417912540340, 1606417912790339, 1606417913040347, 1606417913290345,
+            1606417913539726, 1606417913789728, 1606417914039738, 1606417914289743, 1606417914539739, 1606417914789741,
+            1606417915039753, 1606417915289749, 1606417915539757, 1606417915789755, 1606417916039761, 1606417916289767,
+            1606417916539767, 1606417916789161, 1606417917039769, 1606417917289782, 1606417917540410, 1606417917790409,
+            1606417918040409, 1606417918290411, 1606417918539795, 1606417918789799, 1606417919039805, 1606417919289176,
+            1606417919539808, 1606417919789817, 1606417920039820, 1606417920289828, 1606417920540451, 1606417920789824,
+            1606417921039831, 1606417921289833, 1606417921539840, 1606417921789840, 1606417922039845, 1606417922289849,
+            1606417922539853, 1606417922790486, 1606417923039856, 1606417923289872, 1606417923539868, 1606417923789875,
+            1606417924040502, 1606417924290499, 1606417924540501, 1606417924789892, 1606417925039887, 1606417925289889,
+            1606417925539892, 1606417925789901, 1606417926039904, 1606417926289912, 1606417926539909, 1606417926789911,
+            1606417927039922, 1606417927289920, 1606417927539299, 1606417927789927, 1606417928039930, 1606417928290570,
+            1606417928541187, 1606417928790568, 1606417929040569, 1606417929290571, 1606417929540581, 1606417929790582,
+            1606417930040583, 1606417930289963, 1606417930539965, 1606417930789968, 1606417931039974, 1606417931289977,
+            1606417931540605, 1606417931790605, 1606417932039983, 1606417932289991, 1606417932539994, 1606417932790009,
+            1606417933040001, 1606417933290001, 1606417933540011, 1606417933790019, 1606417934040012, 1606417934290014,
+            1606417934540026, 1606417934790023, 1606417935040030, 1606417935290030, 1606417935540034, 1606417935790046,
+            1606417936040672, 1606417936290676, 1606417936540049, 1606417936790056, 1606417937040056, 1606417937290056,
+            1606417937540692, 1606417937790696, 1606417938040079, 1606417938290072, 1606417938540076, 1606417938790079,
+            1606417939040085, 1606417939290089, 1606417939540091, 1606417939790095, 1606417940040723, 1606417940290724,
+            1606417940540731, 1606417940790118, 1606417941040743,        ];
+
+        /// <summary>
+        /// The Boreas radar scans of the stop: a short set of 12 spread over it (two of them with another
+        /// radar's interference, scans 3 and 25 of the stop), or all 213.
         /// </summary>
         internal static ExampleData BoreasRadar { get; } = new(
             "Boreas radar scans",
-            "12 scans of a Navtech radar spinning on the roof of a car standing still for 53 seconds at a junction in Toronto, "
+            "Scans of a Navtech radar spinning on the roof of a car standing still for 53 seconds at a junction in Toronto, "
                 + "on 26 November 2020, from the Boreas dataset. Each scan is a PNG image of 400 azimuths (rows) by 3,371 "
                 + "columns: an 11-column timestamp, then 3,360 range bins of about 6 cm.",
             "From the Boreas dataset by the Autonomous Space Robotics Lab, University of Toronto, licensed under CC BY 4.0 "
@@ -68,12 +111,16 @@ namespace JuliaSynth.ViewModels
                 + "driving dataset\", The International Journal of Robotics Research, 2023. https://www.boreas.utias.utoronto.ca/ "
                 + "The scans are unchanged.",
             "https://boreas.s3.us-west-2.amazonaws.com/boreas-2020-11-26-13-58/radar/",
-            [.. new[]
-            {
-                1606417888039363, 1606417892540051, 1606417897039495, 1606417901539558, 1606417906040239, 1606417910539683,
-                1606417915039753, 1606417919539808, 1606417924040502, 1606417928541187, 1606417933040001, 1606417937540692,
-            }.Select(time => $"{time}.png")],
-            5_200_000);
+            [
+                new("Short",
+                    "12 scans spread over the stop, two of them with another radar's interference: quick to download and run.",
+                    [.. new[] { 1, 3, 20, 25, 40, 60, 80, 100, 120, 140, 160, 180 }.Select(i => $"{StopScans[i - 1]}.png")],
+                    4_500_000),
+                new("Full",
+                    "All 213 scans of the stop, one every quarter second: traffic moves smoothly from scan to scan.",
+                    [.. StopScans.Select(time => $"{time}.png")],
+                    80_000_000),
+            ]);
 
         public static IReadOnlyList<Example> All { get; } = [
             new("Loan payment",
@@ -118,12 +165,13 @@ namespace JuliaSynth.ViewModels
                 + "Change the rate in balance and run again.",
                 SavingsGrowth),
             new("Radar clutter map",
-                "Radar: 12 scans of a radar spinning on the roof of a car standing at a Toronto junction, from the Boreas "
+                "Radar: scans of a radar spinning on the roof of a car standing at a Toronto junction, from the Boreas "
                 + "dataset (each a PNG image: azimuths by range bins). Running keeps a clutter map, the scene as it usually is, "
                 + "as a running average of the scans. by_azimuth counts, scan by scan and azimuth by azimuth, the cells "
-                + "standing out from it: passing traffic, and in two scans a whole azimuth lit up by another radar, which "
-                + "interference finds. range_profile gives the clutter's strength range bin by range bin. The scans are "
-                + "downloaded when the example opens; reading PNG files needs PNGFiles and ColorTypes.",
+                + "standing out from it, mostly passing traffic. interference finds the scans where one azimuth stands out "
+                + "along most of its range: another radar's signal, in two of the scans (2 and 4 of the short set, 3 and 25 "
+                + "of the full one). range_profile gives the clutter's strength range bin by range bin. The scans are "
+                + "downloaded when the example opens, 12 or all 213; reading PNG files needs PNGFiles and ColorTypes.",
                 RadarClutterMap) { Data = BoreasRadar },
         ];
 
@@ -359,7 +407,9 @@ namespace JuliaSynth.ViewModels
         /// </summary>
         private static MainViewModel.DesignDocument RadarClutterMap()
         {
-            FilesNode files = new() { Format = FileFormats.Png, Folder = BoreasRadar.Folder, Row = 6, Column = Inputs };
+            // The full set when it was downloaded, else the short one.
+            string folder = BoreasRadar.DownloadedFolder ?? ExampleData.SetFolder(BoreasRadar.Folder, BoreasRadar.Sets[0]);
+            FilesNode files = new() { Format = FileFormats.Png, Folder = folder, Row = 6, Column = Inputs };
 
             Function scan = Define("scan", "Matrix{Float64}", 16, Inputs,
                 "X[:, 12:1011]  # without the 11 timestamp columns; the first 1000 range bins (about 60 m)",
@@ -374,28 +424,33 @@ namespace JuliaSynth.ViewModels
             MapNode scans = new() { Row = 11, Column = Stage1 };
             RunningNode clutter = new() { Row = 25, Column = Stage1 };
 
-            Function byAzimuth = Define("by_azimuth", "Matrix{Int64}", 11, Stage2,
+            Function byAzimuth = Define("by_azimuth", "Matrix{Int64}", 9, Stage2,
                 """
                 # Row s, column a: the cells of scan s on azimuth a standing out from the clutter.
                 reduce(vcat, [permutedims(vec(count(>(0.15), X .- C; dims = 2))) for X in scans])
                 """,
                 ("scans", "Vector"), ("C", "Matrix{Float64}"));
-            Function rangeProfile = Define("range_profile", "Vector{Float64}", 34, Stage2,
+            Function rangeProfile = Define("range_profile", "Vector{Float64}", 29, Stage2,
                 "vec(sum(C; dims = 1)) ./ size(C, 1)  # the clutter's mean strength at each range bin",
                 ("C", "Matrix{Float64}"));
-            Function interference = Define("interference", "Vector{Int64}", 11, Stage3,
-                "findall(vec(maximum(counts; dims = 2)) .> 180)  # scans with an azimuth lit up along its length: another radar",
-                ("counts", "Matrix{Int64}"));
+            Function interference = Define("interference", "Vector{Int64}", 19, Stage2,
+                """
+                # Scans where an azimuth stands out from the clutter along most of its range, in 8 of its
+                # 10 stretches of 100 bins (6 m each): another radar's signal. A vehicle covers a few metres.
+                lit(X, a) = count(b -> count(>(0.15), X[a, b:b+99] .- C[a, b:b+99]) >= 10, 1:100:1000)
+                findall(X -> any(a -> lit(X, a) >= 8, axes(X, 1)), scans)
+                """,
+                ("scans", "Vector"), ("C", "Matrix{Float64}"));
 
-            DisplayNode showInterference = Shown(11, Stage3 + 14);
-            PlotNode clutterMap = new() { Title = "Clutter map: azimuth (rows) by range bin", Kind = "Heatmap", Row = 23, Column = Stage2 + 3 };
-            PlotNode standingOut = new() { Title = "Cells above the clutter: scan (rows) by azimuth", Kind = "Heatmap", Row = 23, Column = Stage3 + 17 };
-            PlotNode profile = new() { Title = "Clutter strength by range bin", Row = 37, Column = Stage3 + 3 };
+            DisplayNode showInterference = Shown(19, Stage3);
+            PlotNode clutterMap = new() { Title = "Clutter map: azimuth (rows) by range bin", Kind = "Heatmap", Row = 21, Column = Stage3 + 17 };
+            PlotNode standingOut = new() { Title = "Cells above the clutter: scan (rows) by azimuth", Kind = "Heatmap", Row = 7, Column = Stage3 + 17 };
+            PlotNode profile = new() { Title = "Clutter strength by range bin", Row = 35, Column = Stage3 + 17 };
 
             return Design([files, scan, update, scans, clutter, byAzimuth, rangeProfile, interference, showInterference, clutterMap, standingOut, profile],
                 (files, scans, "items"), (scan, scans, "f"),
                 (scans, clutter, "items"), (update, clutter, "f"),
-                (scans, byAzimuth, 0), (clutter, byAzimuth, 1), (byAzimuth, interference, 0), (interference, showInterference, 0),
+                (scans, byAzimuth, 0), (clutter, byAzimuth, 1), (scans, interference, 0), (clutter, interference, 1), (interference, showInterference, 0),
                 (clutter, rangeProfile, 0), (clutter, clutterMap, "y"), (byAzimuth, standingOut, "y"), (rangeProfile, profile, "y"));
         }
 

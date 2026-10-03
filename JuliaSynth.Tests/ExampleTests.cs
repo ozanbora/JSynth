@@ -33,9 +33,11 @@ namespace JuliaSynth.Tests
                 AppSettings.SettingsPath = Path.Combine(_folder, "settings.json");
                 if (example.Data is ExampleData data)
                 {
-                    foreach (string file in data.Files)
+                    string files = ExampleData.SetFolder(_folder, data.Sets[0]);
+                    _ = Directory.CreateDirectory(files);
+                    foreach (string file in data.Sets[0].Files)
                     {
-                        PngTests.WriteGreyPng(Path.Combine(_folder, file), new int[1, 1], 8);
+                        PngTests.WriteGreyPng(Path.Combine(files, file), new int[1, 1], 8);
                     }
 
                     AppSettings settings = AppSettings.Load();
