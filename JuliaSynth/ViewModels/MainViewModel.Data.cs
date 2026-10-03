@@ -69,7 +69,7 @@ public partial class MainViewModel
         Show(0);
         try
         {
-            await data.DownloadAsync(Http, folder, new Progress<int>(Show), cancellation.Token);
+            await data.DownloadAsync(Http, folder, Show, cancellation.Token);
             Log($"Downloaded {data.Name} to {folder}. {data.Credit}", OutputKind.Info);
             return true;
         }

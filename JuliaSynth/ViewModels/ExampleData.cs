@@ -58,12 +58,13 @@ namespace JuliaSynth.ViewModels
         /// <summary>
         /// Downloads the files missing from <paramref name="folder"/> one by one (each written to a temporary
         /// name first, so a stopped download leaves no half file), with the credit next to them, and
-        /// remembers the folder. <paramref name="progress"/> gets the number of files there so far.
+        /// remembers the folder. <paramref name="progress"/> is told the number of files there so far, right away on
+        /// the caller's thread (the download goes on there between its awaits), so it never comes after the end.
         /// </summary>
         /// <exception cref="HttpRequestException">A file couldn't be downloaded.</exception>
         /// <exception cref="IOException">A file couldn't be written.</exception>
         /// <exception cref="OperationCanceledException">Stopped.</exception>
-        public async Task DownloadAsync(HttpClient client, string folder, IProgress<int>? progress = null, CancellationToken cancellationToken = default)
+        public async Task DownloadAsync(HttpClient client, string folder, Action<int>? progress = null, CancellationToken cancellationToken = default)
         {
             _ = Directory.CreateDirectory(folder);
             await File.WriteAllTextAsync(Path.Combine(folder, ReadmeName), $"{Name}\n\n{About}\n\n{Credit}\n\nDownloaded by JuliaSynth from {BaseUrl}\n", cancellationToken);
@@ -85,7 +86,7 @@ namespace JuliaSynth.ViewModels
                     File.Move(partial, path, overwrite: true);
                 }
 
-                progress?.Report(++done);
+                progress?.Invoke(++done);
             }
 
             AppSettings settings = AppSettings.Load();

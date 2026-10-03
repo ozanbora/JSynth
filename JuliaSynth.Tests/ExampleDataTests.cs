@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using JuliaSynth.Model;
 using JuliaSynth.Runtime;
 using JuliaSynth.ViewModels;
@@ -66,7 +67,7 @@ namespace JuliaSynth.Tests
             StandInInternet internet = new();
             List<int> progress = [];
 
-            await Data.DownloadAsync(new HttpClient(internet), target, new SynchronousProgress(progress.Add));
+            await Data.DownloadAsync(new HttpClient(internet), target, progress.Add);
 
             Assert.Equal(["b.png"], internet.Asked);
             Assert.Equal("already here", File.ReadAllText(Path.Combine(target, "a.png")));
@@ -108,6 +109,9 @@ namespace JuliaSynth.Tests
 
                 MainViewModel.Http = new HttpClient(new StandInInternet());
                 Assert.True(await viewModel.DownloadExampleDataAsync(Data, Path.Combine(_folder, "ok")));
+
+                // Anything still queued for the window runs first: the banner must stay gone after it.
+                Dispatcher.UIThread.RunJobs();
                 Assert.Contains(seen, text => text.StartsWith("Downloading Test scans: 0 of 2 files."));
                 Assert.False(viewModel.IsDownloading);
                 Assert.False(viewModel.IsRunning);
@@ -169,14 +173,6 @@ namespace JuliaSynth.Tests
                 Assert.Equal("2-element Vector{Int64}:\n 6\n 9", interference.Text);
                 Assert.Equal("Matrix{Float64}", reports.Single(r => r.Id == design.Nodes.OfType<RunningNode>().Single().ID).Type);
             });
-        }
-
-        /// <summary>
-        /// Progress reported where it happens, rather than posted to a thread later.
-        /// </summary>
-        private sealed class SynchronousProgress(Action<int> report) : IProgress<int>
-        {
-            public void Report(int value) => report(value);
         }
     }
 }
