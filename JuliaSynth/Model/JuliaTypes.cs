@@ -140,7 +140,7 @@ namespace JuliaSynth.Model
                 && value >= min && value <= max;
         }
 
-        private static (BigInteger Min, BigInteger Max)? IntegerRange(string type)
+        internal static (BigInteger Min, BigInteger Max)? IntegerRange(string type)
         {
             if (!type.StartsWith("Int", StringComparison.Ordinal) && !type.StartsWith("UInt", StringComparison.Ordinal))
             {

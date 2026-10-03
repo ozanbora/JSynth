@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 
 namespace JuliaSynth.Model
 {
@@ -19,6 +20,7 @@ namespace JuliaSynth.Model
         public const string Tsv = FileFormats.Tsv;
         public const string MatrixMarket = FileFormats.MatrixMarket;
         public const string Jld2 = FileFormats.Jld2;
+        public const string Png = FileFormats.Png;
 
         public static IReadOnlyList<string> Formats => FileFormats.All;
 
@@ -147,6 +149,8 @@ namespace JuliaSynth.Model
 
         public bool IsJld2 => Format == Jld2;
 
+        public bool IsImage => FileFormats.IsImage(Format);
+
         public bool IsVector => JuliaTypes.Dimensions(Shape) == 1;
 
         /// <summary>
@@ -219,7 +223,7 @@ namespace JuliaSynth.Model
             foreach (string name in new[]
             {
                 nameof(Format), nameof(Shape), nameof(PossibleShapes), nameof(CanPickShape), nameof(IsDelimited),
-                nameof(IsJld2), nameof(IsVector), nameof(Symbol), nameof(OutputType), nameof(FileName), nameof(Julia),
+                nameof(IsJld2), nameof(IsImage), nameof(IsVector), nameof(Symbol), nameof(OutputType), nameof(FileName), nameof(Julia),
                 nameof(Code), nameof(Package),
             })
             {
@@ -256,6 +260,7 @@ namespace JuliaSynth.Model
                 {
                     Csv or Tsv => InspectDelimited(),
                     MatrixMarket => InspectMatrixMarket(),
+                    Png => InspectPng(),
                     _ => (string.Empty, null),
                 };
             }
@@ -347,6 +352,59 @@ namespace JuliaSynth.Model
             double cells = (double)size[0] * size[1];
             double stored = mirrored ? 2 * size[2] : size[2];
             return (cells == 0 ? shape : $"{shape}, {(mirrored ? "~" : string.Empty)}{stored / cells:0.###%} stored", null);
+        }
+
+        /// <summary>
+        /// Size, bit depth and colours, from the header of a PNG file (its IHDR chunk).
+        /// </summary>
+        private (string, string?) InspectPng()
+        {
+            byte[] header = new byte[26];
+            using (FileStream stream = File.OpenRead(_path))
+            {
+                stream.ReadExactly(header, 0, Math.Min(header.Length, (int)stream.Length));
+            }
+
+            return PngHeader(header, ElementType);
+        }
+
+        /// <summary>
+        /// What the first 26 bytes of a PNG file say, for an image read as <paramref name="elementType"/>:
+        /// "480×640, 16-bit grey", or why it can't be read so.
+        /// </summary>
+        internal static (string Summary, string? Error) PngHeader(ReadOnlySpan<byte> header, string elementType)
+        {
+            ReadOnlySpan<byte> signature = [0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A];
+            if (header.Length < 26 || !header[..8].SequenceEqual(signature) || !header[12..16].SequenceEqual("IHDR"u8))
+            {
+                return (string.Empty, "This is not a PNG image.");
+            }
+
+            uint width = System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(header[16..]);
+            uint height = System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(header[20..]);
+            int depth = header[24];
+            string colours = header[25] switch
+            {
+                0 => "grey",
+                2 => "colour",
+                3 => "palette colour",
+                4 => "grey with alpha",
+                6 => "colour with alpha",
+                _ => "unknown colours",
+            };
+
+            // Rows are the image's height: row 1 is its top line.
+            string summary = $"{height:N0}×{width:N0}, {depth}-bit {colours}";
+            if (JuliaTypes.Floats.Contains(elementType))
+            {
+                return (summary, null);
+            }
+
+            // Integers hold the values stored: up to 255, or 65535 for 16 bits (colour turns into 8 or 16-bit grey).
+            BigInteger largest = depth == 16 ? 65535 : 255;
+            return JuliaTypes.IntegerRange(elementType) is not (_, var max) || max < largest
+                ? (summary, $"Pixels of this image go up to {largest}: pick an integer type holding that, or a float type for intensities from 0 to 1.")
+                : (summary, null);
         }
 
         private static bool IsIdentifier(string name)

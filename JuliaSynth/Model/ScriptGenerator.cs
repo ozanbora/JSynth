@@ -81,9 +81,23 @@ namespace JuliaSynth.Model
             {
                 _ = script.AppendLine().Append(LoadPackages(usings, packages.Except(usings)));
             }
-            else if (usings.Count > 0)
+            else
             {
-                _ = script.AppendLine().AppendLine($"using {string.Join(", ", usings)}");
+                List<string> imports = order.SelectMany(ImportsOf).Distinct().Order(StringComparer.Ordinal).Except(usings).ToList();
+                if (usings.Count + imports.Count > 0)
+                {
+                    _ = script.AppendLine();
+                }
+
+                if (usings.Count > 0)
+                {
+                    _ = script.AppendLine($"using {string.Join(", ", usings)}");
+                }
+
+                if (imports.Count > 0)
+                {
+                    _ = script.AppendLine($"import {string.Join(", ", imports)}");
+                }
             }
 
             List<Function> functions = order.OfType<Function>().Where(f => f.Error is null).ToList();
@@ -296,7 +310,8 @@ namespace JuliaSynth.Model
         /// </summary>
         private static IEnumerable<string> NeededPackages(Node node)
         {
-            return node is Function function ? PackagesOf(node).Concat(function.RequiredPackages).Distinct() : PackagesOf(node);
+            IEnumerable<string> packages = PackagesOf(node).Concat(ImportsOf(node));
+            return node is Function function ? packages.Concat(function.RequiredPackages).Distinct() : packages;
         }
 
         /// <summary>
@@ -317,6 +332,19 @@ namespace JuliaSynth.Model
                 _ => [],
             };
             return packages;
+        }
+
+        /// <summary>
+        /// The packages loaded with <c>import</c> for <paramref name="node"/>: used by qualified names only.
+        /// </summary>
+        private static IEnumerable<string> ImportsOf(Node node)
+        {
+            return node switch
+            {
+                ArrayFile file => FileFormats.Imports(file.Format),
+                FilesNode files => FileFormats.Imports(files.Format),
+                _ => [],
+            };
         }
 
         /// <summary>

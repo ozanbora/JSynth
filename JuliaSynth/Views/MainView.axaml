@@ -61,7 +61,7 @@
                   <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Load from file (CSV, .mtx, JLD2)" Tag="ArrayFile" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtPointer_Click"/>
                   <Separator/>
                   <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtPointer_Click"/>
@@ -367,7 +367,7 @@
                 <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Load from file (CSV, .mtx, JLD2)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtCenter_Click"/>
                 <Separator/>
                 <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtCenter_Click"/>

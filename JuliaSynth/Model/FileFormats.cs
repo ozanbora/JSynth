@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace JuliaSynth.Model
 {
@@ -13,10 +14,13 @@ namespace JuliaSynth.Model
         public const string Tsv = "TSV";
         public const string MatrixMarket = "Matrix Market";
         public const string Jld2 = "JLD2";
+        public const string Png = "PNG image";
 
-        public static IReadOnlyList<string> All { get; } = [Csv, Tsv, MatrixMarket, Jld2];
+        public static IReadOnlyList<string> All { get; } = [Csv, Tsv, MatrixMarket, Jld2, Png];
 
         public static bool IsDelimited(string format) => format is Csv or Tsv;
+
+        public static bool IsImage(string format) => format == Png;
 
         /// <summary>
         /// The shapes a file of <paramref name="format"/> can be read as.
@@ -25,6 +29,7 @@ namespace JuliaSynth.Model
         {
             Csv or Tsv => [JuliaTypes.Vector, JuliaTypes.Matrix],
             MatrixMarket => [JuliaTypes.SparseMatrix],
+            Png => [JuliaTypes.Matrix],
             _ => [JuliaTypes.Vector, JuliaTypes.Matrix, JuliaTypes.SparseVector, JuliaTypes.SparseMatrix],
         };
 
@@ -37,6 +42,7 @@ namespace JuliaSynth.Model
             ".tsv" or ".tab" => Tsv,
             ".mtx" => MatrixMarket,
             ".jld2" => Jld2,
+            ".png" => Png,
             _ => null,
         };
 
@@ -48,6 +54,7 @@ namespace JuliaSynth.Model
             Csv => "*.csv",
             Tsv => "*.tsv",
             MatrixMarket => "*.mtx",
+            Png => "*.png",
             _ => "*.jld2",
         };
 
@@ -58,8 +65,15 @@ namespace JuliaSynth.Model
         {
             Csv or Tsv => "DelimitedFiles",
             MatrixMarket => "MatrixMarket, SparseArrays",
+            Png => "PNGFiles",
             _ => "JLD2, SparseArrays",
         };
+
+        /// <summary>
+        /// Packages <paramref name="format"/> is read with that are loaded with import rather than using, so
+        /// their many names (ColorTypes: red, gray, alpha, ...) don't clash with the design's own.
+        /// </summary>
+        public static IReadOnlyList<string> Imports(string format) => format == Png ? ["ColorTypes"] : [];
 
         /// <summary>
         /// Julia code reading the file at <paramref name="path"/> (a Julia expression: a string literal,
@@ -75,6 +89,11 @@ namespace JuliaSynth.Model
                 // readdlm always makes a matrix; vec makes a vector of it, column by column.
                 Csv or Tsv => Dense(shape, $"readdlm({path}, {(format == Csv ? "','" : "'\\t'")}, {elementType}{(hasHeader ? "; skipstart = 1" : string.Empty)})"),
                 MatrixMarket => $"{type}(MatrixMarket.mmread({path}))",
+
+                // Grey levels (colour turned to grey by luminance), row 1 at the top: as intensities from 0 to 1
+                // for a float type, else as the values stored (0 to 255, or 65535 for a 16-bit image).
+                Png when JuliaTypes.Floats.Contains(elementType) => $"{type}(ColorTypes.gray.(ColorTypes.Gray.(PNGFiles.load({path}))))",
+                Png => $"{type}(reinterpret.(ColorTypes.gray.(ColorTypes.Gray.(PNGFiles.load({path})))))",
                 _ => $"convert({type}, JLD2.load({path}, {ArrayFile.PathLiteral(variable)}))",
             };
         }

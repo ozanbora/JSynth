@@ -8,7 +8,7 @@ namespace JuliaSynth.Views.Details;
 public partial class ArrayFile : UserControl
 {
     private static readonly IReadOnlyList<FilePickerFileType> FileTypes = [
-        new("Arrays (CSV, TSV, Matrix Market, JLD2)") { Patterns = ["*.csv", "*.tsv", "*.tab", "*.mtx", "*.jld2"] },
+        new("Arrays and images (CSV, TSV, Matrix Market, JLD2, PNG)") { Patterns = ["*.csv", "*.tsv", "*.tab", "*.mtx", "*.jld2", "*.png"] },
         new("All files") { Patterns = ["*"] },
     ];
 

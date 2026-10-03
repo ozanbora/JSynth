@@ -172,6 +172,8 @@ namespace JuliaSynth.Model
 
         public bool IsJld2 => Format == FileFormats.Jld2;
 
+        public bool IsImage => FileFormats.IsImage(Format);
+
         /// <summary>
         /// What each file becomes, e.g. <c>Matrix{Float64}</c>: the type a function applied to them takes.
         /// </summary>
@@ -238,7 +240,7 @@ namespace JuliaSynth.Model
 
             foreach (string name in new[]
             {
-                nameof(Shape), nameof(PossibleShapes), nameof(CanPickShape), nameof(IsDelimited), nameof(IsJld2),
+                nameof(Shape), nameof(PossibleShapes), nameof(CanPickShape), nameof(IsDelimited), nameof(IsJld2), nameof(IsImage),
                 nameof(EachType), nameof(FolderName), nameof(Julia), nameof(Code), nameof(Package),
             })
             {

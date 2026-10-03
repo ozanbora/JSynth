@@ -67,7 +67,7 @@
                 SelectedValue="{Binding Path=Format}"
                 ItemsSource="{x:Static jsModel:FileFormats.All}"
                 VerticalAlignment="Center"
-                ToolTip.Tip="How the files are read. CSV and TSV: values separated by commas or tabs. Matrix Market (.mtx): sparse matrices. JLD2: arrays saved from Julia."
+                ToolTip.Tip="How the files are read. CSV and TSV: values separated by commas or tabs. Matrix Market (.mtx): sparse matrices. JLD2: arrays saved from Julia. PNG: an image, as a matrix of grey levels (lossless)."
                 />
     </StackPanel>
 
@@ -101,6 +101,17 @@
               IsVisible="{Binding Path=IsDelimited}"
               ToolTip.Tip="Skip a first line that names the columns instead of holding values."
               />
+
+    <TextBlock Grid.Row="3"
+               Grid.Column="1"
+               MaxWidth="320"
+               HorizontalAlignment="Left"
+               FontSize="12"
+               Opacity="0.7"
+               TextWrapping="Wrap"
+               IsVisible="{Binding Path=IsImage}"
+               Text="Grey levels, row 1 at the top (colour is turned to grey). A float type gives intensities from 0 to 1; an integer type the values stored: 0 to 255, or 0 to 65535 for a 16-bit image."
+               />
 
     <Label Grid.Row="3"
            Grid.Column="0"
