@@ -128,9 +128,9 @@ namespace JuliaSynth.Tests
 
             // The wire is drawn as fitting (not flagged) until the function takes more values.
             Function applied = OneValue();
-            Assert.True(Wiring.Fits(applied, map.Apply));
+            Assert.True(Wiring.Fits(applied, map, map.Apply));
             applied.Parameters.Add(new Parameter("B", Function.AnyType));
-            Assert.False(Wiring.Fits(applied, map.Apply));
+            Assert.False(Wiring.Fits(applied, map, map.Apply));
         }
 
         /// <summary>

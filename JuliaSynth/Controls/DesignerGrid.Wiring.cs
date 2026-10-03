@@ -244,10 +244,11 @@ namespace JuliaSynth.Controls
                     if (outputs.TryGetValue(connection.SourceID, out Connector? output)
                         && inputs.TryGetValue(connection.ParameterID, out Connector? input)
                         && output.Owner is Model.Node source
-                        && input.Parameter is Parameter parameter)
+                        && input.Parameter is Parameter parameter
+                        && input.Owner is Model.Node target)
                     {
                         // A type changed after wiring (or a mapped function's parameters): keep the wire but flag it.
-                        Pen pen = Wiring.Fits(source, parameter)
+                        Pen pen = Wiring.Fits(source, target, parameter)
                             ? new Pen(WireBrush(source.Color), Thickness)
                             : new Pen(InvalidWireBrush, Thickness, new DashStyle([2, 2], 0));
                         DrawWire(context, pen, output.CenterIn(grid), input.CenterIn(grid));

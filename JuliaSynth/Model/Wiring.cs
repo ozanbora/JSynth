@@ -31,11 +31,20 @@ namespace JuliaSynth.Model
         /// Whether what <paramref name="source"/> gives fits <paramref name="parameter"/>: its value's type,
         /// or for a function port, the function itself (see <see cref="Validate"/>).
         /// </summary>
-        public static bool Fits(Node source, Parameter parameter)
+        public static bool Fits(Node source, Node target, Parameter parameter)
         {
             return parameter.IsFunctionPort
-                ? source is Function { Parameters.Count: 1 }
+                ? source is Function function && function.Parameters.Count == FunctionArity(target, parameter)
                 : AreTypesCompatible(source.OutputType, parameter.Type);
+        }
+
+        /// <summary>
+        /// How many values the function wired into the function port <paramref name="parameter"/> of
+        /// <paramref name="target"/> takes: Map applies it to one value; Running gives it the state and a value.
+        /// </summary>
+        public static int FunctionArity(Node target, Parameter parameter)
+        {
+            return target is RunningNode running && parameter == running.Update ? 2 : 1;
         }
 
         /// <summary>
@@ -50,11 +59,13 @@ namespace JuliaSynth.Model
             }
 
             // A function port takes the function itself, to apply to each value.
-            if (!Fits(source, parameter))
+            if (!Fits(source, target, parameter))
             {
+                bool updates = FunctionArity(target, parameter) == 2;
                 return !parameter.IsFunctionPort ? $"{source.OutputType} can't be passed to {parameter.Signature}."
-                    : source is Function function ? $"{function.Name} takes {function.Parameters.Count} values; it must take one, to be applied to each value."
-                    : "Only a function can be wired here: the one to apply to each value.";
+                    : source is Function function ? $"{function.Name} takes {function.Parameters.Count} values; it must take "
+                        + (updates ? "two: the state, then a value, to update the state with each value." : "one, to be applied to each value.")
+                    : $"Only a function can be wired here: the one {(updates ? "updating the state with each value" : "to apply to each value")}.";
             }
 
             // The wire would make the target (indirectly) depend on itself.

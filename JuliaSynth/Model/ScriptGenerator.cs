@@ -55,8 +55,8 @@ namespace JuliaSynth.Model
                 }
             }
 
-            // Files go through Map; a script without them is still valid Julia, so these are in an exported one too.
-            if (nodes.Any(n => n is FilesNode or MapNode))
+            // Files go through Map and Running; a script without them is still valid Julia, so these are in an exported one too.
+            if (nodes.Any(n => n is FilesNode or MapNode or RunningNode))
             {
                 _ = script.AppendLine().AppendLine(FilesNode.Prelude.TrimEnd());
             }
@@ -64,6 +64,11 @@ namespace JuliaSynth.Model
             if (instrumented && nodes.OfType<MapNode>().Any())
             {
                 _ = script.AppendLine(MapNode.Prelude.TrimEnd());
+            }
+
+            if (instrumented && nodes.OfType<RunningNode>().Any())
+            {
+                _ = script.AppendLine(RunningNode.Prelude.TrimEnd());
             }
 
             // Functions wired into a Map are applied by it: one whose parameter isn't wired has no value of its own.
@@ -225,6 +230,23 @@ namespace JuliaSynth.Model
                     return MapNode.Problem(function) is string problem
                         ? (null, problem)
                         : ($"{(instrumented ? "_jsynth_map" : "map")}({function.Name}, {items})", null);
+                }
+                case RunningNode running:
+                {
+                    if (Input(running.Items) is not string items)
+                    {
+                        return (null, "Wire values in to go through them.");
+                    }
+
+                    // The function itself, by name: Running calls it, once per value.
+                    if (inputs.FirstOrDefault(c => c.ParameterID == running.Update.ID) is not Connection wire || byID[wire.SourceID] is not Function function)
+                    {
+                        return (null, "Wire in the function updating the state with each value.");
+                    }
+
+                    return RunningNode.Problem(function) is string problem
+                        ? (null, problem)
+                        : (running.Julia(function.Name, items, Input(running.Start), instrumented), null);
                 }
                 case ArrayBuilder builder:
                 {
@@ -418,6 +440,7 @@ namespace JuliaSynth.Model
                     ArrayFile => "D",
                     FilesNode => "files",
                     MapNode => "mapped",
+                    RunningNode => "running",
                     DisplayNode => "shown",
                     PlotNode => "plot",
                     SaveFile => "saved",

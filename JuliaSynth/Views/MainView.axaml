@@ -70,6 +70,7 @@
                   <Separator/>
                   <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Running: carry a state through each (↻)" Tag="RunningNode" Click="AddAtPointer_Click"/>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
@@ -157,6 +158,9 @@
               </DataTemplate>
               <DataTemplate DataType="jsModel:MapNode">
                 <jsViews:MapNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:RunningNode">
+                <jsViews:RunningNode DataContext="{Binding}"/>
               </DataTemplate>
               <DataTemplate DataType="jsModel:Function">
                 <jsViews:Function DataContext="{Binding}"/>
@@ -376,6 +380,7 @@
                 <Separator/>
                 <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Running: carry a state through each (↻)" Tag="RunningNode" Click="AddAtCenter_Click"/>
               </MenuFlyout>
             </DropDownButton.Flyout>
           </DropDownButton>
