@@ -18,6 +18,17 @@ namespace JuliaSynth.Tests
 
         private static Example Named(string name) => Examples.All.Single(e => e.Name == name);
 
+        // One Julia for all the examples, as in the app: each design runs after the others, without their names.
+        private static readonly Dictionary<string, JuliaSession> Sessions = [];
+
+        private static JuliaSession SessionFor(JuliaInstallation julia)
+        {
+            lock (Sessions)
+            {
+                return Sessions.TryGetValue(julia.Path, out JuliaSession? session) ? session : Sessions[julia.Path] = new JuliaSession(julia.Path);
+            }
+        }
+
         [Theory]
         [MemberData(nameof(Names))]
         public void An_example_is_complete_and_tidy(string name)
@@ -137,11 +148,9 @@ namespace JuliaSynth.Tests
                     return;
                 }
 
-                JuliaRunner runner = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                runner.Reported += reports.Enqueue;
 
-                RunResult result = await runner.RunAsync(script.Text, folder);
+                RunResult result = await SessionFor(julia).RunAsync(script.Text, folder, reported: reports.Enqueue);
 
                 Assert.True(result.Succeeded);
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));

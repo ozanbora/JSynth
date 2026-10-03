@@ -20,7 +20,11 @@ public partial class App : Application
         {
             MainViewModel viewModel = new();
             viewModel.StartUp();
-            desktop.Exit += (_, _) => MainViewModel.DeletePlotFiles();
+            desktop.Exit += (_, _) =>
+            {
+                viewModel.EndJulia();
+                MainViewModel.DeletePlotFiles();
+            };
 
             // Saving is explicit now; the window asks about unsaved changes when it closes.
             desktop.MainWindow = new MainWindow

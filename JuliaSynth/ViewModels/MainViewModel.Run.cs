@@ -104,12 +104,94 @@ public partial class MainViewModel
         get => _julia;
         private set
         {
+            bool same = value == _julia;
             _ = this.RaiseAndSetIfChanged(ref _julia, value);
             this.RaisePropertyChanged(nameof(JuliaStatus));
 
-            // Another Julia has packages of its own.
+            // Another Julia has packages of its own, and runs in a session of its own.
             _installedPackages.Clear();
+            if (same)
+            {
+                return;
+            }
+
+            _session?.Dispose();
+            _session = value is null ? null : new JuliaSession(value.Path);
+            ForgetWarmUp();
+            _ = WarmUpAsync();
         }
+    }
+
+    // The Julia runs go to, kept running between them so they needn't start Julia (and compile) again.
+    private JuliaSession? _session;
+
+    // Packages the session loaded ahead of a run, so it isn't asked again for each change to the design.
+    private readonly HashSet<string> _warmedPackages = [];
+    private bool _isWarm;
+
+    /// <summary>
+    /// Has the session start Julia, if it isn't running, and load the design's packages, while nothing
+    /// waits for it; the next run starts right away.
+    /// </summary>
+    private async Task WarmUpAsync()
+    {
+        if (_session is not JuliaSession session)
+        {
+            return;
+        }
+
+        IReadOnlyList<string> packages = ScriptGenerator.Generate(Nodes, Connections, instrumented: false).Packages;
+        if (_isWarm && packages.All(_warmedPackages.Contains))
+        {
+            return;
+        }
+
+        _warmedPackages.UnionWith(packages);
+        _isWarm = true;
+        try
+        {
+            await session.WarmUpAsync(JuliaSession.WarmUpScript(packages));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception or ObjectDisposedException)
+        {
+            // The run says what is wrong, if anything still is.
+        }
+    }
+
+    /// <summary>
+    /// The session's Julia ended, or will: the next warm-up starts its replacement.
+    /// </summary>
+    private void ForgetWarmUp()
+    {
+        _warmedPackages.Clear();
+        _isWarm = false;
+    }
+
+    /// <summary>
+    /// Ends the Julia runs go to; called when JuliaSynth closes.
+    /// </summary>
+    public void EndJulia()
+    {
+        _session?.Dispose();
+    }
+
+    /// <summary>
+    /// Starts a new Julia for the next runs, without anything the earlier ones left behind (a package
+    /// changed on disk, a method redefined globally, ...).
+    /// </summary>
+    public void RestartJulia()
+    {
+        IsOutputVisible = true;
+        if (_session is null)
+        {
+            Log("Julia wasn't found, so there is nothing to restart.", OutputKind.Info);
+            return;
+        }
+
+        _session.Restart();
+        ForgetWarmUp();
+        Log("Restarted Julia: the next run starts afresh.", OutputKind.Info);
+        _ = WarmUpAsync();
     }
 
     /// <summary>
@@ -125,6 +207,8 @@ public partial class MainViewModel
 
     public ReactiveCommand<RxVoid, RxVoid> InstallPackages { get; private set; } = null!;
 
+    public ReactiveCommand<RxVoid, RxVoid> Restart { get; private set; } = null!;
+
     public ReactiveCommand<RxVoid, RxVoid> ClearOutput { get; private set; } = null!;
 
     public ReactiveCommand<RxVoid, RxVoid> ToggleOutput { get; private set; } = null!;
@@ -135,6 +219,10 @@ public partial class MainViewModel
         Run = ReactiveCommand.CreateFromTask(RunDesignAsync, this.WhenAnyValue(x => x.IsRunning, busy => !busy));
         Stop = ReactiveCommand.Create(() => _runCancellation?.Cancel(), running);
         InstallPackages = ReactiveCommand.CreateFromTask(InstallMissingPackagesAsync, this.WhenAnyValue(x => x.IsRunning, busy => !busy));
+        Restart = ReactiveCommand.Create(RestartJulia, this.WhenAnyValue(x => x.IsRunning, busy => !busy));
+
+        // A design opened needs its packages loaded before it runs.
+        DesignLoaded += () => _ = WarmUpAsync();
         ClearOutput = ReactiveCommand.Create(Output.Clear);
         ToggleOutput = ReactiveCommand.Create(() => { IsOutputVisible = !IsOutputVisible; });
     }
@@ -236,6 +324,7 @@ public partial class MainViewModel
         {
             string folder = RunFolder;
             ClearPlotFiles();
+            JuliaSession session = _session!;
             JuliaScript script = ScriptGenerator.Generate(Nodes, Connections, instrumented: true, PlotFolder);
             int version = _designVersion;
             Dictionary<string, Node> nodes = Nodes.ToDictionary(n => n.ID);
@@ -250,10 +339,6 @@ public partial class MainViewModel
             {
                 node.Result = null;
             }
-
-            JuliaRunner runner = new(julia.Path);
-            runner.Output += line => Dispatcher.UIThread.Post(() => Log(line.Text, line.IsError ? OutputKind.Error : OutputKind.Output));
-            runner.Reported += report => Dispatcher.UIThread.Post(() => Show(report));
 
             void Show(Report report)
             {
@@ -280,7 +365,19 @@ public partial class MainViewModel
             }
 
             Log($"Running with Julia {julia.Version} in {folder}…", OutputKind.Info);
-            RunResult result = await runner.RunAsync(script.Text, folder, cancellation.Token);
+            RunResult result = await session.RunAsync(
+                script.Text,
+                folder,
+                line => Dispatcher.UIThread.Post(() => Log(line.Text, line.IsError ? OutputKind.Error : OutputKind.Output)),
+                report => Dispatcher.UIThread.Post(() => Show(report)),
+                cancellation.Token);
+
+            // Stopping ended that Julia: have the next one ready for the next run.
+            if (result.Cancelled)
+            {
+                ForgetWarmUp();
+                _ = WarmUpAsync();
+            }
 
             // Let the output still queued for the UI thread come first.
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
@@ -444,7 +541,7 @@ public partial class MainViewModel
             return true;
         }
 
-        JuliaPackages manager = new(julia.Path);
+        JuliaPackages manager = new(julia.Path, _session!);
         IReadOnlyList<string> missing;
         try
         {
@@ -453,6 +550,9 @@ public partial class MainViewModel
         }
         catch (OperationCanceledException)
         {
+            // Stopping the check ended the Julia it ran in: have the next one ready.
+            ForgetWarmUp();
+            _ = WarmUpAsync();
             Log("Stopped.", OutputKind.Info);
             return false;
         }
@@ -501,6 +601,10 @@ public partial class MainViewModel
         }
 
         _installedPackages.UnionWith(missing);
+
+        // Loaded afresh by a new Julia, rather than by one that looked for them before they were there.
+        _session?.Restart();
+        ForgetWarmUp();
         Log($"Installed {names} in {result.Elapsed.TotalSeconds:0} s.", OutputKind.Info);
         return true;
     }

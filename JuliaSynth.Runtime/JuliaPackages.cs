@@ -22,9 +22,19 @@ namespace JuliaSynth.Runtime
         private static readonly Regex NameRegex = new(@"^[A-Za-z_][A-Za-z0-9_]*$");
 
         private readonly Func<JuliaRunner> _newRunner;
+        private readonly JuliaSession? _session;
 
         public JuliaPackages(string juliaPath) : this(() => new JuliaRunner(juliaPath))
         {
+        }
+
+        /// <summary>
+        /// Package handling that checks in <paramref name="session"/>, a Julia already running, and installs
+        /// with a Julia of its own: the package manager is better kept out of the Julia running designs.
+        /// </summary>
+        public JuliaPackages(string juliaPath, JuliaSession session) : this(juliaPath)
+        {
+            _session = session;
         }
 
         /// <summary>
@@ -66,10 +76,9 @@ namespace JuliaSynth.Runtime
                 return [];
             }
 
-            JuliaRunner runner = _newRunner();
             List<string> missing = [];
             List<string> errors = [];
-            runner.Output += line =>
+            void Receive(OutputLine line)
             {
                 lock (missing)
                 {
@@ -82,9 +91,20 @@ namespace JuliaSynth.Runtime
                         errors.Add(line.Text);
                     }
                 }
-            };
+            }
 
-            RunResult result = await runner.RunAsync(CheckScript(wanted), workingDirectory, cancellationToken);
+            RunResult result;
+            if (_session is null)
+            {
+                JuliaRunner runner = _newRunner();
+                runner.Output += Receive;
+                result = await runner.RunAsync(CheckScript(wanted), workingDirectory, cancellationToken);
+            }
+            else
+            {
+                result = await _session.RunAsync(CheckScript(wanted), workingDirectory, Receive, cancellationToken: cancellationToken);
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
             if (!result.Succeeded)
             {
@@ -116,6 +136,14 @@ namespace JuliaSynth.Runtime
             }
 
             return await runner.RunAsync(InstallScript(wanted), workingDirectory, cancellationToken);
+        }
+
+        /// <summary>
+        /// Whether <paramref name="name"/> can be a package name: a Julia identifier.
+        /// </summary>
+        public static bool IsName(string name)
+        {
+            return NameRegex.IsMatch(name);
         }
 
         private static List<string> Valid(IEnumerable<string> names)

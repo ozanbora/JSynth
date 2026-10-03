@@ -279,7 +279,7 @@ namespace JuliaSynth.Model
         private static string Definition(Function function)
         {
             string id = StringLiteral(function.ID);
-            string define = Guarded(function.ID, $"include_string(Main, {StringLiteral(function.Code)}, {StringLiteral(function.Name)})", report: false);
+            string define = Guarded(function.ID, $"include_string(@__MODULE__, {StringLiteral(function.Code)}, {StringLiteral(function.Name)})", report: false);
             if (function.RequiredPackages.Count == 0)
             {
                 return define;
@@ -333,7 +333,7 @@ namespace JuliaSynth.Model
                 const _jsynth_missing = Dict{String, String}()
                 for (_p, _how) in ({{string.Join(", ", loads)}},)
                     try
-                        Core.eval(Main, Meta.parse("$_how $_p"))
+                        Core.eval(@__MODULE__, Meta.parse("$_how $_p"))
                     catch e
                         _jsynth_missing[_p] = sprint(showerror, e)
                     end

@@ -96,7 +96,7 @@ namespace JuliaSynth.Tests
                 // Loaded up front with import (to find missing ones); the function's own code takes the names.
                 Assert.Contains("for (_p, _how) in ((\"LinearAlgebra\", \"import\"), (\"Statistics\", \"import\"),)", run.Text);
                 Assert.Contains("if (_why = _jsynth_package_problem(\"LinearAlgebra\", \"Statistics\")) !== nothing\n    _jsynth_skip(", run.Text);
-                Assert.Contains("include_string(Main, \"using LinearAlgebra\\nimport Statistics\\nfunction f(", run.Text);
+                Assert.Contains("include_string(@__MODULE__, \"using LinearAlgebra\\nimport Statistics\\nfunction f(", run.Text);
 
                 // A plain script has them with the function, not in a using line of its own.
                 Assert.Contains("using LinearAlgebra\nimport Statistics\nfunction f(", plain.Text);
