@@ -15,12 +15,12 @@ namespace JuliaSynth.Model
     /// </summary>
     public class ArrayFile : Node
     {
-        public const string Csv = "CSV";
-        public const string Tsv = "TSV";
-        public const string MatrixMarket = "Matrix Market";
-        public const string Jld2 = "JLD2";
+        public const string Csv = FileFormats.Csv;
+        public const string Tsv = FileFormats.Tsv;
+        public const string MatrixMarket = FileFormats.MatrixMarket;
+        public const string Jld2 = FileFormats.Jld2;
 
-        public static IReadOnlyList<string> Formats { get; } = [Csv, Tsv, MatrixMarket, Jld2];
+        public static IReadOnlyList<string> Formats => FileFormats.All;
 
         // Delimited files larger than this aren't read through just to count their rows.
         private const long MaxCountedBytes = 16 * 1024 * 1024;
@@ -170,31 +170,14 @@ namespace JuliaSynth.Model
         /// <summary>
         /// The Julia expression reading the file, e.g. <c>readdlm(raw"C:\data\a.csv", ',', Float64)</c>.
         /// </summary>
-        public string Julia
-        {
-            get
-            {
-                string path = PathLiteral(_path);
-                return Format switch
-                {
-                    Csv or Tsv => Dense($"readdlm({path}, {(Format == Csv ? "','" : "'\\t'")}, {ElementType}{(HasHeader ? "; skipstart = 1" : string.Empty)})"),
-                    MatrixMarket => $"{OutputType}(MatrixMarket.mmread({path}))",
-                    _ => $"convert({OutputType}, JLD2.load({path}, {PathLiteral(Variable)}))",
-                };
-            }
-        }
+        public string Julia => FileFormats.Read(Format, PathLiteral(_path), Shape, ElementType, HasHeader, Variable);
 
         /// <summary>
         /// <see cref="Julia"/>, after the <c>using</c> it needs.
         /// </summary>
         public string Code => $"using {Package}\n{Julia}";
 
-        public string Package => Format switch
-        {
-            Csv or Tsv => "DelimitedFiles",
-            MatrixMarket => "MatrixMarket, SparseArrays",
-            _ => "JLD2, SparseArrays",
-        };
+        public string Package => FileFormats.Package(Format);
 
         public string? Error
         {
@@ -209,27 +192,12 @@ namespace JuliaSynth.Model
             Update();
         }
 
-        public static IReadOnlyList<string> ShapesFor(string format) => format switch
-        {
-            Csv or Tsv => [JuliaTypes.Vector, JuliaTypes.Matrix],
-            MatrixMarket => [JuliaTypes.SparseMatrix],
-            _ => [JuliaTypes.Vector, JuliaTypes.Matrix, JuliaTypes.SparseVector, JuliaTypes.SparseMatrix],
-        };
+        public static IReadOnlyList<string> ShapesFor(string format) => FileFormats.ShapesFor(format);
 
         /// <summary>
-        /// The format a file extension stands for, or null.
+        /// The format a file's extension stands for, or null.
         /// </summary>
-        public static string? FormatOf(string path)
-        {
-            return System.IO.Path.GetExtension(path).ToLowerInvariant() switch
-            {
-                ".csv" => Csv,
-                ".tsv" or ".tab" => Tsv,
-                ".mtx" => MatrixMarket,
-                ".jld2" => Jld2,
-                _ => null,
-            };
-        }
+        public static string? FormatOf(string path) => FileFormats.OfExtension(System.IO.Path.GetExtension(path));
 
         /// <summary>
         /// A Julia string with the text as is: raw strings leave backslashes (Windows paths) alone.
@@ -238,9 +206,6 @@ namespace JuliaSynth.Model
         {
             return $"raw\"{text.Replace("\"", "\\\"")}\"";
         }
-
-        // readdlm always makes a matrix; vec makes a vector of it, column by column.
-        private string Dense(string read) => IsVector ? $"vec({read})" : read;
 
         private void Update()
         {
