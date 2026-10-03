@@ -40,8 +40,13 @@ public static class PlotRenderer
                 ScottPlot.Plottables.Heatmap heatmap = plot.Add.Heatmap(data.Values!);
                 heatmap.Colormap = new ScottPlot.Colormaps.Viridis();
 
-                // Rows and columns numbered as in Julia, row 1 at the top, even when averaged down.
-                heatmap.Extent = new CoordinateRect(0.5, data.Columns + 0.5, data.Rows + 0.5, 0.5);
+                // Rows and columns numbered as in Julia, row 1 at the top, even when averaged down: cell
+                // edges from 0.5 to the size + 0.5. ScottPlot centres the corner cells on the extent's
+                // corners, so the extent runs half a (shown) cell inside those edges.
+                int shownRows = data.Values!.GetLength(0), shownColumns = data.Values.GetLength(1);
+                double halfWidth = shownColumns > 1 ? data.Columns / (2.0 * shownColumns) : 0;
+                double halfHeight = shownRows > 1 ? data.Rows / (2.0 * shownRows) : 0;
+                heatmap.Extent = new CoordinateRect(0.5 + halfWidth, data.Columns + 0.5 - halfWidth, data.Rows + 0.5 - halfHeight, 0.5 + halfHeight);
                 if (!compact)
                 {
                     _ = plot.Add.ColorBar(heatmap);
