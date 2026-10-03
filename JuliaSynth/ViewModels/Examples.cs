@@ -167,11 +167,11 @@ namespace JuliaSynth.ViewModels
             new("Radar clutter map",
                 "Radar: scans of a radar spinning on the roof of a car standing at a Toronto junction, from the Boreas "
                 + "dataset (each a PNG image: azimuths by range bins). Running keeps a clutter map, the scene as it usually is, "
-                + "as a running average of the scans. by_azimuth counts, scan by scan and azimuth by azimuth, the cells "
-                + "standing out from it, mostly passing traffic. interference finds the scans where one azimuth stands out "
-                + "along most of its range: another radar's signal, in two of the scans (2 and 4 of the short set, 3 and 25 "
-                + "of the full one). top_down shows the clutter map from above, like a radar screen: the streets of the junction dark, "
-                + "buildings, trees and parked cars bright. range_profile gives the clutter's strength range bin by range bin. The scans are "
+                + "as a running average of the scans. top_down shows it from above, like a radar screen: the streets of the junction "
+                + "dark, the buildings, trees and parked cars on its corners bright. standing_out shows, from above too, in how many scans each "
+                + "spot stood out from the clutter: the tracks of the traffic along the streets. interference finds the scans where one "
+                + "azimuth stands out along most of its range, another radar's signal: 2 and 4 of the short set, 3 and 25 of the full one. "
+                + "range_profile gives the clutter's strength range bin by range bin. The scans are "
                 + "downloaded when the example opens, 12 or all 213; reading PNG files needs PNGFiles and ColorTypes.",
                 RadarClutterMap) { Data = BoreasRadar },
         ];
@@ -425,10 +425,12 @@ namespace JuliaSynth.ViewModels
             MapNode scans = new() { Row = 11, Column = Stage1 };
             RunningNode clutter = new() { Row = 25, Column = Stage1 };
 
-            Function byAzimuth = Define("by_azimuth", "Matrix{Int64}", 9, Stage2,
+            Function standingOut = Define("standing_out", "Matrix{Float64}", 9, Stage2,
                 """
-                # Row s, column a: the cells of scan s on azimuth a standing out from the clutter.
-                reduce(vcat, [permutedims(vec(count(>(0.15), X .- C; dims = 2))) for X in scans])
+                # In how many scans each spot around the car stood out from the clutter, seen from above with
+                # top_down, 3 or more brightest: what moves leaves tracks, traffic along the streets.
+                times = sum(X -> (X .- C) .> 0.15, scans)
+                top_down(Float64.(min.(times, 3)))
                 """,
                 ("scans", "Vector"), ("C", "Matrix{Float64}"));
             Function topDown = Define("top_down", "Matrix{Float64}", 29, Stage2,
@@ -463,14 +465,14 @@ namespace JuliaSynth.ViewModels
 
             DisplayNode showInterference = Shown(42, Stage3);
             PlotNode clutterMap = new() { Title = "Clutter map from above (0.3 m a pixel)", Kind = "Heatmap", Row = 35, Column = Stage3 + 17 };
-            PlotNode standingOut = new() { Title = "Cells above the clutter: scan (rows) by azimuth", Kind = "Heatmap", Row = 7, Column = Stage3 + 17 };
+            PlotNode traffic = new() { Title = "Standing out from the clutter, from above", Kind = "Heatmap", Row = 7, Column = Stage3 + 17 };
             PlotNode profile = new() { Title = "Clutter strength by range bin", Row = 21, Column = Stage3 + 17 };
 
-            return Design([files, scan, update, scans, clutter, byAzimuth, topDown, rangeProfile, interference, showInterference, clutterMap, standingOut, profile],
+            return Design([files, scan, update, scans, clutter, standingOut, topDown, rangeProfile, interference, showInterference, clutterMap, traffic, profile],
                 (files, scans, "items"), (scan, scans, "f"),
                 (scans, clutter, "items"), (update, clutter, "f"),
-                (scans, byAzimuth, 0), (clutter, byAzimuth, 1), (scans, interference, 0), (clutter, interference, 1), (interference, showInterference, 0),
-                (clutter, rangeProfile, 0), (clutter, topDown, 0), (topDown, clutterMap, "y"), (byAzimuth, standingOut, "y"), (rangeProfile, profile, "y"));
+                (scans, standingOut, 0), (clutter, standingOut, 1), (scans, interference, 0), (clutter, interference, 1), (interference, showInterference, 0),
+                (clutter, rangeProfile, 0), (clutter, topDown, 0), (topDown, clutterMap, "y"), (standingOut, traffic, "y"), (rangeProfile, profile, "y"));
         }
 
         private static string DataFolder(string name)
