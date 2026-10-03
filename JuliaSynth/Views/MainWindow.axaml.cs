@@ -91,10 +91,44 @@ public partial class MainWindow : Window
     /// </summary>
     internal async Task OpenExampleAsync(Example example)
     {
-        if (ViewModel is MainViewModel viewModel && await ConfirmDiscardAsync())
+        if (ViewModel is not MainViewModel viewModel || !await ConfirmDiscardAsync())
         {
-            viewModel.OpenExample(example);
+            return;
         }
+
+        // Data that isn't bundled is downloaded first, if the user agrees, to where they like.
+        if (example.Data is ExampleData data && !data.IsIn(data.Folder))
+        {
+            string folder = data.Folder;
+            string? answer = await MessageDialog.ShowAsync(this, $"Download {data.Name}?",
+                $"{example.Name} reads {data.Name}, which isn't on this computer yet.\n\n{data.About}\n\n{data.Credit}\n\n"
+                + $"Download them ({data.Size}) to {folder}?",
+                "Download", "Choose folder…", "Cancel");
+            if (answer == "Choose folder…")
+            {
+                IReadOnlyList<IStorageFolder> folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                {
+                    Title = $"Download {data.Name} to",
+                });
+                if (folders.FirstOrDefault()?.TryGetLocalPath() is not string picked)
+                {
+                    return;
+                }
+
+                folder = picked;
+            }
+            else if (answer != "Download")
+            {
+                return;
+            }
+
+            if (!await viewModel.DownloadExampleDataAsync(data, folder))
+            {
+                return;
+            }
+        }
+
+        viewModel.OpenExample(example);
     }
 
     /// <summary>

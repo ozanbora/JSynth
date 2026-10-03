@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace JuliaSynth.ViewModels
@@ -24,6 +25,17 @@ namespace JuliaSynth.ViewModels
         /// The Julia program picked by the user; null to look for one.
         /// </summary>
         public string? JuliaPath { get; set; }
+
+        /// <summary>
+        /// Where the data of examples was downloaded to, by the data's name (see <see cref="ExampleData"/>).
+        /// </summary>
+        public Dictionary<string, string> DataFolders
+        {
+            get => _dataFolders;
+            set => _dataFolders = value ?? [];
+        }
+
+        private Dictionary<string, string> _dataFolders = [];
 
         /// <summary>
         /// Settings can't be read (missing, unreadable, corrupt) → defaults; they are a convenience only.

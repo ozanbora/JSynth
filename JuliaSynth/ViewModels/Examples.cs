@@ -13,6 +13,11 @@ namespace JuliaSynth.ViewModels
     public sealed record Example(string Name, string Description, Func<MainViewModel.DesignDocument> Build)
     {
         /// <summary>
+        /// Data it reads that is downloaded when it is opened, rather than bundled; null when there is none.
+        /// </summary>
+        public ExampleData? Data { get; init; }
+
+        /// <summary>
         /// The field it is from, which its description starts with: "Finance".
         /// </summary>
         public string Category => Description.Split(':', 2) is [string field, _] ? field : string.Empty;
@@ -49,6 +54,26 @@ namespace JuliaSynth.ViewModels
         private const int Stage1 = 22;
         private const int Stage2 = 36;
         private const int Stage3 = 50;
+
+        /// <summary>
+        /// 12 scans of the Boreas dataset's radar while its car stood still for 53 s, about 4.5 s apart.
+        /// </summary>
+        internal static ExampleData BoreasRadar { get; } = new(
+            "Boreas radar scans",
+            "12 scans of a Navtech radar spinning on the roof of a car standing still for 53 seconds at a junction in Toronto, "
+                + "on 26 November 2020, from the Boreas dataset. Each scan is a PNG image of 400 azimuths (rows) by 3,371 "
+                + "columns: an 11-column timestamp, then 3,360 range bins of about 6 cm.",
+            "From the Boreas dataset by the Autonomous Space Robotics Lab, University of Toronto, licensed under CC BY 4.0 "
+                + "(https://creativecommons.org/licenses/by/4.0/): K. Burnett et al., \"Boreas: A multi-season autonomous "
+                + "driving dataset\", The International Journal of Robotics Research, 2023. https://www.boreas.utias.utoronto.ca/ "
+                + "The scans are unchanged.",
+            "https://boreas.s3.us-west-2.amazonaws.com/boreas-2020-11-26-13-58/radar/",
+            [.. new[]
+            {
+                1606417888039363, 1606417892540051, 1606417897039495, 1606417901539558, 1606417906040239, 1606417910539683,
+                1606417915039753, 1606417919539808, 1606417924040502, 1606417928541187, 1606417933040001, 1606417937540692,
+            }.Select(time => $"{time}.png")],
+            5_200_000);
 
         public static IReadOnlyList<Example> All { get; } = [
             new("Loan payment",
@@ -92,7 +117,16 @@ namespace JuliaSynth.ViewModels
                 + "a range, without any files; the plot shows the growth and final the balance after 30 years. "
                 + "Change the rate in balance and run again.",
                 SavingsGrowth),
+            new("Radar clutter map",
+                "Radar: 12 scans of a radar spinning on the roof of a car standing at a Toronto junction, from the Boreas "
+                + "dataset (each a PNG image: azimuths by range bins). Running keeps a clutter map, the scene as it usually is, "
+                + "as a running average of the scans. by_azimuth counts, scan by scan and azimuth by azimuth, the cells "
+                + "standing out from it: passing traffic, and in two scans a whole azimuth lit up by another radar, which "
+                + "interference finds. range_profile gives the clutter's strength range bin by range bin. The scans are "
+                + "downloaded when the example opens; reading PNG files needs PNGFiles and ColorTypes.",
+                RadarClutterMap) { Data = BoreasRadar },
         ];
+
 
         private static MainViewModel.DesignDocument LoanPayment()
         {
@@ -323,6 +357,48 @@ namespace JuliaSynth.ViewModels
         /// <summary>
         /// A folder of bundled example data, next to the app (see ExampleData in the project).
         /// </summary>
+        private static MainViewModel.DesignDocument RadarClutterMap()
+        {
+            FilesNode files = new() { Format = FileFormats.Png, Folder = BoreasRadar.Folder, Row = 6, Column = Inputs };
+
+            Function scan = Define("scan", "Matrix{Float64}", 16, Inputs,
+                "X[:, 12:1011]  # without the 11 timestamp columns; the first 1000 range bins (about 60 m)",
+                ("X", "Matrix{Float64}"));
+            Function update = Define("update", "Matrix{Float64}", 26, Inputs,
+                """
+                α = 0.2  # how quickly the clutter map follows the scene
+                (1 - α) .* C .+ α .* X
+                """,
+                ("C", "Matrix{Float64}"), ("X", "Matrix{Float64}"));
+
+            MapNode scans = new() { Row = 11, Column = Stage1 };
+            RunningNode clutter = new() { Row = 25, Column = Stage1 };
+
+            Function byAzimuth = Define("by_azimuth", "Matrix{Int64}", 11, Stage2,
+                """
+                # Row s, column a: the cells of scan s on azimuth a standing out from the clutter.
+                reduce(vcat, [permutedims(vec(count(>(0.15), X .- C; dims = 2))) for X in scans])
+                """,
+                ("scans", "Vector"), ("C", "Matrix{Float64}"));
+            Function rangeProfile = Define("range_profile", "Vector{Float64}", 34, Stage2,
+                "vec(sum(C; dims = 1)) ./ size(C, 1)  # the clutter's mean strength at each range bin",
+                ("C", "Matrix{Float64}"));
+            Function interference = Define("interference", "Vector{Int64}", 11, Stage3,
+                "findall(vec(maximum(counts; dims = 2)) .> 180)  # scans with an azimuth lit up along its length: another radar",
+                ("counts", "Matrix{Int64}"));
+
+            DisplayNode showInterference = Shown(11, Stage3 + 14);
+            PlotNode clutterMap = new() { Title = "Clutter map: azimuth (rows) by range bin", Kind = "Heatmap", Row = 23, Column = Stage2 + 3 };
+            PlotNode standingOut = new() { Title = "Cells above the clutter: scan (rows) by azimuth", Kind = "Heatmap", Row = 23, Column = Stage3 + 17 };
+            PlotNode profile = new() { Title = "Clutter strength by range bin", Row = 37, Column = Stage3 + 3 };
+
+            return Design([files, scan, update, scans, clutter, byAzimuth, rangeProfile, interference, showInterference, clutterMap, standingOut, profile],
+                (files, scans, "items"), (scan, scans, "f"),
+                (scans, clutter, "items"), (update, clutter, "f"),
+                (scans, byAzimuth, 0), (clutter, byAzimuth, 1), (byAzimuth, interference, 0), (interference, showInterference, 0),
+                (clutter, rangeProfile, 0), (clutter, clutterMap, "y"), (byAzimuth, standingOut, "y"), (rangeProfile, profile, "y"));
+        }
+
         private static string DataFolder(string name)
         {
             return System.IO.Path.Combine(AppContext.BaseDirectory, "ExampleData", name);

@@ -18,6 +18,39 @@ namespace JuliaSynth.Tests
 
         private static Example Named(string name) => Examples.All.Single(e => e.Name == name);
 
+        /// <summary>
+        /// For an example whose data is downloaded: tiny PNG files of the same names in a temporary folder,
+        /// remembered as where the data was downloaded to, in settings of their own, until disposed.
+        /// </summary>
+        private sealed class StandInData : IDisposable
+        {
+            private readonly string _settingsBefore = AppSettings.SettingsPath;
+            private readonly string _folder = Path.Combine(Path.GetTempPath(), "JuliaSynth.Tests", Guid.NewGuid().ToString("N"));
+
+            public StandInData(Example example)
+            {
+                _ = Directory.CreateDirectory(_folder);
+                AppSettings.SettingsPath = Path.Combine(_folder, "settings.json");
+                if (example.Data is ExampleData data)
+                {
+                    foreach (string file in data.Files)
+                    {
+                        PngTests.WriteGreyPng(Path.Combine(_folder, file), new int[1, 1], 8);
+                    }
+
+                    AppSettings settings = AppSettings.Load();
+                    settings.DataFolders[data.Name] = _folder;
+                    settings.Save();
+                }
+            }
+
+            public void Dispose()
+            {
+                AppSettings.SettingsPath = _settingsBefore;
+                Directory.Delete(_folder, recursive: true);
+            }
+        }
+
         // One Julia for all the examples, as in the app: each design runs after the others, without their names.
         private static readonly Dictionary<string, JuliaSession> Sessions = [];
 
@@ -33,6 +66,7 @@ namespace JuliaSynth.Tests
         [MemberData(nameof(Names))]
         public void An_example_is_complete_and_tidy(string name)
         {
+            using StandInData data = new(Named(name));
             MainViewModel.DesignDocument design = Named(name).Build();
 
             // Everything computable: nothing unwired or invalid, so the plain script skips nothing.

@@ -1,0 +1,182 @@
+using JuliaSynth.Model;
+using JuliaSynth.Runtime;
+using JuliaSynth.ViewModels;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace JuliaSynth.Tests
+{
+    /// <summary>
+    /// Data of examples that is downloaded when they open rather than bundled. The internet is played by a
+    /// stand-in; the last test runs the radar example on the real scans when they were downloaded before.
+    /// </summary>
+    public sealed class ExampleDataTests : IDisposable
+    {
+        private readonly string _folder = Path.Combine(Path.GetTempPath(), "JuliaSynth.Tests", Guid.NewGuid().ToString("N"));
+        private readonly string _originalSettingsPath = AppSettings.SettingsPath;
+        private readonly HttpClient _originalHttp = MainViewModel.Http;
+
+        public ExampleDataTests()
+        {
+            _ = Directory.CreateDirectory(_folder);
+            AppSettings.SettingsPath = Path.Combine(_folder, "settings.json");
+        }
+
+        public void Dispose()
+        {
+            AppSettings.SettingsPath = _originalSettingsPath;
+            MainViewModel.Http = _originalHttp;
+            Directory.Delete(_folder, recursive: true);
+        }
+
+        private static readonly ExampleData Data = new(
+            "Test scans", "Two scans.", "By nobody, for tests.", "https://example.invalid/scans/", ["a.png", "b.png"], 2_000);
+
+        /// <summary>
+        /// Answers every request with the file's name as its content, or 404 for the names in <paramref name="missing"/>.
+        /// </summary>
+        private sealed class StandInInternet(params string[] missing) : HttpMessageHandler
+        {
+            public ConcurrentQueue<string> Asked { get; } = new();
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                string name = request.RequestUri!.Segments[^1];
+                Asked.Enqueue(name);
+                return Task.FromResult(missing.Contains(name)
+                    ? new HttpResponseMessage(HttpStatusCode.NotFound)
+                    : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent($"scan {name}") });
+            }
+        }
+
+        [Fact]
+        public async Task Downloading_fetches_the_missing_files_credits_them_and_remembers_the_folder()
+        {
+            string target = Path.Combine(_folder, "data");
+            _ = Directory.CreateDirectory(target);
+            File.WriteAllText(Path.Combine(target, "a.png"), "already here");
+            StandInInternet internet = new();
+            List<int> progress = [];
+
+            await Data.DownloadAsync(new HttpClient(internet), target, new SynchronousProgress(progress.Add));
+
+            Assert.Equal(["b.png"], internet.Asked);
+            Assert.Equal("already here", File.ReadAllText(Path.Combine(target, "a.png")));
+            Assert.Equal("scan b.png", File.ReadAllText(Path.Combine(target, "b.png")));
+            Assert.Contains("By nobody, for tests.", File.ReadAllText(Path.Combine(target, ExampleData.ReadmeName)));
+            Assert.Equal([1, 2], progress);
+            Assert.True(Data.IsIn(target));
+            Assert.Equal(target, Data.Folder);
+            Assert.Empty(Directory.GetFiles(target, "*.part"));
+        }
+
+        [Fact]
+        public async Task A_file_that_cannot_be_downloaded_stops_it_and_the_folder_is_not_remembered()
+        {
+            string target = Path.Combine(_folder, "data");
+
+            _ = await Assert.ThrowsAsync<HttpRequestException>(() => Data.DownloadAsync(new HttpClient(new StandInInternet("b.png")), target));
+
+            Assert.True(File.Exists(Path.Combine(target, "a.png")));
+            Assert.False(File.Exists(Path.Combine(target, "b.png")));
+            Assert.False(Data.IsIn(target));
+            Assert.Equal(Data.DefaultFolder, Data.Folder);
+        }
+
+        [Fact]
+        public void The_window_shows_the_download_going_and_says_how_it_ended()
+        {
+            Ui.Run(async () =>
+            {
+                MainViewModel viewModel = new();
+                List<string> seen = [];
+                viewModel.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(MainViewModel.DownloadText) && viewModel.IsDownloading)
+                    {
+                        seen.Add(viewModel.DownloadText);
+                    }
+                };
+
+                MainViewModel.Http = new HttpClient(new StandInInternet());
+                Assert.True(await viewModel.DownloadExampleDataAsync(Data, Path.Combine(_folder, "ok")));
+                Assert.Contains(seen, text => text.StartsWith("Downloading Test scans: 0 of 2 files."));
+                Assert.False(viewModel.IsDownloading);
+                Assert.False(viewModel.IsRunning);
+                Assert.Contains(viewModel.Output, o => o.Text.StartsWith("Downloaded Test scans to "));
+
+                MainViewModel.Http = new HttpClient(new StandInInternet("a.png"));
+                Assert.False(await viewModel.DownloadExampleDataAsync(Data, Path.Combine(_folder, "broken")));
+                Assert.Contains(viewModel.Output, o => o.IsError && o.Text.StartsWith("Test scans couldn't be downloaded:"));
+            });
+        }
+
+        [Fact]
+        public void The_radar_example_reads_its_scans_from_where_they_were_downloaded()
+        {
+            Ui.Run(() =>
+            {
+                string scans = Path.Combine(_folder, "scans");
+                AppSettings settings = AppSettings.Load();
+                settings.DataFolders[Examples.BoreasRadar.Name] = scans;
+                settings.Save();
+
+                Example radar = Examples.All.Single(e => e.Name == "Radar clutter map");
+                Assert.Same(Examples.BoreasRadar, radar.Data);
+                Assert.Equal(scans, radar.Build().Nodes.OfType<FilesNode>().Single().Folder);
+                Assert.Equal(12, Examples.BoreasRadar.Files.Count);
+                Assert.All(Examples.BoreasRadar.Files, f => Assert.EndsWith(".png", f));
+            });
+        }
+
+        [Fact]
+        public void Real_julia_finds_the_interference_in_the_real_scans()
+        {
+            Ui.Run(async () =>
+            {
+                // Runs only where the scans were downloaded (by opening the example) and PNG files can be read.
+                AppSettings.SettingsPath = _originalSettingsPath;
+                string folder = Examples.BoreasRadar.Folder;
+                AppSettings.SettingsPath = Path.Combine(_folder, "settings.json");
+                if (!Examples.BoreasRadar.IsIn(folder)
+                    || await JuliaLocator.FindAsync(null) is not JuliaInstallation julia
+                    || (await new JuliaPackages(julia.Path).FindMissingAsync(["PNGFiles", "ColorTypes"], _folder)).Count > 0)
+                {
+                    return;
+                }
+
+                AppSettings settings = AppSettings.Load();
+                settings.DataFolders[Examples.BoreasRadar.Name] = folder;
+                settings.Save();
+                MainViewModel.DesignDocument design = Examples.All.Single(e => e.Name == "Radar clutter map").Build();
+                JuliaScript script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: true, _folder);
+
+                using JuliaSession session = new(julia.Path);
+                ConcurrentQueue<Report> reports = new();
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+
+                Assert.True(result.Succeeded);
+                Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
+                Report interference = reports.Single(r => script.Variables[r.Id] == "interference_out");
+                Assert.Equal("2-element Vector{Int64}:\n 6\n 9", interference.Text);
+                Assert.Equal("Matrix{Float64}", reports.Single(r => r.Id == design.Nodes.OfType<RunningNode>().Single().ID).Type);
+            });
+        }
+
+        /// <summary>
+        /// Progress reported where it happens, rather than posted to a thread later.
+        /// </summary>
+        private sealed class SynchronousProgress(Action<int> report) : IProgress<int>
+        {
+            public void Report(int value) => report(value);
+        }
+    }
+}

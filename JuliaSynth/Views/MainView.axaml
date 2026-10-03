@@ -210,6 +210,26 @@
         </StackPanel>
       </StackPanel>
     </Border>
+    <!-- Downloading the data of an example. -->
+    <Border Grid.Column="0"
+            x:Name="DownloadBanner"
+            IsVisible="{Binding Path=IsDownloading}"
+            MaxWidth="720"
+            Margin="16 12"
+            Padding="14 10"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            CornerRadius="8"
+            Background="{DynamicResource StatusBarBackgroundBrush}"
+            BorderBrush="{DynamicResource StatusBarBorderBrush}"
+            BorderThickness="1"
+            BoxShadow="0 4 16 0 #30000000">
+      <StackPanel Spacing="8">
+        <TextBlock Text="{Binding Path=DownloadText}" TextWrapping="Wrap"/>
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Path=DownloadProgress}"/>
+        <Button Content="Stop" HorizontalAlignment="Right" Command="{Binding Path=Stop}"/>
+      </StackPanel>
+    </Border>
     <!-- The start page, over the canvas. -->
     <jsViews:StartPage Grid.Column="0" IsVisible="{Binding Path=IsStartPageOpen}"/>
     <!-- The function panel: a function's settings and code, docked so it stays open while you work. -->
