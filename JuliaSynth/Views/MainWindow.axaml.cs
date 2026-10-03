@@ -35,13 +35,7 @@ public partial class MainWindow : Window
         {
             MenuItem item = new() { Header = example.Name };
             ToolTip.SetTip(item, example.Description);
-            item.Click += async (_, _) =>
-            {
-                if (ViewModel is MainViewModel viewModel && await ConfirmDiscardAsync())
-                {
-                    viewModel.OpenExample(example);
-                }
-            };
+            item.Click += async (_, _) => await OpenExampleAsync(example);
             ExamplesMenu.Items.Add(item);
         }
 
@@ -89,6 +83,25 @@ public partial class MainWindow : Window
 
     private async void New_Click(object? sender, RoutedEventArgs e)
     {
+        await NewDesignAsync();
+    }
+
+    /// <summary>
+    /// Opens <paramref name="example"/>, once unsaved changes are dealt with.
+    /// </summary>
+    internal async Task OpenExampleAsync(Example example)
+    {
+        if (ViewModel is MainViewModel viewModel && await ConfirmDiscardAsync())
+        {
+            viewModel.OpenExample(example);
+        }
+    }
+
+    /// <summary>
+    /// Starts an empty design, once unsaved changes are dealt with.
+    /// </summary>
+    internal async Task NewDesignAsync()
+    {
         if (ViewModel is MainViewModel viewModel && await ConfirmDiscardAsync())
         {
             viewModel.NewDesign();
@@ -96,6 +109,14 @@ public partial class MainWindow : Window
     }
 
     private async void Open_Click(object? sender, RoutedEventArgs e)
+    {
+        await OpenDesignAsync();
+    }
+
+    /// <summary>
+    /// Asks for a design file and opens it, once unsaved changes are dealt with.
+    /// </summary>
+    internal async Task OpenDesignAsync()
     {
         if (ViewModel is not MainViewModel viewModel || !await ConfirmDiscardAsync())
         {
@@ -223,6 +244,14 @@ public partial class MainWindow : Window
     }
 
     private async void ChooseJulia_Click(object? sender, RoutedEventArgs e)
+    {
+        await ChooseJuliaAsync();
+    }
+
+    /// <summary>
+    /// Asks for the Julia program and uses it from now on.
+    /// </summary>
+    internal async Task ChooseJuliaAsync()
     {
         if (ViewModel is not MainViewModel viewModel)
         {

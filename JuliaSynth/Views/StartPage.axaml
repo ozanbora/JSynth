@@ -1,0 +1,170 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:jsViewModels="clr-namespace:JuliaSynth.ViewModels"
+             x:Class="JuliaSynth.Views.StartPage"
+             x:DataType="jsViewModels:MainViewModel">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.heading">
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.note">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.7"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <!-- An example: a card to click. -->
+    <Style Selector="Button.example">
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="VerticalAlignment" Value="Stretch"/>
+      <Setter Property="Margin" Value="0 0 12 12"/>
+      <Setter Property="Padding" Value="12 10"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="VerticalContentAlignment" Value="Top"/>
+      <Setter Property="Background" Value="{DynamicResource CanvasBackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource StatusBarBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+    <Style Selector="Button.example:pointerover /template/ ContentPresenter">
+      <Setter Property="BorderBrush" Value="#6F9FD8"/>
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Over the canvas: dims it, and holds the page in the middle. -->
+  <Panel>
+    <Border Background="{DynamicResource CanvasBackgroundBrush}" Opacity="0.85"/>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Border x:Name="Card"
+              MaxWidth="760"
+              Margin="16 24"
+              Padding="28 24"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              CornerRadius="12"
+              Background="{DynamicResource StatusBarBackgroundBrush}"
+              BorderBrush="{DynamicResource StatusBarBorderBrush}"
+              BorderThickness="1"
+              BoxShadow="0 8 28 0 #30000000">
+        <StackPanel Spacing="20">
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="4">
+              <TextBlock Text="JuliaSynth" FontSize="26" FontWeight="SemiBold"/>
+              <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                         Text="Wire inputs and functions together, run them with Julia (F5), and see each value on its node. Export a design as a plain Julia script whenever you like."/>
+            </StackPanel>
+            <Button Grid.Column="1"
+                    VerticalAlignment="Top"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Content="✕"
+                    Command="{Binding Path=CloseStartPage}"
+                    ToolTip.Tip="Close the start page (Esc)"/>
+          </Grid>
+
+          <!-- Julia: ready, being looked for, or how to install it. -->
+          <Border x:Name="JuliaBox"
+                  Padding="14 12"
+                  CornerRadius="8"
+                  Background="{DynamicResource CanvasBackgroundBrush}">
+            <Panel>
+              <TextBlock IsVisible="{Binding Path=IsJuliaFound}"
+                         TextWrapping="Wrap">
+                <Run Text="✓" Foreground="{DynamicResource AcceptBrush}" FontWeight="Bold"/>
+                <Run Text="{Binding Path=JuliaStatus, Mode=OneWay}" FontWeight="SemiBold"/>
+                <Run Text="is ready, at"/>
+                <Run Text="{Binding Path=Julia.Path, Mode=OneWay, FallbackValue=''}"/>
+              </TextBlock>
+
+              <TextBlock Text="Looking for Julia…"
+                         IsVisible="{Binding Path=IsLookingForJulia}"
+                         Opacity="0.8"/>
+
+              <StackPanel x:Name="InstallJulia"
+                          Spacing="8"
+                          IsVisible="{Binding Path=IsJuliaMissing}">
+                <TextBlock TextWrapping="Wrap">
+                  <Run Text="!" Foreground="{DynamicResource NodeWarningBrush}" FontWeight="Bold"/>
+                  <Run Text="Julia isn't installed, or JuliaSynth can't find it." FontWeight="SemiBold"/>
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap"
+                           Text="JuliaSynth runs designs with Julia. Install it with juliaup, Julia's own installer, by running this in a terminal:"/>
+                <Grid ColumnDefinitions="*,Auto">
+                  <Border Padding="10 6"
+                          CornerRadius="6"
+                          Background="{DynamicResource StatusBarBackgroundBrush}"
+                          BorderBrush="{DynamicResource StatusBarBorderBrush}"
+                          BorderThickness="1">
+                    <SelectableTextBlock x:Name="InstallCommand"
+                                         FontFamily="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace"
+                                         FontSize="13"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding Source={x:Static jsViewModels:MainViewModel.JuliaInstallCommand}}"/>
+                  </Border>
+                  <Button x:Name="CopyButton"
+                          Grid.Column="1"
+                          Margin="8 0 0 0"
+                          VerticalAlignment="Center"
+                          Content="Copy"
+                          Click="Copy_Click"
+                          ToolTip.Tip="Copy the command"/>
+                </Grid>
+                <TextBlock Classes="note"
+                           Text="JuliaSynth looks again every few seconds, and picks Julia up as soon as it is installed. Already have Julia somewhere else? Choose its program."/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="Choose Julia…" Click="ChooseJulia_Click"/>
+                  <Button Content="More ways to install Julia" Click="InstallPage_Click"
+                          ToolTip.Tip="{Binding Source={x:Static jsViewModels:MainViewModel.JuliaInstallPage}}"/>
+                </StackPanel>
+              </StackPanel>
+            </Panel>
+          </Border>
+
+          <StackPanel Spacing="10">
+            <TextBlock Classes="heading" Text="Start with an example"/>
+            <ItemsControl x:Name="ExampleCards" ItemsSource="{Binding Path=StartExamples}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <!-- Cards all the same size, in rows. -->
+                  <WrapPanel ItemWidth="234" ItemHeight="132"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="jsViewModels:Example">
+                  <Button Classes="example"
+                          Click="Example_Click"
+                          ToolTip.Tip="{Binding Path=Description}">
+                    <StackPanel Spacing="3">
+                      <TextBlock Text="{Binding Path=Category}"
+                                 FontSize="11"
+                                 Opacity="0.6"/>
+                      <TextBlock Text="{Binding Path=Name}" FontWeight="SemiBold"/>
+                      <TextBlock Text="{Binding Path=Summary}"
+                                 FontSize="12"
+                                 Opacity="0.8"
+                                 TextWrapping="Wrap"
+                                 MaxLines="4"
+                                 TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Empty design" Click="New_Click"/>
+              <Button Content="Open a design…" Click="Open_Click"/>
+              <Button Content="Close" Command="{Binding Path=CloseStartPage}"/>
+            </StackPanel>
+            <TextBlock Classes="note"
+                       Text="Right-click the canvas to add nodes, drag from a node's output to an input to wire them, and press F5 to run. File → Start page brings this page back."/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </Panel>
+</UserControl>

@@ -102,11 +102,17 @@ public partial class MainViewModel
     public JuliaInstallation? Julia
     {
         get => _julia;
-        private set
+        internal set
         {
             bool same = value == _julia;
             _ = this.RaiseAndSetIfChanged(ref _julia, value);
-            this.RaisePropertyChanged(nameof(JuliaStatus));
+            RaiseJuliaChanged();
+
+            // It may be being installed: look again now and then, without saying so.
+            if (value is null)
+            {
+                _ = WatchForJuliaAsync();
+            }
 
             // Another Julia has packages of its own, and runs in a session of its own.
             _installedPackages.Clear();
@@ -233,7 +239,7 @@ public partial class MainViewModel
     public async Task FindJuliaAsync()
     {
         _isLookingForJulia = true;
-        this.RaisePropertyChanged(nameof(JuliaStatus));
+        RaiseJuliaChanged();
         try
         {
             Julia = await Task.Run(() => JuliaLocator.FindAsync(AppSettings.Load().JuliaPath));
@@ -241,7 +247,7 @@ public partial class MainViewModel
         finally
         {
             _isLookingForJulia = false;
-            this.RaisePropertyChanged(nameof(JuliaStatus));
+            RaiseJuliaChanged();
         }
     }
 
@@ -270,6 +276,7 @@ public partial class MainViewModel
     /// </summary>
     public void OpenExample(Example example)
     {
+        IsStartPageOpen = false;
         Load(example.Build());
         History.Reset();
         FilePath = null;

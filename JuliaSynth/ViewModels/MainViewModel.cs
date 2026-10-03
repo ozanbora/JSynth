@@ -545,13 +545,15 @@ public partial class MainViewModel : ReactiveObject
         Redo = ReactiveCommand.Create(History.Redo, this.WhenAnyValue(x => x.CanRedo, x => x.IsTypingText, (can, typing) => can && !typing));
         DeleteSelected = ReactiveCommand.Create(DeleteSelectedNodes, notTyping);
         SelectAll = ReactiveCommand.Create(() => { foreach (Node node in Nodes) { node.IsSelected = true; } }, notTyping);
-        ClearSelection = ReactiveCommand.Create(() => SelectOnly(null), notTyping);
+        // Escape closes the start page first.
+        ClearSelection = ReactiveCommand.Create(() => { if (IsStartPageOpen) { IsStartPageOpen = false; } else { SelectOnly(null); } }, notTyping);
         Copy = ReactiveCommand.Create(() => { _ = CopySelection(); }, notTyping);
         Cut = ReactiveCommand.Create(CutSelection, notTyping);
         Paste = ReactiveCommand.Create(PasteClipboard, notTyping);
         Duplicate = ReactiveCommand.Create(DuplicateSelection, notTyping);
         CreateRunCommands();
         CreateInspectorCommands();
+        CreateStartCommands();
 
         History.Changed += (_, _) =>
         {
@@ -689,11 +691,12 @@ public partial class MainViewModel : ReactiveObject
     public string Title => $"{(FilePath is null ? "Untitled" : Path.GetFileName(FilePath))}{(IsDirty ? " •" : string.Empty)} - JuliaSynth";
 
     /// <summary>
-    /// Opens the last design, else a nodes.json from before design files, else keeps the starting design.
+    /// Opens the last design, else a nodes.json from before design files, else keeps the starting design
+    /// and shows the start page.
     /// </summary>
     public void StartUp()
     {
-        _ = FindJuliaAsync();
+        _ = FindJuliaAtStartAsync();
         DeleteOldPlotFiles();
 
         foreach (string? path in new[] { AppSettings.Load().LastFile, LegacyFile })
@@ -711,10 +714,13 @@ public partial class MainViewModel : ReactiveObject
                 }
             }
         }
+
+        IsStartPageOpen = true;
     }
 
     public void NewDesign()
     {
+        IsStartPageOpen = false;
         Load(new DesignDocument());
         History.Reset();
         FilePath = null;
@@ -725,6 +731,7 @@ public partial class MainViewModel : ReactiveObject
     public void OpenDesign(string path)
     {
         string json = File.ReadAllText(path);
+        IsStartPageOpen = false;
 
         // nodes.json used to hold just the node list (serialized as {"$type": ..., "$values": [...]}).
         DesignDocument document = (JObject.Parse(json).ContainsKey("$values")

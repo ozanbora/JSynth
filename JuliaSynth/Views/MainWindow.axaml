@@ -49,6 +49,7 @@
               <Separator/>
               <!-- Filled from Examples.All -->
               <MenuItem x:Name="ExamplesMenu" Header="_Examples"/>
+              <MenuItem Header="Start pa_ge" Command="{Binding Path=ShowStartPage}"/>
               <Separator/>
               <MenuItem Header="E_xit" Click="Exit_Click"/>
             </MenuItem>

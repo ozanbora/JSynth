@@ -171,6 +171,19 @@
       </ScrollViewer>
     </Border>
 
+    <!-- How to start, on an empty canvas; clicks go through to the canvas. -->
+    <TextBlock Grid.Column="0"
+               IsVisible="{Binding Path=IsCanvasHintVisible}"
+               IsHitTestVisible="False"
+               MaxWidth="420"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               TextAlignment="Center"
+               TextWrapping="Wrap"
+               Opacity="0.55"
+               Text="An empty design. Right-click to add a node, or open an example from File → Examples."/>
+    <!-- The start page, over the canvas. -->
+    <jsViews:StartPage Grid.Column="0" IsVisible="{Binding Path=IsStartPageOpen}"/>
     <!-- The function panel: a function's settings and code, docked so it stays open while you work. -->
     <Border Grid.Column="1"
             x:Name="InspectorPanel"

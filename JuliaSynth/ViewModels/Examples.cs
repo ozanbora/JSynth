@@ -10,7 +10,32 @@ namespace JuliaSynth.ViewModels
     /// </summary>
     /// <param name="Name">Shown in the Examples menu.</param>
     /// <param name="Description">What it computes and what to try; shown when it is opened.</param>
-    public sealed record Example(string Name, string Description, Func<MainViewModel.DesignDocument> Build);
+    public sealed record Example(string Name, string Description, Func<MainViewModel.DesignDocument> Build)
+    {
+        /// <summary>
+        /// The field it is from, which its description starts with: "Finance".
+        /// </summary>
+        public string Category => Description.Split(':', 2) is [string field, _] ? field : string.Empty;
+
+        /// <summary>
+        /// What it works out: the first sentence of its description, after the field.
+        /// </summary>
+        public string Summary
+        {
+            get
+            {
+                string text = Description.Split(':', 2) is [_, string rest] ? rest.Trim() : Description;
+                // Up to the end of the sentence, or of its first part when a colon goes on to the details.
+                int end = new[] { text.IndexOf(". ", StringComparison.Ordinal), text.IndexOf(": ", StringComparison.Ordinal) }
+                    .Where(i => i >= 0)
+                    .DefaultIfEmpty(-1)
+                    .Min();
+                text = end < 0 ? text : text[..end] + ".";
+                // "the monthly payment" → "The monthly payment"; "π estimated" stays as it is.
+                return text.Length > 0 && char.IsAsciiLetterLower(text[0]) ? char.ToUpperInvariant(text[0]) + text[1..] : text;
+            }
+        }
+    }
 
     /// <summary>
     /// Real-world examples, built in code so they always match the current nodes. They run with Julia and
