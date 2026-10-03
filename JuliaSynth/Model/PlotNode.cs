@@ -97,7 +97,15 @@ namespace JuliaSynth.Model
         /// </summary>
         public string Julia(string path, string y, string? x)
         {
-            return $"_jsynth_plot({ArrayFile.PathLiteral(path)}, \"{Kind.ToLowerInvariant()}\", {y}{(x is null ? string.Empty : $", {x}")})";
+            return JuliaAt(ArrayFile.PathLiteral(path), y, x);
+        }
+
+        /// <summary>
+        /// As <see cref="Julia"/>, the file being a Julia expression: one of its own each time a stream draws it.
+        /// </summary>
+        public string JuliaAt(string path, string y, string? x)
+        {
+            return $"_jsynth_plot({path}, \"{Kind.ToLowerInvariant()}\", {y}{(x is null ? string.Empty : $", {x}")})";
         }
 
         public override bool IsViewState(string property)

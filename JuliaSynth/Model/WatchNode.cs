@@ -1,0 +1,186 @@
+using Newtonsoft.Json;
+using ReactiveUI;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+
+namespace JuliaSynth.Model
+{
+    /// <summary>
+    /// A folder watched for new files, a sensor's say: a design with one runs as a stream, the nodes
+    /// downstream of it again for every file as soon as it is written, until it is stopped. It gives
+    /// each file's contents (a frame) in turn; a <see cref="RunningNode"/> downstream carries a state
+    /// from file to file. Its settings for reading the files are those of <see cref="FilesNode"/>.
+    /// </summary>
+    public class WatchNode : FilesNode
+    {
+        public const string ByName = "Name";
+        public const string ByTime = "Time written";
+
+        public static IReadOnlyList<string> Orders { get; } = [ByName, ByTime];
+
+        /// <summary>
+        /// Julia code watching a folder, for runs and exported scripts alike: <c>_jsynth_watch</c> calls
+        /// back for each file once it is written, and <c>_jsynth_tick</c> carries a Running node's state.
+        /// </summary>
+        public static new string Prelude { get; } = """
+            # A folder watched for new files, made by a JuliaSynth Watch folder node: body(path, n, show) for
+            # each file once it is written (its size the same at two looks), in name or time order. Files there
+            # before the start go first, or are passed over. show: whether to show values for this one, at most
+            # four times a second and for the last of those waiting. ready() once it watches. Ends when the stop file appears.
+            struct _JSynthFirst end
+            function _jsynth_watch(body, folder, pattern, existing, bytime; stop = nothing, ready = () -> nothing)
+                isdir(folder) || throw(ArgumentError("The folder $(repr(folder)) doesn't exist."))
+                files() = filter(p -> isfile(p) && occursin(pattern, basename(p)), readdir(folder; join = true))
+                stopped() = stop !== nothing && isfile(stop)
+                seen = existing ? Set{String}() : Set(files())
+                ready()
+                sizes = Dict{String, Int}()
+                n, shown = 0, 0.0
+                while !stopped()
+                    due = String[]
+                    for p in files()
+                        p in seen && continue
+                        s = filesize(p)
+                        s > 0 && get(sizes, p, -1) == s ? push!(due, p) : (sizes[p] = s)
+                    end
+                    sort!(due; by = p -> bytime ? (mtime(p), p) : (0.0, p))
+                    for (i, p) in enumerate(due)
+                        stopped() && return n
+                        push!(seen, p)
+                        delete!(sizes, p)
+                        n += 1
+                        show = i == length(due) || time() - shown >= 0.25
+                        show && (shown = time())
+                        body(p, n, show)
+                    end
+                    isempty(due) && sleep(0.1)
+                end
+                n
+            end
+            # The state a Running node carries from file to file, by its id: updated by f with each value,
+            # from init, or from the first value without one. With keep, every state so far.
+            const _jsynth_states = Dict{String, Any}()
+            const _jsynth_kept = Dict{String, Vector{Any}}()
+            function _jsynth_tick(id, f, value, keep; init = _JSynthFirst())
+                state = get(_jsynth_states, id, _JSynthFirst())
+                state = !(state isa _JSynthFirst) ? f(state, value) : init isa _JSynthFirst ? value : f(init, value)
+                _jsynth_states[id] = state
+                keep || return state
+                kept = get!(Vector{Any}, _jsynth_kept, id)
+                push!(kept, state isa AbstractArray ? copy(state) : state)
+                identity.(kept)
+            end
+            """.ReplaceLineEndings("\n");
+
+        /// <summary>
+        /// Julia code for a run of a stream: each file starts with the failures there were before the
+        /// stream (one file failing doesn't stop the next), and the watched node says how far it got.
+        /// </summary>
+        /// <summary>
+        /// What a run reports for the watched folder once it watches, before any file: so a replay starts then.
+        /// </summary>
+        public const string WatchingText = "Watching for files…";
+
+        public static string RunPrelude { get; } = $"""
+            function _jsynth_frame_start(show, before)
+                _jsynth_quiet[] = !show
+                empty!(_jsynth_failed)
+                union!(_jsynth_failed, before)
+            end
+            _jsynth_watching(id) = _jsynth_report(id, "ok", "", "{WatchingText}")
+            _jsynth_frame(id, n, path, value) =
+                _jsynth_report(id, "ok", string(typeof(value)), string(n, n == 1 ? " file" : " files", " so far; the latest: ", basename(path)))
+            """.ReplaceLineEndings("\n");
+
+        private bool _existingFirst = true;
+        private string _order = ByName;
+        private string _replayFolder = string.Empty;
+        private double _replayRate = 4;
+
+        /// <summary>
+        /// Whether files already in the folder when the stream starts go first, or are passed over.
+        /// </summary>
+        [JsonProperty(Order = 8)]
+        public bool ExistingFirst
+        {
+            get => _existingFirst;
+            set => this.RaiseAndSetIfChanged(ref _existingFirst, value);
+        }
+
+        /// <summary>
+        /// The order of files arriving together: by <see cref="ByName"/> (timestamped names), or <see cref="ByTime"/> written.
+        /// </summary>
+        [JsonProperty(Order = 9)]
+        public string Order
+        {
+            get => _order;
+            set
+            {
+                if (value is not null && Orders.Contains(value))
+                {
+                    _ = this.RaiseAndSetIfChanged(ref _order, value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Recorded files JuliaSynth copies into the watched folder while the stream runs, one at a time at
+        /// <see cref="ReplayRate"/>: a stand-in for a sensor. Empty for none.
+        /// </summary>
+        [JsonProperty(Order = 10)]
+        public string ReplayFolder
+        {
+            get => _replayFolder;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _replayFolder, (value ?? string.Empty).Trim().Trim('"'));
+                this.RaisePropertyChanged(nameof(Replays));
+            }
+        }
+
+        /// <summary>
+        /// Files a second the replay writes, from 0.1 to 100.
+        /// </summary>
+        [JsonProperty(Order = 11)]
+        public double ReplayRate
+        {
+            get => _replayRate;
+            set => this.RaiseAndSetIfChanged(ref _replayRate, Math.Clamp(double.IsFinite(value) ? value : 4, 0.1, 100));
+        }
+
+        public bool Replays => _replayFolder.Length > 0;
+
+        public override string OutputType => EachType;
+
+        protected override bool NeedsFiles => false;
+
+        public WatchNode()
+        {
+            Color = NodePalette.Watch;
+        }
+
+        /// <summary>
+        /// The call watching the folder, <paramref name="body"/> being <c>(path, n, show)</c> handling one file.
+        /// </summary>
+        /// <param name="stopFile">For a run: the file whose appearing ends the stream; the run is told when it watches.</param>
+        public string Watch(string? stopFile)
+        {
+            string stop = stopFile is null ? string.Empty : $"; stop = {ArrayFile.PathLiteral(stopFile)}, ready = () -> _jsynth_watching(\"{ID}\")";
+            return $"_jsynth_watch({ArrayFile.PathLiteral(Folder)}, r\"{PatternRegex(Pattern)}\"i, {(ExistingFirst ? "true" : "false")}, {(Order == ByTime ? "true" : "false")}{stop})";
+        }
+
+        public override string Julia => $"{Watch(null)} do path, n, show\n    frame = ({ReadFunction})(path)\n    # ... the nodes downstream, for each file\nend";
+
+        public override bool IsViewState(string property)
+        {
+            return base.IsViewState(property) || property == nameof(Replays);
+        }
+
+        /// <summary>
+        /// "4 files a second".
+        /// </summary>
+        public string ReplayRateText => $"{ReplayRate.ToString("0.##", CultureInfo.InvariantCulture)} files a second";
+    }
+}

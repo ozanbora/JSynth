@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JuliaSynth.Views.Details.WatchNode"
+             Classes="details"
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+             xmlns:jsDetails="clr-namespace:JuliaSynth.Views.Details"
+             x:DataType="jsModel:WatchNode"
+             Width="480"
+             >
+
+  <!-- How each file is read, as for Files; then how the folder is watched. -->
+  <StackPanel Spacing="10">
+    <jsDetails:FilesNode/>
+
+    <Grid RowDefinitions="auto,auto,auto,auto,auto"
+          ColumnDefinitions="auto,*"
+          >
+      <Label Grid.Row="0"
+             Grid.Column="0"
+             VerticalAlignment="Center"
+             Content="Already there"
+             />
+      <CheckBox Grid.Row="0"
+                Grid.Column="1"
+                Content="Files in the folder at the start go first"
+                IsChecked="{Binding Path=ExistingFirst}"
+                ToolTip.Tip="Ticked: the files already in the folder are worked through first, then new ones as they come. Not ticked: only files written after the start."
+                />
+
+      <Label Grid.Row="1"
+             Grid.Column="0"
+             VerticalAlignment="Center"
+             Content="Order"
+             />
+      <ComboBox Grid.Row="1"
+                Grid.Column="1"
+                Width="150"
+                SelectedValue="{Binding Path=Order}"
+                ItemsSource="{x:Static jsModel:WatchNode.Orders}"
+                ToolTip.Tip="The order of files waiting together: by name (timestamped names, frame-0001, ...), or by the time they were written."
+                />
+
+      <TextBlock Grid.Row="2"
+                 Grid.Column="0"
+                 Grid.ColumnSpan="2"
+                 Margin="0 8 0 0"
+                 FontWeight="SemiBold"
+                 Text="Stand-in for a sensor"
+                 />
+
+      <Label Grid.Row="3"
+             Grid.Column="0"
+             VerticalAlignment="Center"
+             Content="Replay"
+             />
+      <Grid Grid.Row="3"
+            Grid.Column="1"
+            ColumnDefinitions="*,auto"
+            >
+        <TextBox Grid.Column="0"
+                 Text="{Binding Path=ReplayFolder}"
+                 PlaceholderText="A folder of recorded files (optional)"
+                 ToolTip.Tip="While the stream runs, JuliaSynth copies the matching files of this folder into the watched one, one at a time, as a sensor would write them: for trying a design without the sensor."
+                 />
+        <Button Grid.Column="1"
+                Margin="4 0 0 0"
+                Content="Browse…"
+                Click="BrowseReplay_Click"
+                />
+      </Grid>
+
+      <Label Grid.Row="4"
+             Grid.Column="0"
+             VerticalAlignment="Center"
+             Content="Rate"
+             IsVisible="{Binding Path=Replays}"
+             />
+      <StackPanel Grid.Row="4"
+                  Grid.Column="1"
+                  Orientation="Horizontal"
+                  Spacing="6"
+                  IsVisible="{Binding Path=Replays}"
+                  >
+        <NumericUpDown Width="130"
+                       Minimum="0.1"
+                       Maximum="100"
+                       Increment="1"
+                       FormatString="0.##"
+                       Value="{Binding Path=ReplayRate}"
+                       />
+        <TextBlock VerticalAlignment="Center"
+                   Text="files a second"
+                   />
+      </StackPanel>
+    </Grid>
+  </StackPanel>
+
+</UserControl>

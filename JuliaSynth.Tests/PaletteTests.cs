@@ -17,7 +17,7 @@ namespace JuliaSynth.Tests
         [
             new Function(), new Float(), new Integer(), new UnsignedInteger(), new VectorNode(), new MatrixNode(),
             new SparseInput(), new ArrayBuilder(), new ArrayFile(), new DisplayNode(), new SaveFile(), new PlotNode(),
-            new FilesNode(), new MapNode(), new RunningNode(),
+            new FilesNode(), new MapNode(), new RunningNode(), new WatchNode(),
         ];
 
         [Fact]

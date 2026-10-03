@@ -97,6 +97,16 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
+        /// Julia code updating the state, under <paramref name="id"/>, with <paramref name="value"/>, the value of
+        /// a stream's file: the state is carried from file to file (see <see cref="WatchNode"/>).
+        /// </summary>
+        public string JuliaTick(string id, string function, string value, string? start)
+        {
+            string init = start is null ? string.Empty : $"; init = {start}";
+            return $"_jsynth_tick({id}, {function}, {value}, {(KeepEach ? "true" : "false")}{init})";
+        }
+
+        /// <summary>
         /// Julia code going through <paramref name="items"/> with <paramref name="function"/>, from
         /// <paramref name="start"/> or else the first value: for a run (errors say which value), or plain.
         /// </summary>

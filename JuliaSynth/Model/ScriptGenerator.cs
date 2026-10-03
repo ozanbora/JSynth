@@ -12,7 +12,13 @@ namespace JuliaSynth.Model
     /// <summary>
     /// A design as one Julia script, the variable holding each node's value, and the packages it loads.
     /// </summary>
-    public sealed record JuliaScript(string Text, IReadOnlyDictionary<string, string> Variables, IReadOnlyList<string> Packages);
+    public sealed record JuliaScript(string Text, IReadOnlyDictionary<string, string> Variables, IReadOnlyList<string> Packages)
+    {
+        /// <summary>
+        /// Whether it runs as a stream (the design watches a folder): until stopped, rather than once.
+        /// </summary>
+        public bool Streams { get; init; }
+    }
 
     /// <summary>
     /// Turns a design into a Julia script: the packages it needs, the function definitions, then every
@@ -27,7 +33,8 @@ namespace JuliaSynth.Model
         private const string Indent = "    ";
 
         /// <param name="plotFolder">Where plots write their numbers for the app to read; JuliaSynth's temporary folder by default.</param>
-        public static JuliaScript Generate(IEnumerable<Node> designNodes, IEnumerable<Connection> designConnections, bool instrumented, string? plotFolder = null)
+        /// <param name="stopFile">For a run of a stream: the file whose appearing ends it.</param>
+        public static JuliaScript Generate(IEnumerable<Node> designNodes, IEnumerable<Connection> designConnections, bool instrumented, string? plotFolder = null, string? stopFile = null)
         {
             plotFolder ??= Path.Combine(Path.GetTempPath(), "JuliaSynth");
             List<Node> nodes = designNodes.ToList();
@@ -69,6 +76,16 @@ namespace JuliaSynth.Model
             if (instrumented && nodes.OfType<RunningNode>().Any())
             {
                 _ = script.AppendLine(RunningNode.Prelude.TrimEnd());
+            }
+
+            // Watching a folder is plain Julia too; showing how far a stream got is for runs.
+            if (nodes.OfType<WatchNode>().Any())
+            {
+                _ = script.AppendLine().AppendLine(WatchNode.Prelude.TrimEnd());
+                if (instrumented)
+                {
+                    _ = script.AppendLine(WatchNode.RunPrelude.TrimEnd());
+                }
             }
 
             // Functions wired into a Map are applied by it: one whose parameter isn't wired has no value of its own.
@@ -115,44 +132,87 @@ namespace JuliaSynth.Model
                     : script.AppendJoin("\n\n", functions.Select(f => f.Code)).AppendLine();
             }
 
+
+            // A design watching a folder runs as a stream: the nodes downstream of the watched folder again for
+            // every file written to it, until stopped; the others once, before.
+            WatchNode? watched = order.OfType<WatchNode>().FirstOrDefault(w => w.Error is null);
+            HashSet<string> streamed = watched is null ? [] : Downstream(watched, connections, byID);
+            StreamContext? stream = watched is null ? null : new(watched, streamed);
+
             if (order.Count > 0)
             {
                 _ = script.AppendLine().AppendLine("# Values");
             }
 
-            foreach (Node node in order)
+            foreach (Node node in order.Where(n => !streamed.Contains(n.ID)))
+            {
+                _ = script.Append(NodeCode(node));
+            }
+
+            if (watched is not null)
+            {
+                string body = string.Concat(order.Where(n => streamed.Contains(n.ID)).Select(NodeCode));
+                string root = variables[watched.ID];
+                if (instrumented)
+                {
+                    _ = script.AppendLine().AppendLine($"# The stream: the values from {root} on, again for every file written to the folder, until stopped")
+                        .AppendLine("const _jsynth_before_stream = copy(_jsynth_failed)")
+                        .AppendLine($"{watched.Watch(stopFile)} do _path, _n, _show")
+                        .AppendLine($"{Indent}_jsynth_frame_start(_show, _jsynth_before_stream)")
+                        .Append(Indented(body))
+                        .AppendLine("end")
+                        .AppendLine("_jsynth_quiet[] = false");
+                }
+                else
+                {
+                    _ = script.AppendLine().AppendLine($"# The stream: the values from {root} on, again for every file written to the folder (stop with Ctrl+C)")
+                        .AppendLine($"{watched.Watch(null)} do _path, _n, _show")
+                        .Append(Indented(body))
+                        .AppendLine("end");
+                }
+            }
+
+            // One node's value: computed (and reported, in a run), or why it isn't.
+            string NodeCode(Node node)
             {
                 List<Connection> inputs = connections.Where(c => c.TargetID == node.ID).ToList();
                 if (node is Function used && applied.Contains(used.ID) && used.Parameters.Any(p => inputs.All(c => c.ParameterID != p.ID)))
                 {
-                    continue;
+                    return string.Empty;
                 }
 
                 string variable = variables[node.ID];
-                (string? expression, string? problem) = Expression(node, inputs, variables, byID, instrumented, plotFolder);
+                bool inStream = streamed.Contains(node.ID);
+                (string? expression, string? problem) = Expression(node, inputs, variables, byID, instrumented, plotFolder, inStream ? stream : null);
 
+                // Values of a stream are assigned in a function (the one called for each file): globals, by name.
+                string assign = inStream ? $"global {variable}" : variable;
                 if (!instrumented)
                 {
                     // Showing or saving a value is something to do, not a value to keep; plots are drawn by
                     // JuliaSynth, so a plain script only says how to draw them in Julia.
-                    _ = script.AppendLine(problem is not null ? $"# {variable}: {problem}"
+                    return (problem is not null ? $"# {variable}: {problem}"
                         : node is OutputNode output ? output.Statement(variables[inputs[0].SourceID])
                         : node is PlotNode plot ? PlotHint(plot, inputs, variables)
-                        : $"{variable} = {expression}");
-                    continue;
+                        : $"{assign} = {expression}") + "\n";
                 }
 
-                _ = script.AppendLine($"# {variable}");
+                StringBuilder code = new($"# {variable}\n");
                 if (problem is not null)
                 {
-                    _ = script.AppendLine($"_jsynth_skip({StringLiteral(node.ID)}, {StringLiteral(problem)})");
-                    continue;
+                    return code.AppendLine($"_jsynth_skip({StringLiteral(node.ID)}, {StringLiteral(problem)})").ToString();
                 }
 
                 string id = StringLiteral(node.ID);
                 string[] blockers = inputs.Select(c => StringLiteral(c.SourceID)).Distinct().ToArray();
                 string[] needed = NeededPackages(node).Select(StringLiteral).ToArray();
                 List<(string Condition, string Then)> conditions = [];
+
+                // A plot of a stream is drawn for the files whose values are shown, not for every one.
+                if (inStream && node is PlotNode)
+                {
+                    conditions.Add(("_jsynth_quiet[]", "nothing"));
+                }
 
                 // A function whose definition failed has nothing to call; its error is already reported.
                 if (node is Function)
@@ -170,31 +230,60 @@ namespace JuliaSynth.Model
                     conditions.Add(($"(_why = _jsynth_package_problem({string.Join(", ", needed)})) !== nothing", $"_jsynth_skip({id}, _why)"));
                 }
 
-                string compute = Guarded(node.ID, $"global {variable} = {expression}", report: true, variable);
+                // The watched folder says which file the stream is at, rather than showing the file.
+                string compute = node == watched
+                    ? $"try\n{Indent}global {variable} = {expression}\n{Indent}_jsynth_frame({id}, _n, _path, {variable})\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
+                    : Guarded(node.ID, $"global {variable} = {expression}", report: true, variable);
 
                 if (conditions.Count == 0)
                 {
-                    _ = script.Append(compute);
+                    return code.Append(compute).ToString();
                 }
-                else
-                {
-                    for (int i = 0; i < conditions.Count; i++)
-                    {
-                        _ = script.AppendLine($"{(i == 0 ? "if" : "elseif")} {conditions[i].Condition}").AppendLine($"{Indent}{conditions[i].Then}");
-                    }
 
-                    _ = script.AppendLine("else").Append(Indented(compute)).AppendLine("end");
+                for (int i = 0; i < conditions.Count; i++)
+                {
+                    _ = code.AppendLine($"{(i == 0 ? "if" : "elseif")} {conditions[i].Condition}").AppendLine($"{Indent}{conditions[i].Then}");
                 }
+
+                return code.AppendLine("else").Append(Indented(compute)).AppendLine("end").ToString();
             }
 
             // Plain newlines, whatever the platform or the line endings of this source file.
-            return new JuliaScript(script.ToString().ReplaceLineEndings("\n"), variables, packages);
+            return new JuliaScript(script.ToString().ReplaceLineEndings("\n"), variables, packages) { Streams = watched is not null };
+        }
+
+        /// <summary>
+        /// A stream being generated: the watched folder, and the nodes computed again for each of its files.
+        /// </summary>
+        private sealed record StreamContext(WatchNode Watched, HashSet<string> Nodes);
+
+        /// <summary>
+        /// The ids of <paramref name="root"/> and every node its value reaches, through value wires (a
+        /// function wired into a function port is applied, not given a value).
+        /// </summary>
+        private static HashSet<string> Downstream(Node root, List<Connection> connections, Dictionary<string, Node> byID)
+        {
+            HashSet<string> reached = [root.ID];
+            Queue<string> pending = new([root.ID]);
+            while (pending.TryDequeue(out string? id))
+            {
+                foreach (Connection wire in connections.Where(c => c.SourceID == id))
+                {
+                    bool value = byID[wire.TargetID].Inputs.Any(p => p.ID == wire.ParameterID && !p.IsFunctionPort);
+                    if (value && reached.Add(wire.TargetID))
+                    {
+                        pending.Enqueue(wire.TargetID);
+                    }
+                }
+            }
+
+            return reached;
         }
 
         /// <summary>
         /// Julia code computing <paramref name="node"/>'s value from its wired inputs, or why it can't be computed.
         /// </summary>
-        private static (string? Expression, string? Problem) Expression(Node node, List<Connection> inputs, Dictionary<string, string> variables, Dictionary<string, Node> byID, bool instrumented, string plotFolder)
+        private static (string? Expression, string? Problem) Expression(Node node, List<Connection> inputs, Dictionary<string, string> variables, Dictionary<string, Node> byID, bool instrumented, string plotFolder, StreamContext? stream)
         {
             string? Input(Parameter parameter) => inputs.FirstOrDefault(c => c.ParameterID == parameter.ID) is Connection c ? variables[c.SourceID] : null;
 
@@ -212,6 +301,11 @@ namespace JuliaSynth.Model
                     return sparse.Error is null ? (sparse.Julia, null) : (null, sparse.Error);
                 case ArrayFile file:
                     return file.Error is null ? (file.Julia, null) : (null, file.Error);
+                case WatchNode watch when stream?.Watched == watch:
+                    // The file the stream is at, read as each of the folder's files is.
+                    return ($"({watch.ReadFunction})(_path)", null);
+                case WatchNode watch:
+                    return (null, watch.Error ?? "Only one Watch folder is watched in a design: this one isn't.");
                 case FilesNode files:
                     return files.Error is null ? (files.Julia, null) : (null, files.Error);
                 case MapNode map:
@@ -246,7 +340,9 @@ namespace JuliaSynth.Model
 
                     return RunningNode.Problem(function) is string problem
                         ? (null, problem)
-                        : (running.Julia(function.Name, items, Input(running.Start), instrumented), null);
+                        : stream is not null
+                            ? (running.JuliaTick(StringLiteral(running.ID), function.Name, items, Input(running.Start)), null)
+                            : (running.Julia(function.Name, items, Input(running.Start), instrumented), null);
                 }
                 case ArrayBuilder builder:
                 {
@@ -277,7 +373,10 @@ namespace JuliaSynth.Model
 
                 case PlotNode plot:
                     return Input(plot.Y) is string y
-                        ? (plot.Julia(Path.Combine(plotFolder, $"{plot.ID}.jsplot"), y, Input(plot.X)), null)
+                        // In a stream, a file of its own each time it is drawn: the app may still be reading the last.
+                        ? (stream is not null
+                            ? plot.JuliaAt($"joinpath({ArrayFile.PathLiteral(plotFolder)}, \"{plot.ID}-$(_n).jsplot\")", y, Input(plot.X))
+                            : plot.Julia(Path.Combine(plotFolder, $"{plot.ID}.jsplot"), y, Input(plot.X)), null)
                         : (null, "Wire values in to plot them.");
 
                 case OutputNode output:
@@ -438,6 +537,7 @@ namespace JuliaSynth.Model
                     SparseInput => "S",
                     ArrayBuilder => "B",
                     ArrayFile => "D",
+                    WatchNode => "frame",
                     FilesNode => "files",
                     MapNode => "mapped",
                     RunningNode => "running",

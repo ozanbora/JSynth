@@ -174,6 +174,14 @@ namespace JuliaSynth.ViewModels
                 + "range_profile gives the clutter's strength range bin by range bin. The scans are "
                 + "downloaded when the example opens, 12 or all 213; reading PNG files needs PNGFiles and ColorTypes.",
                 RadarClutterMap) { Data = BoreasRadar },
+            new("Live radar",
+                "Streaming: the radar scans of Radar clutter map, arriving one at a time as from the radar itself. "
+                + "JuliaSynth replays them into a folder, 4 a second as the radar made them, and the Watch folder node "
+                + "works through each as soon as it is written: Running nodes keep the clutter map, count where each scan "
+                + "stood out from it (the traffic) and the scans with another radar's interference, and the plots follow "
+                + "live. Press Stop to end it. The scans are downloaded when the example opens; reading PNG files needs "
+                + "PNGFiles and ColorTypes.",
+                LiveRadar) { Data = BoreasRadar },
         ];
 
 
@@ -406,6 +414,27 @@ namespace JuliaSynth.ViewModels
         /// <summary>
         /// A folder of bundled example data, next to the app (see ExampleData in the project).
         /// </summary>
+        /// <summary>
+        /// top_down(C) of the radar examples: a radar scan's azimuth-by-range matrix seen from above.
+        /// </summary>
+        private const string TopDownBody =
+                """
+                # The clutter map seen from above, like a radar screen: the radar in the middle, its 0° up,
+                # 0.3 m a pixel out to 60 m. Each pixel takes the strongest echo of the range bins (6 cm) it covers.
+                n, metres, bin = 401, 0.3, 0.0596
+                centre = (n + 1) ÷ 2
+                image = zeros(n, n)
+                for i in 1:n, j in 1:n
+                    x, y = (j - centre) * metres, (centre - i) * metres
+                    r = hypot(x, y)
+                    bins = max(floor(Int, (r - metres / 2) / bin) + 1, 1):min(ceil(Int, (r + metres / 2) / bin), size(C, 2))
+                    isempty(bins) && continue
+                    a = mod(round(Int, atan(x, y) / 2π * size(C, 1)), size(C, 1)) + 1  # the azimuth, clockwise from up
+                    image[i, j] = maximum(view(C, a, bins))
+                end
+                image
+                """;
+
         private static MainViewModel.DesignDocument RadarClutterMap()
         {
             // The full set when it was downloaded, else the short one.
@@ -434,22 +463,7 @@ namespace JuliaSynth.ViewModels
                 """,
                 ("scans", "Vector"), ("C", "Matrix{Float64}"));
             Function topDown = Define("top_down", "Matrix{Float64}", 29, Stage2,
-                """
-                # The clutter map seen from above, like a radar screen: the radar in the middle, its 0° up,
-                # 0.3 m a pixel out to 60 m. Each pixel takes the strongest echo of the range bins (6 cm) it covers.
-                n, metres, bin = 401, 0.3, 0.0596
-                centre = (n + 1) ÷ 2
-                image = zeros(n, n)
-                for i in 1:n, j in 1:n
-                    x, y = (j - centre) * metres, (centre - i) * metres
-                    r = hypot(x, y)
-                    bins = max(floor(Int, (r - metres / 2) / bin) + 1, 1):min(ceil(Int, (r + metres / 2) / bin), size(C, 2))
-                    isempty(bins) && continue
-                    a = mod(round(Int, atan(x, y) / 2π * size(C, 1)), size(C, 1)) + 1  # the azimuth, clockwise from up
-                    image[i, j] = maximum(view(C, a, bins))
-                end
-                image
-                """,
+                TopDownBody,
                 ("C", "Matrix{Float64}"));
             Function rangeProfile = Define("range_profile", "Vector{Float64}", 19, Stage2,
                 "vec(sum(C; dims = 1)) ./ size(C, 1)  # the clutter's mean strength at each range bin",
@@ -473,6 +487,80 @@ namespace JuliaSynth.ViewModels
                 (scans, clutter, "items"), (update, clutter, "f"),
                 (scans, standingOut, 0), (clutter, standingOut, 1), (scans, interference, 0), (clutter, interference, 1), (interference, showInterference, 0),
                 (clutter, rangeProfile, 0), (clutter, topDown, 0), (topDown, clutterMap, "y"), (standingOut, traffic, "y"), (rangeProfile, profile, "y"));
+        }
+
+        private static MainViewModel.DesignDocument LiveRadar()
+        {
+            // The scans are replayed, 4 a second as the radar made them, into a folder of their own that the
+            // design watches: the full set when it was downloaded, else the short one.
+            string live = System.IO.Path.Combine(BoreasRadar.Folder, "live");
+            try
+            {
+                _ = System.IO.Directory.CreateDirectory(live);
+            }
+            catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+            {
+                // The Watch folder node says the folder is missing.
+            }
+
+            WatchNode watch = new()
+            {
+                Format = FileFormats.Png,
+                Folder = live,
+                ReplayFolder = BoreasRadar.DownloadedFolder ?? ExampleData.SetFolder(BoreasRadar.Folder, BoreasRadar.Sets[0]),
+                ReplayRate = 4,
+                Row = 6,
+                Column = Inputs,
+            };
+
+            Function update = Define("update", "Matrix{Float64}", 18, Inputs,
+                """
+                α = 0.2  # how quickly the clutter map follows the scene
+                (1 - α) .* C .+ α .* X
+                """,
+                ("C", "Matrix{Float64}"), ("X", "Matrix{Float64}"));
+            Function add = Define("add", "Matrix{Float64}", 28, Inputs, "T .+ S  # one more scan counted where a spot stood out",
+                ("T", "Matrix{Float64}"), ("S", "Matrix{Float64}"));
+            Function plus = Define("plus", "Int64", 38, Inputs, "n + hit", ("n", "Int64"), ("hit", "Int64"));
+
+            Function scan = Define("scan", "Matrix{Float64}", 6, Stage1,
+                "X[:, 12:1011]  # without the 11 timestamp columns; the first 1000 range bins (about 60 m)",
+                ("X", "Matrix{Float64}"));
+            RunningNode clutter = new() { Row = 18, Column = Stage1 };
+            RunningNode tally = new() { Row = 28, Column = Stage1 + 28 };
+            RunningNode count = new() { Row = 38, Column = Stage1 + 28 };
+
+            Function standingOut = Define("stands_out", "Matrix{Float64}", 28, Stage2,
+                """
+                # 1 where this scan stands out from the clutter map as it was before it, 0 elsewhere. C has this
+                # scan in it already, at α = 0.2 (see update): X - C is 0.8 of how far X stands out from the map before.
+                Float64.((X .- C) ./ 0.8 .> 0.15)
+                """,
+                ("X", "Matrix{Float64}"), ("C", "Matrix{Float64}"));
+            Function interfered = Define("interfered", "Int64", 38, Stage2,
+                """
+                # 1 when an azimuth of this scan stands out along most of its range, in 8 of its 10 stretches
+                # of 100 bins (6 m each): another radar's signal. A vehicle covers a few metres. As in stands_out,
+                # against the clutter map before this scan.
+                lit(a) = count(b -> count(>(0.15), (X[a, b:b+99] .- C[a, b:b+99]) ./ 0.8) >= 10, 1:100:1000)
+                Int(any(a -> lit(a) >= 8, axes(X, 1)))
+                """,
+                ("X", "Matrix{Float64}"), ("C", "Matrix{Float64}"));
+            Function topDown = Define("top_down", "Matrix{Float64}", 18, Stage2, TopDownBody, ("C", "Matrix{Float64}"));
+            Function traffic = Define("traffic", "Matrix{Float64}", 28, Stage3 + 14,
+                "top_down(min.(T, 3))  # from above, 3 scans or more brightest: what moves leaves tracks",
+                ("T", "Matrix{Float64}"));
+
+            PlotNode clutterMap = new() { Title = "Clutter map from above, live", Kind = "Heatmap", Row = 13, Column = Stage3 + 14 };
+            PlotNode tracks = new() { Title = "Standing out from the clutter, from above, live", Kind = "Heatmap", Row = 28, Column = Stage3 + 32 };
+            DisplayNode showCount = Shown(41, Stage3 + 14);
+
+            return Design([watch, update, add, plus, scan, clutter, tally, count, standingOut, interfered, topDown, traffic, clutterMap, tracks, showCount],
+                (watch, scan, 0),
+                (scan, clutter, "items"), (update, clutter, "f"),
+                (scan, standingOut, 0), (clutter, standingOut, 1), (standingOut, tally, "items"), (add, tally, "f"),
+                (scan, interfered, 0), (clutter, interfered, 1), (interfered, count, "items"), (plus, count, "f"),
+                (clutter, topDown, 0), (topDown, clutterMap, "y"), (tally, traffic, 0), (traffic, tracks, "y"), (count, showCount, 0));
         }
 
         private static string DataFolder(string name)

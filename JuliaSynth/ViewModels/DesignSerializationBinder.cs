@@ -38,6 +38,7 @@ namespace JuliaSynth.ViewModels
             typeof(FilesNode),
             typeof(MapNode),
             typeof(RunningNode),
+            typeof(WatchNode),
             typeof(Argument),
             typeof(List<Argument>),
             typeof(Connection),

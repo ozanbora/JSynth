@@ -193,7 +193,12 @@ namespace JuliaSynth.Model
         /// <summary>
         /// The Julia expression making the files, e.g. <c>JuliaSynthFiles(raw"data", r"^.*\.csv$"i, path -> readdlm(path, ',', Float64))</c>.
         /// </summary>
-        public string Julia => $"JuliaSynthFiles({ArrayFile.PathLiteral(_folder)}, r\"{PatternRegex(_pattern)}\"i, path -> {FileFormats.Read(Format, "path", Shape, ElementType, HasHeader, Variable)})";
+        public virtual string Julia => $"JuliaSynthFiles({ArrayFile.PathLiteral(_folder)}, r\"{PatternRegex(_pattern)}\"i, {ReadFunction})";
+
+        /// <summary>
+        /// The Julia function reading one file, e.g. <c>path -> readdlm(path, ',', Float64)</c>.
+        /// </summary>
+        public string ReadFunction => $"path -> {FileFormats.Read(Format, "path", Shape, ElementType, HasHeader, Variable)}";
 
         /// <summary>
         /// <see cref="Julia"/>, after the <c>using</c> it needs.
@@ -229,7 +234,32 @@ namespace JuliaSynth.Model
             })) + "$";
         }
 
-        private void Update()
+        /// <summary>
+        /// Looks at the folder again, for <see cref="Summary"/> and <see cref="Error"/>: files come and go.
+        /// </summary>
+        public void Recount()
+        {
+            (Summary, Error) = Inspect();
+        }
+
+        /// <summary>
+        /// The summary and error are worked out from the folder: looking again changes no design.
+        /// </summary>
+        public override bool IsViewState(string property)
+        {
+            return base.IsViewState(property) || property is nameof(Summary) or nameof(Error);
+        }
+
+        /// <summary>
+        /// Whether a folder without matching files is an error: it is for going through them, not for
+        /// waiting for them.
+        /// </summary>
+        protected virtual bool NeedsFiles => true;
+
+        /// <summary>
+        /// Checks the settings again and says what changed.
+        /// </summary>
+        protected void Update()
         {
             if (!PossibleShapes.Contains(_shape))
             {
@@ -285,8 +315,9 @@ namespace JuliaSynth.Model
                     .Order(StringComparer.Ordinal)
                     .ToList();
 
+                string pattern = _pattern.Length == 0 ? "*" : _pattern;
                 return names.Count == 0
-                    ? (string.Empty, $"No file in the folder matches {(_pattern.Length == 0 ? "*" : _pattern)}.")
+                    ? (NeedsFiles ? (string.Empty, $"No file in the folder matches {pattern}.") : ($"No {pattern} file yet: waiting for the first.", null))
                     : ($"{names.Count:N0} {(names.Count == 1 ? "file" : "files")}: {string.Join(", ", names.Take(3))}{(names.Count > 3 ? ", …" : string.Empty)}", null);
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)

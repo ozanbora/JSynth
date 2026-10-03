@@ -50,7 +50,10 @@ namespace JuliaSynth.Runtime
                 m = string(@__MODULE__)
                 m == "Main" ? String(s) : replace(String(s), "$m." => "", "`$m`" => "`Main`", "@ $m " => "@ Main ")
             end
+            # Set between the files of a stream whose values aren't shown (see the Watch folder node).
+            const _jsynth_quiet = Ref(false)
             function _jsynth_report(id, status, type, text)
+                _jsynth_quiet[] && return
                 println(stdout, _JSYNTH, id, "\t", status, "\t", _jsynth_escape(_jsynth_unqualified(type)), "\t", _jsynth_escape(_jsynth_unqualified(text)))
                 flush(stdout)
             end

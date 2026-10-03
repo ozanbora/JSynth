@@ -79,6 +79,9 @@ public partial class MainViewModel
     // Goes up with every change to the design, so results of a run started before it are dropped.
     private static int _designVersion;
 
+    // How many times each plot was read, by its id, so a slower earlier read doesn't replace a later one.
+    private readonly Dictionary<string, int> _plotLoads = [];
+
     private JuliaInstallation? _julia;
     private bool _isLookingForJulia;
     private bool _isRunning;
@@ -227,7 +230,7 @@ public partial class MainViewModel
     {
         IObservable<bool> running = this.WhenAnyValue(x => x.IsRunning);
         Run = ReactiveCommand.CreateFromTask(RunDesignAsync, this.WhenAnyValue(x => x.IsRunning, busy => !busy));
-        Stop = ReactiveCommand.Create(() => _runCancellation?.Cancel(), running);
+        Stop = ReactiveCommand.Create(StopRun, running);
         InstallPackages = ReactiveCommand.CreateFromTask(InstallMissingPackagesAsync, this.WhenAnyValue(x => x.IsRunning, busy => !busy));
         Restart = ReactiveCommand.Create(RestartJulia, this.WhenAnyValue(x => x.IsRunning, busy => !busy));
 
@@ -337,7 +340,9 @@ public partial class MainViewModel
             string folder = RunFolder;
             ClearPlotFiles();
             JuliaSession session = _session!;
-            JuliaScript script = ScriptGenerator.Generate(Nodes, Connections, instrumented: true, PlotFolder);
+            string stopFile = NewStopFile();
+            JuliaScript script = ScriptGenerator.Generate(Nodes, Connections, instrumented: true, PlotFolder, stopFile);
+            bool streaming = script.Streams;
             int version = _designVersion;
             Dictionary<string, Node> nodes = Nodes.ToDictionary(n => n.ID);
 
@@ -354,8 +359,9 @@ public partial class MainViewModel
 
             void Show(Report report)
             {
-                // Nodes changed since the run started would show values they don't have.
-                if (version != _designVersion || !nodes.TryGetValue(report.Id, out Node? node) || !script.Variables.TryGetValue(report.Id, out string? variable))
+                // Nodes changed since the run started would show values they don't have; a stream goes on
+                // with the design it started with, and says so, so its values keep coming.
+                if ((!streaming && version != _designVersion) || !nodes.TryGetValue(report.Id, out Node? node) || !script.Variables.TryGetValue(report.Id, out string? variable))
                 {
                     return;
                 }
@@ -363,7 +369,27 @@ public partial class MainViewModel
                 node.Result = report;
                 if (node is PlotNode plot && report.Status == ReportStatus.Ok)
                 {
-                    _ = LoadPlotAsync(plot, report.Text, version);
+                    _ = LoadPlotAsync(plot, report.Text, streaming ? null : version);
+                }
+
+                if (streaming)
+                {
+                    if (node is WatchNode && report.Status == ReportStatus.Ok)
+                    {
+                        if (report.Text == WatchNode.WatchingText)
+                        {
+                            StreamWatching();
+                            return;
+                        }
+
+                        StreamStatus = report.Text;
+                        ((WatchNode)node).Recount();
+                    }
+
+                    if (!LogsInStream(report))
+                    {
+                        return;
+                    }
                 }
 
                 Log(report.Status switch
@@ -377,6 +403,12 @@ public partial class MainViewModel
             }
 
             Log($"Running with Julia {julia.Version} in {folder}…", OutputKind.Info);
+            if (streaming && Nodes.OfType<WatchNode>().FirstOrDefault(w => w.Error is null) is WatchNode watched)
+            {
+                Log($"Watching {watched.Folder} for {(watched.Pattern.Length == 0 ? "*" : watched.Pattern)} files: the values from {script.Variables[watched.ID]} on are worked out again for each, until you stop.", OutputKind.Info);
+                BeginStream(watched, stopFile);
+            }
+
             RunResult result = await session.RunAsync(
                 script.Text,
                 folder,
@@ -393,7 +425,10 @@ public partial class MainViewModel
 
             // Let the output still queued for the UI thread come first.
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            string stream = StreamStatus;
+            EndStream();
             Log(result.Cancelled ? "Stopped."
+                : streaming && result.ExitCode == 0 ? $"Stopped the stream: {(stream.Length == 0 ? "no file came" : stream)}."
                 : result.ExitCode == 0 ? $"Finished in {result.Elapsed.TotalSeconds:0.0} s."
                 : $"Julia stopped with exit code {result.ExitCode} after {result.Elapsed.TotalSeconds:0.0} s.",
                 result.Succeeded ? OutputKind.Info : OutputKind.Error);
@@ -404,6 +439,7 @@ public partial class MainViewModel
         }
         finally
         {
+            EndStream();
             Finish(cancellation);
         }
     }
@@ -486,14 +522,23 @@ public partial class MainViewModel
     /// Reads the numbers of a plot a run wrote to <paramref name="path"/>, off the UI thread, and shows them
     /// unless the design changed meanwhile.
     /// </summary>
-    private async Task LoadPlotAsync(PlotNode plot, string path, int version)
+    /// <param name="version">The design version the run started with; null for a stream, shown whatever changed.</param>
+    private async Task LoadPlotAsync(PlotNode plot, string path, int? version)
     {
+        // Drawn again and again in a stream: only the latest drawing read is shown, whichever read ends first.
+        int load = _plotLoads[plot.ID] = _plotLoads.GetValueOrDefault(plot.ID) + 1;
         try
         {
             PlotData data = await Task.Run(() => PlotData.Read(path));
-            if (version == _designVersion)
+            if ((version is null || version == _designVersion) && load == _plotLoads[plot.ID])
             {
                 plot.Plot = data;
+            }
+
+            // A stream writes a file each time it draws: read, it isn't needed any more.
+            if (version is null)
+            {
+                File.Delete(path);
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)

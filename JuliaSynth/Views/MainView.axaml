@@ -63,6 +63,7 @@
                   <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Watch folder: a stream of new files (◉)" Tag="WatchNode" Click="AddAtPointer_Click"/>
                   <Separator/>
                   <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtPointer_Click"/>
@@ -153,6 +154,10 @@
               <DataTemplate DataType="jsModel:PlotNode">
                 <jsOutputs:PlotNode DataContext="{Binding}"/>
               </DataTemplate>
+              <!-- Before Files: a Watch folder node is one too. -->
+              <DataTemplate DataType="jsModel:WatchNode">
+                <jsInputs:WatchNode DataContext="{Binding}"/>
+              </DataTemplate>
               <DataTemplate DataType="jsModel:FilesNode">
                 <jsInputs:FilesNode DataContext="{Binding}"/>
               </DataTemplate>
@@ -209,6 +214,25 @@
           <Button Content="Stop" IsVisible="{Binding Path=IsInstallingPackages}" Command="{Binding Path=Stop}"/>
         </StackPanel>
       </StackPanel>
+    </Border>
+    <!-- A stream running: from where, how far, and that edits wait for the next run. -->
+    <Border Grid.Column="0"
+            x:Name="StreamBanner"
+            IsVisible="{Binding Path=IsStreaming}"
+            MaxWidth="720"
+            Margin="16 12"
+            Padding="14 10"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            CornerRadius="8"
+            Background="{DynamicResource StatusBarBackgroundBrush}"
+            BorderBrush="{DynamicResource AcceptBrush}"
+            BorderThickness="1"
+            BoxShadow="0 4 16 0 #30000000">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding Path=StreamText}" TextWrapping="Wrap"/>
+        <Button Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center" Content="Stop" Command="{Binding Path=Stop}"/>
+      </Grid>
     </Border>
     <!-- Downloading the data of an example. -->
     <Border Grid.Column="0"
@@ -393,6 +417,7 @@
                 <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Watch folder: a stream of new files (◉)" Tag="WatchNode" Click="AddAtCenter_Click"/>
                 <Separator/>
                 <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtCenter_Click"/>
