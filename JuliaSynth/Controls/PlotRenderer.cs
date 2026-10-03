@@ -19,6 +19,8 @@ public static class PlotRenderer
         plot.Axes.Title.Label.Text = title;
         Style(plot, foreground, compact);
 
+        // Rules of the last drawing (square cells) don't carry over.
+        plot.Axes.Rules.Clear();
         if (data is null)
         {
             return;
@@ -66,6 +68,13 @@ public static class PlotRenderer
         if (data.Kind is PlotKind.Heatmap or PlotKind.Spy)
         {
             plot.Axes.SetLimits(0.5, data.Columns + 0.5, data.Rows + 0.5, 0.5);
+        }
+
+        // A square matrix, an image most likely (a radar screen, say), keeps square cells, zoomed out to show
+        // all of it: circles stay round.
+        if (data.Kind == PlotKind.Heatmap && data.Rows == data.Columns)
+        {
+            plot.Axes.Rules.Add(new ScottPlot.AxisRules.SquareZoomOut(plot.Axes.Bottom, plot.Axes.Left));
         }
     }
 

@@ -201,7 +201,7 @@ namespace JuliaSynth.Tests
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
                 Report interference = reports.Single(r => script.Variables[r.Id] == "interference_out");
                 // Another radar's interference in scans 3 and 25 of the stop: 2 and 4 of the short set.
-                Assert.Equal(Path.GetFileName(scans) == "full" ? "2-element Vector{Int64}:\n 3\n 25" : "2-element Vector{Int64}:\n 2\n 4", interference.Text);
+                Assert.Equal(Path.GetFileName(scans) == "full" ? "2-element Vector{Int64}:\n  3\n 25" : "2-element Vector{Int64}:\n 2\n 4", interference.Text);
                 Assert.Equal("Matrix{Float64}", reports.Single(r => r.Id == design.Nodes.OfType<RunningNode>().Single().ID).Type);
             });
         }
