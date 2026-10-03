@@ -42,12 +42,15 @@ namespace JuliaSynth.Runtime
                         Base.include(m, script)
                     catch e
                         code = 1
-                        try
-                            Base.display_error(stderr, e, catch_backtrace())
+                        bt = catch_backtrace()
+                        shown = try
+                            sprint(Base.display_error, e, bt)
                         catch
-                            showerror(stderr, e)
-                            println(stderr)
+                            sprint(showerror, e) * "\n"
                         end
+                        # As in a Julia of its own, where the script runs in Main.
+                        name = string(m)
+                        print(stderr, replace(shown, "$name." => "", "`$name`" => "`Main`", "@ $name " => "@ Main "))
                     finally
                         # Out of the run's folder, which Windows won't let go while a program is in it.
                         cd(tempdir())

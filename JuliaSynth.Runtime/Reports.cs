@@ -44,8 +44,14 @@ namespace JuliaSynth.Runtime
             const _JSYNTH = "\x1eJSYNTH\t"
             const _jsynth_failed = Set{String}()
             _jsynth_escape(s) = replace(String(s), "\\" => "\\\\", "\n" => "\\n", "\t" => "\\t", "\r" => "")
+            # Names as Julia shows them in Main, also when the script runs in a module of its own:
+            # Foo rather than Main.JuliaSynthRun.Foo.
+            function _jsynth_unqualified(s)
+                m = string(@__MODULE__)
+                m == "Main" ? String(s) : replace(String(s), "$m." => "", "`$m`" => "`Main`", "@ $m " => "@ Main ")
+            end
             function _jsynth_report(id, status, type, text)
-                println(stdout, _JSYNTH, id, "\t", status, "\t", _jsynth_escape(type), "\t", _jsynth_escape(text))
+                println(stdout, _JSYNTH, id, "\t", status, "\t", _jsynth_escape(_jsynth_unqualified(type)), "\t", _jsynth_escape(_jsynth_unqualified(text)))
                 flush(stdout)
             end
             function _jsynth_ok(id, value)

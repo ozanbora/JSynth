@@ -140,6 +140,36 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public async Task Names_from_the_script_show_as_in_a_julia_of_its_own()
+        {
+            using JuliaSession? session = await Session();
+            if (session is null)
+            {
+                return;
+            }
+
+            Outcome run = await Run(session, Reports.Prelude + "\n" + """
+                struct Reading
+                    celsius::Float64
+                end
+                _jsynth_ok("a", [Reading(12.5)])
+                try
+                    missing_name + 1
+                catch e
+                    _jsynth_error("b", e)
+                end
+                also_missing
+                """);
+
+            Report value = run.Reports.Single(r => r.Id == "a");
+            Assert.Equal("Vector{Reading}", value.Type);
+            Assert.Equal("1-element Vector{Reading}:\n Reading(12.5)", value.Text);
+            Assert.Contains("not defined in `Main`", run.Reports.Single(r => r.Id == "b").Text);
+            Assert.Contains(run.Errors, l => l.Contains("`also_missing` not defined in `Main`"));
+            Assert.DoesNotContain("JuliaSynthRun", string.Join("\n", run.Errors.Concat(run.Reports.Select(r => r.Type + r.Text))));
+        }
+
+        [Fact]
         public async Task Warming_up_shows_nothing_and_the_runs_after_it_still_report()
         {
             using JuliaSession? session = await Session();
