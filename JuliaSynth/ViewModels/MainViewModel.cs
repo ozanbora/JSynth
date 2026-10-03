@@ -554,6 +554,7 @@ public partial class MainViewModel : ReactiveObject
         CreateRunCommands();
         CreateInspectorCommands();
         CreateStartCommands();
+        CreatePackageCommands();
 
         History.Changed += (_, _) =>
         {
@@ -724,6 +725,7 @@ public partial class MainViewModel : ReactiveObject
         Load(new DesignDocument());
         History.Reset();
         FilePath = null;
+        DesignOpened();
     }
 
     /// <exception cref="IOException">The file can't be read.</exception>
@@ -743,6 +745,7 @@ public partial class MainViewModel : ReactiveObject
         History.Reset();
         FilePath = Path.GetFullPath(path);
         Remember(FilePath);
+        DesignOpened();
     }
 
     /// <exception cref="IOException">The file can't be written.</exception>

@@ -168,5 +168,99 @@ namespace JuliaSynth.Tests
 
             Assert.Equal(["NoSuchJuliaSynthPackage"], missing);
         }
+
+        private static async Task Until(Func<bool> condition)
+        {
+            for (int i = 0; i < 300 && !condition(); i++)
+            {
+                await Task.Delay(50);
+            }
+        }
+
+        [Fact]
+        public void Opening_a_design_says_which_packages_it_needs_before_it_runs()
+        {
+            Ui.Run(async () =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new();
+                Assert.True(await viewModel.ChooseJuliaAsync(StandInJulia.Create(_folder, ["julia version 1.11.2", $"{Missing}MatrixMarket"])));
+                Assert.False(viewModel.IsPackageBannerVisible);
+
+                viewModel.OpenExample(Examples.All.Single(e => e.Name == "Network spread"));
+                await Until(() => viewModel.IsPackageBannerVisible);
+
+                Assert.Equal(["MatrixMarket"], viewModel.MissingPackages);
+                Assert.Equal("This design needs MatrixMarket, which isn't installed. The nodes needing it are skipped until it is.", viewModel.PackageBannerText);
+                Assert.True(viewModel.CanOfferInstall);
+
+                ((System.Windows.Input.ICommand)viewModel.DismissPackages).Execute(null);
+                Assert.False(viewModel.IsPackageBannerVisible);
+
+                // Another design that needs nothing missing: no banner.
+                viewModel.OpenExample(Examples.All.Single(e => e.Name == "Loan payment"));
+                await Task.Delay(500);
+                Assert.False(viewModel.IsPackageBannerVisible);
+                viewModel.EndJulia();
+            });
+        }
+
+        [Fact]
+        public void Installing_from_the_banner_shows_it_going_and_ends_it()
+        {
+            Ui.Run(async () =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new();
+                Assert.True(await viewModel.ChooseJuliaAsync(StandInJulia.Create(_folder, ["julia version 1.11.2", $"{Missing}MatrixMarket", "!   Resolving package versions..."])));
+                viewModel.OpenExample(Examples.All.Single(e => e.Name == "Network spread"));
+                await Until(() => viewModel.IsPackageBannerVisible);
+
+                List<string> seen = [];
+                viewModel.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(MainViewModel.PackageBannerText) && viewModel.IsInstallingPackages)
+                    {
+                        seen.Add(viewModel.PackageBannerText);
+                    }
+                };
+
+                await viewModel.InstallDesignPackagesAsync();
+
+                Assert.Contains(seen, text => text.StartsWith("Installing MatrixMarket with Julia's package manager."));
+                Assert.False(viewModel.IsInstallingPackages);
+                Assert.False(viewModel.IsPackageBannerVisible);
+                Assert.Contains(viewModel.Output, o => o.Text.Contains("Resolving package versions"));
+                Assert.Contains(viewModel.Output, o => o.Text.StartsWith("Installed MatrixMarket in "));
+                viewModel.EndJulia();
+            });
+        }
+
+        [Fact]
+        public void Real_julia_names_a_package_a_function_loads_that_is_not_installed()
+        {
+            Ui.Run(async () =>
+            {
+                // Nothing to check against without Julia.
+                if (await JuliaLocator.FindAsync(null) is not JuliaInstallation julia)
+                {
+                    return;
+                }
+
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new();
+                Assert.True(await viewModel.ChooseJuliaAsync(julia.Path));
+                string path = Path.Combine(_folder, "needs.jsynth");
+                Function f = MainViewModel.Nodes.OfType<Function>().Single(n => n.Name == "f");
+                f.Body = "using NoSuchJuliaSynthPackage\nx ^ z";
+                viewModel.SaveDesign(path);
+
+                viewModel.OpenDesign(path);
+                await Until(() => viewModel.IsPackageBannerVisible);
+
+                Assert.Equal(["NoSuchJuliaSynthPackage"], viewModel.MissingPackages);
+                viewModel.EndJulia();
+            });
+        }
     }
 }

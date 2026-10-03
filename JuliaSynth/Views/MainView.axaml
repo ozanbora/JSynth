@@ -182,6 +182,30 @@
                TextWrapping="Wrap"
                Opacity="0.55"
                Text="An empty design. Right-click to add a node, or open an example from File → Examples."/>
+    <!-- Packages the design needs that aren't installed, and their installing. -->
+    <Border Grid.Column="0"
+            x:Name="PackageBanner"
+            IsVisible="{Binding Path=IsPackageBannerVisible}"
+            MaxWidth="720"
+            Margin="16 12"
+            Padding="14 10"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            CornerRadius="8"
+            Background="{DynamicResource StatusBarBackgroundBrush}"
+            BorderBrush="{DynamicResource NodeWarningBrush}"
+            BorderThickness="1"
+            BoxShadow="0 4 16 0 #30000000">
+      <StackPanel Spacing="8">
+        <TextBlock Text="{Binding Path=PackageBannerText}" TextWrapping="Wrap"/>
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding Path=IsInstallingPackages}"/>
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+          <Button Content="Install" IsVisible="{Binding Path=CanOfferInstall}" Command="{Binding Path=InstallDesignPackages}"/>
+          <Button Content="Not now" IsVisible="{Binding Path=CanOfferInstall}" Command="{Binding Path=DismissPackages}"/>
+          <Button Content="Stop" IsVisible="{Binding Path=IsInstallingPackages}" Command="{Binding Path=Stop}"/>
+        </StackPanel>
+      </StackPanel>
+    </Border>
     <!-- The start page, over the canvas. -->
     <jsViews:StartPage Grid.Column="0" IsVisible="{Binding Path=IsStartPageOpen}"/>
     <!-- The function panel: a function's settings and code, docked so it stays open while you work. -->

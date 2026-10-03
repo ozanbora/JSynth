@@ -85,7 +85,7 @@ namespace JuliaSynth.ViewModels
                 "Networks: four small networks (a ring, a star, a path, and four nodes all linked) as sparse matrices in "
                 + ".mtx files. Map counts each network's links and finds its spread rate, the largest eigenvalue "
                 + "(LinearAlgebra), which says how fast a rumour or a virus spreads through it. Reading .mtx files "
-                + "needs the MatrixMarket package: JuliaSynth offers to install it on the first run.",
+                + "needs the MatrixMarket package: JuliaSynth offers to install it when the example opens.",
                 NetworkSpread),
             new("Savings growth",
                 "Finance: 10,000 saved at 5% a year, year by year for 30 years. Map applies balance to every year of "

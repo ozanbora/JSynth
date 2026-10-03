@@ -125,6 +125,10 @@ public partial class MainViewModel
             _session = value is null ? null : new JuliaSession(value.Path);
             ForgetWarmUp();
             _ = WarmUpAsync();
+
+            // What the open design needs, now that there is a Julia to ask.
+            MissingPackages = [];
+            _ = CheckDesignPackagesAsync();
         }
     }
 
@@ -281,6 +285,7 @@ public partial class MainViewModel
         History.Reset();
         FilePath = null;
         ScrollViewerOffset = Avalonia.Vector.Zero;
+        DesignOpened();
 
         IsOutputVisible = true;
         if (Output.Count > 0)
@@ -571,6 +576,7 @@ public partial class MainViewModel
         }
 
         _installedPackages.UnionWith(unknown.Except(missing));
+        MissingPackages = missing;
         if (missing.Count == 0)
         {
             return true;
@@ -592,28 +598,8 @@ public partial class MainViewModel
             return true;
         }
 
-        Log($"Installing {names} with Julia's package manager; the first time, this can take a few minutes…", OutputKind.Info);
-        RunResult result = await manager.InstallAsync(missing, folder, line => Dispatcher.UIThread.Post(() => Log(line.Text, OutputKind.Output)), cancellationToken);
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-        if (result.Cancelled)
-        {
-            Log("Installing stopped.", OutputKind.Info);
-            return false;
-        }
-
-        if (!result.Succeeded)
-        {
-            Log($"Installing {names} failed (see above); the nodes needing {them} are skipped.", OutputKind.Error);
-            return true;
-        }
-
-        _installedPackages.UnionWith(missing);
-
-        // Loaded afresh by a new Julia, rather than by one that looked for them before they were there.
-        _session?.Restart();
-        ForgetWarmUp();
-        Log($"Installed {names} in {result.Elapsed.TotalSeconds:0} s.", OutputKind.Info);
-        return true;
+        // Stopped: no run. Failed: the run goes ahead, and the nodes needing them say why they were skipped.
+        return await InstallPackagesAsync(julia, missing, folder, cancellationToken) != InstallOutcome.Stopped;
     }
 
     /// <summary>
