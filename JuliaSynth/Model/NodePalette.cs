@@ -22,6 +22,8 @@ namespace JuliaSynth.Model
         public static readonly Color Display = Color.Parse("#D5D9DE");       // mist grey
         public static readonly Color SaveFile = Color.Parse("#E6C8AE");      // latte
         public static readonly Color Plot = Color.Parse("#B9D3CB");          // sage
+        public static readonly Color Files = Color.Parse("#E9DDAF");         // wheat
+        public static readonly Color Map = Color.Parse("#F3C4D6");           // rose
 
         /// <summary>
         /// Each kind's colour before the pastels, and its pastel.

@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+             x:Class="JuliaSynth.Views.Details.FilesNode"
+             Classes="details"
+
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+
+             x:DataType="jsModel:FilesNode"
+             Width="480"
+
+             mc:Ignorable="d"
+             d:DesignHeight="320"
+             >
+
+  <Design.DataContext>
+    <jsModel:FilesNode />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <FontFamily x:Key="CodeFont">Cascadia Mono,Consolas,Menlo,monospace</FontFamily>
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto,auto,auto"
+        ColumnDefinitions="auto,*"
+        >
+
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Folder"
+           />
+    <Grid Grid.Row="0"
+          Grid.Column="1"
+          ColumnDefinitions="*,auto"
+          >
+      <TextBox Grid.Column="0"
+               Text="{Binding Path=Folder}"
+               PlaceholderText="C:\data\runs"
+               ToolTip.Tip="Where Julia finds the files. A relative folder is relative to the folder Julia runs in: the design's."
+               />
+      <Button Grid.Column="1"
+              Margin="4 0 0 0"
+              Content="Browse…"
+              Click="Browse_Click"
+              />
+    </Grid>
+
+    <Label Grid.Row="1"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Files"
+           />
+    <StackPanel Grid.Row="1"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="4"
+                >
+      <TextBox Width="150"
+               FontFamily="{StaticResource CodeFont}"
+               Text="{Binding Path=Pattern}"
+               ToolTip.Tip="Which files to read, by name: * stands for any text, ? for one character (run-*.csv). Upper and lower case are the same."
+               />
+      <ComboBox Width="150"
+                SelectedValue="{Binding Path=Format}"
+                ItemsSource="{x:Static jsModel:FileFormats.All}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="How the files are read. CSV and TSV: values separated by commas or tabs. Matrix Market (.mtx): sparse matrices. JLD2: arrays saved from Julia."
+                />
+    </StackPanel>
+
+    <Label Grid.Row="2"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Each makes"
+           />
+    <StackPanel Grid.Row="2"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="4"
+                >
+      <ComboBox Width="150"
+                SelectedValue="{Binding Path=Shape}"
+                ItemsSource="{Binding Path=PossibleShapes}"
+                IsEnabled="{Binding Path=CanPickShape}"
+                ToolTip.Tip="What each file holds: the function applied to the files takes this."
+                />
+      <ComboBox Width="100"
+                SelectedValue="{Binding Path=ElementType}"
+                ItemsSource="{x:Static jsModel:JuliaTypes.Numeric}"
+                ToolTip.Tip="Julia type of every element; the values are converted to it."
+                />
+    </StackPanel>
+
+    <CheckBox Grid.Row="3"
+              Grid.Column="1"
+              Content="First line is a header"
+              IsChecked="{Binding Path=HasHeader}"
+              IsVisible="{Binding Path=IsDelimited}"
+              ToolTip.Tip="Skip a first line that names the columns instead of holding values."
+              />
+
+    <Label Grid.Row="3"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Name"
+           IsVisible="{Binding Path=IsJld2}"
+           />
+    <TextBox Grid.Row="3"
+             Grid.Column="1"
+             FontFamily="{StaticResource CodeFont}"
+             Text="{Binding Path=Variable}"
+             IsVisible="{Binding Path=IsJld2}"
+             ToolTip.Tip="The name the array was saved under in every file, e.g. A for jldsave(&quot;run1.jld2&quot;; A)."
+             />
+
+    <Label Grid.Row="4"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Color"
+           />
+    <ColorPicker Grid.Row="4"
+                 Grid.Column="1"
+                 Color="{Binding Path=Color}"
+                 HorizontalAlignment="Left"
+                 VerticalAlignment="Center"
+                 ToolTip.Tip="Select the color you want to display this node."
+                 />
+
+    <TextBlock Grid.Row="5"
+               Grid.Column="1"
+               Margin="0 4 0 0"
+               FontSize="12"
+               Opacity="0.7"
+               TextWrapping="Wrap"
+               Text="{Binding Path=Summary}"
+               IsVisible="{Binding Path=Summary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               />
+
+    <TextBlock Grid.Row="6"
+               Grid.Column="1"
+               Margin="0 4"
+               Foreground="OrangeRed"
+               TextWrapping="Wrap"
+               Text="{Binding Path=Error}"
+               IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+               />
+
+    <Label Grid.Row="7"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Julia"
+           />
+    <Border Grid.Row="7"
+            Grid.Column="1"
+            Padding="6"
+            CornerRadius="4"
+            Background="{DynamicResource CanvasBackgroundBrush}"
+            >
+      <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
+                           TextWrapping="Wrap"
+                           Text="{Binding Path=Code}"
+                           />
+    </Border>
+  </Grid>
+
+</UserControl>

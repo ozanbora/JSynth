@@ -21,6 +21,11 @@
       <Setter Property="Fill" Value="{DynamicResource PortHoverBrush}"/>
     </Style>
 
+    <!-- A port taking a function to apply, not a value: in the lavender of functions. -->
+    <Style Selector=":is(UserControl).function > Ellipse#Port">
+      <Setter Property="Fill" Value="{DynamicResource FunctionPortBrush}"/>
+    </Style>
+
     <!-- Drop target feedback while a wire is dragged over the port. -->
     <Style Selector=":is(UserControl).accept > Ellipse#Port">
       <Setter Property="Fill" Value="{DynamicResource AcceptBrush}"/>

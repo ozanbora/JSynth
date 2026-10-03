@@ -55,6 +55,24 @@ namespace JuliaSynth.Model
                 }
             }
 
+            // Files go through Map; a script without them is still valid Julia, so these are in an exported one too.
+            if (nodes.Any(n => n is FilesNode or MapNode))
+            {
+                _ = script.AppendLine().AppendLine(FilesNode.Prelude.TrimEnd());
+            }
+
+            if (instrumented && nodes.OfType<MapNode>().Any())
+            {
+                _ = script.AppendLine(MapNode.Prelude.TrimEnd());
+            }
+
+            // Functions wired into a Map are applied by it: one whose parameter isn't wired has no value of its own.
+            Dictionary<string, Node> byID = nodes.ToDictionary(n => n.ID);
+            HashSet<string> applied = connections
+                .Where(c => byID[c.TargetID].Inputs.Any(p => p.ID == c.ParameterID && p.IsFunctionPort))
+                .Select(c => c.SourceID)
+                .ToHashSet();
+
             // Functions bring their packages into scope themselves (their code starts with its using
             // statements); the rest come from here. Running checks them all first.
             List<string> usings = order.SelectMany(PackagesOf).Distinct().Order(StringComparer.Ordinal).ToList();
@@ -86,8 +104,13 @@ namespace JuliaSynth.Model
             foreach (Node node in order)
             {
                 List<Connection> inputs = connections.Where(c => c.TargetID == node.ID).ToList();
+                if (node is Function used && applied.Contains(used.ID) && used.Parameters.Any(p => inputs.All(c => c.ParameterID != p.ID)))
+                {
+                    continue;
+                }
+
                 string variable = variables[node.ID];
-                (string? expression, string? problem) = Expression(node, inputs, variables, plotFolder);
+                (string? expression, string? problem) = Expression(node, inputs, variables, byID, instrumented, plotFolder);
 
                 if (!instrumented)
                 {
@@ -152,7 +175,7 @@ namespace JuliaSynth.Model
         /// <summary>
         /// Julia code computing <paramref name="node"/>'s value from its wired inputs, or why it can't be computed.
         /// </summary>
-        private static (string? Expression, string? Problem) Expression(Node node, List<Connection> inputs, Dictionary<string, string> variables, string plotFolder)
+        private static (string? Expression, string? Problem) Expression(Node node, List<Connection> inputs, Dictionary<string, string> variables, Dictionary<string, Node> byID, bool instrumented, string plotFolder)
         {
             string? Input(Parameter parameter) => inputs.FirstOrDefault(c => c.ParameterID == parameter.ID) is Connection c ? variables[c.SourceID] : null;
 
@@ -170,6 +193,25 @@ namespace JuliaSynth.Model
                     return sparse.Error is null ? (sparse.Julia, null) : (null, sparse.Error);
                 case ArrayFile file:
                     return file.Error is null ? (file.Julia, null) : (null, file.Error);
+                case FilesNode files:
+                    return files.Error is null ? (files.Julia, null) : (null, files.Error);
+                case MapNode map:
+                {
+                    if (Input(map.Items) is not string items)
+                    {
+                        return (null, "Wire values in to go through them.");
+                    }
+
+                    // The function itself, by name: Map calls it, once per value.
+                    if (inputs.FirstOrDefault(c => c.ParameterID == map.Apply.ID) is not Connection wire || byID[wire.SourceID] is not Function function)
+                    {
+                        return (null, "Wire in the function to apply to each value.");
+                    }
+
+                    return MapNode.Problem(function) is string problem
+                        ? (null, problem)
+                        : ($"{(instrumented ? "_jsynth_map" : "map")}({function.Name}, {items})", null);
+                }
                 case ArrayBuilder builder:
                 {
                     if (builder.Error is not null)
@@ -266,6 +308,7 @@ namespace JuliaSynth.Model
             {
                 ArrayBuilder builder => builder.Package is string package ? [package] : [],
                 ArrayFile file => file.Package.Split(',', StringSplitOptions.TrimEntries),
+                FilesNode files => files.Package.Split(',', StringSplitOptions.TrimEntries),
                 SparseInput => ["SparseArrays"],
                 OutputNode output => output.Packages,
 
@@ -345,6 +388,8 @@ namespace JuliaSynth.Model
                     SparseInput => "S",
                     ArrayBuilder => "B",
                     ArrayFile => "D",
+                    FilesNode => "files",
+                    MapNode => "mapped",
                     DisplayNode => "shown",
                     PlotNode => "plot",
                     SaveFile => "saved",

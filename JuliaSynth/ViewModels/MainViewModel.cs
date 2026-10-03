@@ -317,6 +317,8 @@ public partial class MainViewModel : ReactiveObject
             nameof(DisplayNode) => new DisplayNode(),
             nameof(SaveFile) => new SaveFile(),
             nameof(PlotNode) => new PlotNode(),
+            nameof(FilesNode) => new FilesNode(),
+            nameof(MapNode) => new MapNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
 

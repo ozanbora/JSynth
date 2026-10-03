@@ -11,6 +11,12 @@ namespace JuliaSynth.Model
     [JsonObject(MemberSerialization.OptIn)]
     public class Parameter : ReactiveObject
     {
+        /// <summary>
+        /// The type of a port taking a function itself, to apply, rather than a value: a Function node
+        /// wired here is passed by name, not called.
+        /// </summary>
+        public const string FunctionType = "Function";
+
         #region Private Properties
         private string _name;
         private string _type;
@@ -89,7 +95,12 @@ namespace JuliaSynth.Model
         /// <summary>
         /// Julia representation of the parameter; untyped (Any) parameters have no annotation.
         /// </summary>
-        public string Signature => Type == Function.AnyType ? Name : $"{Name}::{Type}";
+        public string Signature => Type == Function.AnyType ? Name : IsFunctionPort ? $"{Name}: a function" : $"{Name}::{Type}";
+
+        /// <summary>
+        /// Whether this port takes a function to apply (see <see cref="FunctionType"/>).
+        /// </summary>
+        public bool IsFunctionPort => Type == FunctionType;
 
         /// <summary>
         /// Whether a wire feeds this parameter; kept up to date by the designer, not saved.

@@ -246,8 +246,8 @@ namespace JuliaSynth.Controls
                         && output.Owner is Model.Node source
                         && input.Parameter is Parameter parameter)
                     {
-                        // A type changed after wiring: keep the wire but flag it.
-                        Pen pen = Wiring.AreTypesCompatible(source.OutputType, parameter.Type)
+                        // A type changed after wiring (or a mapped function's parameters): keep the wire but flag it.
+                        Pen pen = Wiring.Fits(source, parameter)
                             ? new Pen(WireBrush(source.Color), Thickness)
                             : new Pen(InvalidWireBrush, Thickness, new DashStyle([2, 2], 0));
                         DrawWire(context, pen, output.CenterIn(grid), input.CenterIn(grid));

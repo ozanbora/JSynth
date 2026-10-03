@@ -14,6 +14,7 @@
           <!-- Soft accents to go with the pastel nodes; text colours stay dark enough to read. -->
           <SolidColorBrush x:Key="PortBrush" Color="#6F9FD8"/>
           <SolidColorBrush x:Key="PortHoverBrush" Color="#8DB4E6"/>
+          <SolidColorBrush x:Key="FunctionPortBrush" Color="#9B86C9"/>
           <SolidColorBrush x:Key="AcceptBrush" Color="#6CC08B"/>
           <SolidColorBrush x:Key="RejectBrush" Color="#E07A7A"/>
           <SolidColorBrush x:Key="ConsoleErrorBrush" Color="#B4474A"/>
@@ -27,6 +28,7 @@
 
           <SolidColorBrush x:Key="PortBrush" Color="#8DB4E6"/>
           <SolidColorBrush x:Key="PortHoverBrush" Color="#A9C8EE"/>
+          <SolidColorBrush x:Key="FunctionPortBrush" Color="#B7A6DE"/>
           <SolidColorBrush x:Key="AcceptBrush" Color="#8FD3A4"/>
           <SolidColorBrush x:Key="RejectBrush" Color="#F09A9A"/>
           <SolidColorBrush x:Key="ConsoleErrorBrush" Color="#F4A3A3"/>

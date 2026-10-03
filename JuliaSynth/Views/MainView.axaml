@@ -62,12 +62,14 @@
                   <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Load from file (CSV, .mtx, JLD2)" Tag="ArrayFile" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtPointer_Click"/>
                   <Separator/>
                   <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Plot (∿)" Tag="PlotNode" Click="AddAtPointer_Click"/>
                   <Separator/>
                   <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtPointer_Click"/>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
@@ -149,6 +151,12 @@
               </DataTemplate>
               <DataTemplate DataType="jsModel:PlotNode">
                 <jsOutputs:PlotNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:FilesNode">
+                <jsInputs:FilesNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:MapNode">
+                <jsViews:MapNode DataContext="{Binding}"/>
               </DataTemplate>
               <DataTemplate DataType="jsModel:Function">
                 <jsViews:Function DataContext="{Binding}"/>
@@ -323,12 +331,14 @@
                 <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Load from file (CSV, .mtx, JLD2)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtCenter_Click"/>
                 <Separator/>
                 <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Plot (∿)" Tag="PlotNode" Click="AddAtCenter_Click"/>
                 <Separator/>
                 <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtCenter_Click"/>
               </MenuFlyout>
             </DropDownButton.Flyout>
           </DropDownButton>

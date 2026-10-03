@@ -28,6 +28,17 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
+        /// Whether what <paramref name="source"/> gives fits <paramref name="parameter"/>: its value's type,
+        /// or for a function port, the function itself (see <see cref="Validate"/>).
+        /// </summary>
+        public static bool Fits(Node source, Parameter parameter)
+        {
+            return parameter.IsFunctionPort
+                ? source is Function { Parameters.Count: 1 }
+                : AreTypesCompatible(source.OutputType, parameter.Type);
+        }
+
+        /// <summary>
         /// Returns why <paramref name="source"/> can't be wired to <paramref name="parameter"/>
         /// of <paramref name="target"/>, or null when it can.
         /// </summary>
@@ -38,9 +49,12 @@ namespace JuliaSynth.Model
                 return "This node has no output to wire from.";
             }
 
-            if (!AreTypesCompatible(source.OutputType, parameter.Type))
+            // A function port takes the function itself, to apply to each value.
+            if (!Fits(source, parameter))
             {
-                return $"{source.OutputType} can't be passed to {parameter.Signature}.";
+                return !parameter.IsFunctionPort ? $"{source.OutputType} can't be passed to {parameter.Signature}."
+                    : source is Function function ? $"{function.Name} takes {function.Parameters.Count} values; it must take one, to be applied to each value."
+                    : "Only a function can be wired here: the one to apply to each value.";
             }
 
             // The wire would make the target (indirectly) depend on itself.
