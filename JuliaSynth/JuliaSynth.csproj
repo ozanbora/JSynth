@@ -10,6 +10,11 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
+  <!-- Data the examples read (File → Examples): copied next to the app, so they work wherever it runs. -->
+  <ItemGroup>
+    <None Update="ExampleData\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="JuliaSynth.Tests" />
   </ItemGroup>

@@ -13,8 +13,9 @@ namespace JuliaSynth.ViewModels
     public sealed record Example(string Name, string Description, Func<MainViewModel.DesignDocument> Build);
 
     /// <summary>
-    /// Real-world examples, built in code so they always match the current nodes. Each runs with plain Julia:
-    /// no packages to install.
+    /// Real-world examples, built in code so they always match the current nodes. They run with Julia and
+    /// its standard libraries, except that reading .mtx files needs MatrixMarket (offered for installing).
+    /// Data they read is bundled in ExampleData, next to the app.
     /// </summary>
     public static class Examples
     {
@@ -49,6 +50,23 @@ namespace JuliaSynth.ViewModels
                 "Simulation: π estimated from 100,000 random points in a square, by counting those inside the quarter circle. "
                 + "The plot shows the points. More samples give a better estimate; run it a few times to see it vary.",
                 MonteCarloPi),
+            new("Weather station week",
+                "Weather: a week of hourly temperatures, one CSV file a day, read one at a time. Map applies daily_mean "
+                + "(which uses mean from Statistics) and daily_swing to every file; the plot shows the mean of each day "
+                + "and warmest says which day was warmest. The files are in ExampleData/daily-temperatures, next to JuliaSynth: "
+                + "point the Files node at your own folder of CSV files.",
+                WeatherStationWeek),
+            new("Network spread",
+                "Networks: four small networks (a ring, a star, a path, and four nodes all linked) as sparse matrices in "
+                + ".mtx files. Map counts each network's links and finds its spread rate, the largest eigenvalue "
+                + "(LinearAlgebra), which says how fast a rumour or a virus spreads through it. Reading .mtx files "
+                + "needs the MatrixMarket package: JuliaSynth offers to install it on the first run.",
+                NetworkSpread),
+            new("Savings growth",
+                "Finance: 10,000 saved at 5% a year, year by year for 30 years. Map applies balance to every year of "
+                + "a range, without any files; the plot shows the growth and final the balance after 30 years. "
+                + "Change the rate in balance and run again.",
+                SavingsGrowth),
         ];
 
         private static MainViewModel.DesignDocument LoanPayment()
@@ -205,6 +223,84 @@ namespace JuliaSynth.ViewModels
                 (y, cloud, "y"), (x, cloud, "x"),
                 (estimate, showEstimate, 0),
                 (samples, x, "n"), (samples, y, "n"), (x, estimate, 0), (y, estimate, 1));
+        }
+
+        private static MainViewModel.DesignDocument WeatherStationWeek()
+        {
+            FilesNode days = new() { Folder = DataFolder("daily-temperatures"), Pattern = "day-*.csv", HasHeader = true, Row = 6, Column = Inputs };
+
+            Function dailyMean = Define("daily_mean", "Float64", 16, Inputs, "mean(A[:, 2])  # column 2: °C", ("A", "Matrix{Float64}"));
+            dailyMean.Packages = "Statistics";
+            Function dailySwing = Define("daily_swing", "Float64", 26, Inputs,
+                "maximum(A[:, 2]) - minimum(A[:, 2])  # warmest minus coldest hour",
+                ("A", "Matrix{Float64}"));
+
+            MapNode means = new() { Row = 11, Column = Stage1 };
+            MapNode swings = new() { Row = 25, Column = Stage1 };
+            PlotNode curve = new() { Title = "Mean temperature per day (°C)", Row = 9, Column = Stage2 + 3 };
+            Function warmest = Define("warmest", "Int64", 22, Stage2, "argmax(means)  # the day of the week", ("means", "Vector{Float64}"));
+            DisplayNode showWarmest = Shown(22, Stage3);
+            DisplayNode showSwings = Shown(34, Stage2);
+
+            return Design([days, dailyMean, dailySwing, means, swings, curve, warmest, showWarmest, showSwings],
+                (days, means, "items"), (dailyMean, means, "f"),
+                (days, swings, "items"), (dailySwing, swings, "f"),
+                (means, curve, "y"), (means, warmest, 0), (warmest, showWarmest, 0),
+                (swings, showSwings, 0));
+        }
+
+        private static MainViewModel.DesignDocument NetworkSpread()
+        {
+            FilesNode networks = new() { Format = FileFormats.MatrixMarket, Folder = DataFolder("networks"), Row = 6, Column = Inputs };
+
+            Function links = Define("links", "Int64", 16, Inputs, "nnz(S) ÷ 2  # each link is stored both ways", ("S", "SparseMatrixCSC{Float64, Int64}"));
+            Function spread = Define("spread", "Float64", 26, Inputs,
+                """
+                # The largest eigenvalue of the links: the faster things spread, the larger it is.
+                maximum(abs, eigvals(Matrix(S)))
+                """,
+                ("S", "SparseMatrixCSC{Float64, Int64}"));
+            spread.Packages = "LinearAlgebra";
+
+            MapNode linkCounts = new() { Row = 11, Column = Stage1 };
+            MapNode spreadRates = new() { Row = 25, Column = Stage1 };
+            DisplayNode showLinks = Shown(11, Stage2);
+            Function fastest = Define("fastest", "Int64", 25, Stage2, "argmax(rates)  # in file order: complete-4, path-5, ring-6, star-6", ("rates", "Vector{Float64}"));
+            DisplayNode showFastest = Shown(25, Stage3);
+            DisplayNode showRates = Shown(35, Stage2);
+
+            return Design([networks, links, spread, linkCounts, spreadRates, showLinks, fastest, showFastest, showRates],
+                (networks, linkCounts, "items"), (links, linkCounts, "f"),
+                (networks, spreadRates, "items"), (spread, spreadRates, "f"),
+                (linkCounts, showLinks, 0), (spreadRates, fastest, 0), (fastest, showFastest, 0),
+                (spreadRates, showRates, 0));
+        }
+
+        private static MainViewModel.DesignDocument SavingsGrowth()
+        {
+            ArrayBuilder years = new() { Kind = "range", Row = 8, Column = Inputs };
+            foreach ((string key, string value) in new[] { ("start", "0"), ("stop", "30"), ("n", "31") })
+            {
+                years.Parameters.OfType<Argument>().Single(a => a.Key == key).Value = value;
+            }
+
+            Function balance = Define("balance", "Float64", 18, Inputs, "10_000 * 1.05^t  # 10,000 saved at 5% a year, after t years", ("t", "Float64"));
+            MapNode growth = new() { Row = 12, Column = Stage1 };
+            PlotNode curve = new() { Title = "Balance by year", Row = 10, Column = Stage2 + 3 };
+            Function final = Define("final", "Float64", 24, Stage2, "last(balances)", ("balances", "Vector{Float64}"));
+            DisplayNode showFinal = Shown(24, Stage3);
+
+            return Design([years, balance, growth, curve, final, showFinal],
+                (years, growth, "items"), (balance, growth, "f"),
+                (years, curve, "x"), (growth, curve, "y"), (growth, final, 0), (final, showFinal, 0));
+        }
+
+        /// <summary>
+        /// A folder of bundled example data, next to the app (see ExampleData in the project).
+        /// </summary>
+        private static string DataFolder(string name)
+        {
+            return System.IO.Path.Combine(AppContext.BaseDirectory, "ExampleData", name);
         }
 
         private static Float Scalar(double value, int row)
