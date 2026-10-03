@@ -12,6 +12,12 @@ namespace JuliaSynth.Desktop
         public bool UseWindowsUIComposition { get; set; } = true;
         public bool UseDirectX11 { get; set; }
         public bool UseManagedSystemDialogs { get; set; }
+
+        /// <summary>
+        /// Menus, flyouts and tooltips drawn inside the window rather than as windows of their own: on by
+        /// default under WSL, where WSLg can leave closed menus on the screen, overlapping the next ones.
+        /// </summary>
+        public bool OverlayPopups { get; set; } = Wsl.IsRunningUnder;
         public bool Headless { get; set; }
         public bool EnableVNCServer { get; set; }
         public string? VNCHost { get; set; } = null;

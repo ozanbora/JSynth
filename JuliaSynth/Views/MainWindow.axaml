@@ -20,7 +20,7 @@
           <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding Path=ZoomOut}"/>
           <KeyBinding Gesture="Ctrl+D0" Command="{Binding Path=ResetZoom}"/>
           <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding Path=ResetZoom}"/>
-          <!-- Text boxes live in flyouts (their own popups), so these never steal their keys. -->
+          <!-- While a text field has the keyboard, the design-editing ones wait (see IsTypingText). -->
           <KeyBinding Gesture="Ctrl+Z" Command="{Binding Path=Undo}"/>
           <KeyBinding Gesture="Ctrl+Y" Command="{Binding Path=Redo}"/>
           <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding Path=Redo}"/>
@@ -48,7 +48,7 @@
               <MenuItem Header="Save _As…" InputGesture="Ctrl+Shift+S" HotKey="Ctrl+Shift+S" Click="SaveAs_Click"/>
               <Separator/>
               <!-- Filled from Examples.All -->
-              <MenuItem x:Name="ExamplesMenu" Header="E_xamples"/>
+              <MenuItem x:Name="ExamplesMenu" Header="_Examples"/>
               <Separator/>
               <MenuItem Header="E_xit" Click="Exit_Click"/>
             </MenuItem>

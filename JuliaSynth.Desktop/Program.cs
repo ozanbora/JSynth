@@ -47,7 +47,8 @@ internal class Program
         {
             RenderingMode = settings.UseGPU
             ? [X11RenderingMode.Glx, X11RenderingMode.Software]
-            : [X11RenderingMode.Software]
+            : [X11RenderingMode.Software],
+            OverlayPopups = settings.OverlayPopups,
         });
 
         _ = builder.With(new AvaloniaNativePlatformOptions

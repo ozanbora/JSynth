@@ -19,6 +19,8 @@ namespace JuliaSynth.Desktop
 
         public Option<bool> UseManagedSystemDialogs { get; set; }
 
+        public Option<bool> OverlayPopups { get; set; }
+
         public Option<bool> Headless { get; set; }
 
         public Option<bool> EnableVNCServer { get; set; }
@@ -71,6 +73,12 @@ namespace JuliaSynth.Desktop
                 description: "Use managed system dialogs"
             );
 
+            OverlayPopups = new Option<bool>(
+                aliases: ["--overlayPopups"],
+                getDefaultValue: () => CLISettings.Default.OverlayPopups,
+                description: "Draw menus and popups inside the window (Linux; on by default under WSL)"
+            );
+
             Headless = new Option<bool>(
                 aliases: ["--headless"],
                 getDefaultValue: () => CLISettings.Default.Headless,
@@ -111,6 +119,7 @@ namespace JuliaSynth.Desktop
                 UseWindowsUIComposition = GetOptionValue(bindingContext, UseWindowsUIComposition),
                 UseDirectX11 = GetOptionValue(bindingContext, UseDirectX11),
                 UseManagedSystemDialogs = GetOptionValue(bindingContext, UseManagedSystemDialogs),
+                OverlayPopups = GetOptionValue(bindingContext, OverlayPopups),
                 Headless = GetOptionValue(bindingContext, Headless),
                 EnableVNCServer = GetOptionValue(bindingContext, EnableVNCServer),
                 VNCHost = GetOptionValue(bindingContext, VNCHost),

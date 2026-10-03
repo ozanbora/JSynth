@@ -27,6 +27,7 @@ namespace JuliaSynth.Desktop
             rootCommand.AddOption(binder.UseWindowsUIComposition);
             rootCommand.AddOption(binder.UseDirectX11);
             rootCommand.AddOption(binder.UseManagedSystemDialogs);
+            rootCommand.AddOption(binder.OverlayPopups);
             rootCommand.AddOption(binder.Headless);
             rootCommand.AddOption(binder.EnableVNCServer);
             rootCommand.AddOption(binder.VNCHost);
