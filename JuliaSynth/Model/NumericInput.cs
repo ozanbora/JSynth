@@ -53,6 +53,7 @@ namespace JuliaSynth.Model
         #endregion
         public NumericInput() : base()
         {
+            Next = new Parameter("next", Function.AnyType);
         }
 
         /// <summary>

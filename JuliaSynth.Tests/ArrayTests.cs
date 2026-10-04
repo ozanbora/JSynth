@@ -1,4 +1,5 @@
 using JuliaSynth.Model;
+using JuliaSynth.ViewModels;
 using System.Linq;
 using Xunit;
 
@@ -113,8 +114,8 @@ namespace JuliaSynth.Tests
             Parameter v = new("v", "Vector{Float64}");
             Function f = new() { Parameters = { m, v } };
 
-            Assert.Null(Wiring.Validate([], matrix, f, m));
-            Assert.Equal("Matrix{Float64} can't be passed to v::Vector{Float64}.", Wiring.Validate([], matrix, f, v));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], matrix, f, m));
+            Assert.Equal("Matrix{Float64} can't be passed to v::Vector{Float64}.", Wiring.Validate(MainViewModel.Nodes, [], matrix, f, v));
         }
 
         [Theory]

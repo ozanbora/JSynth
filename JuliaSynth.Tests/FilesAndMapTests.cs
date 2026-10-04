@@ -118,13 +118,13 @@ namespace JuliaSynth.Tests
             two.Parameters.Add(new Parameter("a", Function.AnyType));
             two.Parameters.Add(new Parameter("b", Function.AnyType));
 
-            Assert.Null(Wiring.Validate([], OneValue(), map, map.Apply));
-            Assert.Equal("Only a function can be wired here: the one to apply to each value.", Wiring.Validate([], new Float(), map, map.Apply));
-            Assert.Contains("must take one", Wiring.Validate([], two, map, map.Apply));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], OneValue(), map, map.Apply));
+            Assert.Equal("Only a function can be wired here: the one to apply to each value.", Wiring.Validate(MainViewModel.Nodes, [], new Float(), map, map.Apply));
+            Assert.Contains("must take one", Wiring.Validate(MainViewModel.Nodes, [], two, map, map.Apply));
 
             // Its value can still go where values go.
-            Assert.Null(Wiring.Validate([], OneValue(), map, map.Items));
-            Assert.Null(Wiring.Validate([], new FilesNode(), map, map.Items));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], OneValue(), map, map.Items));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], new FilesNode(), map, map.Items));
 
             // The wire is drawn as fitting (not flagged) until the function takes more values.
             Function applied = OneValue();

@@ -50,6 +50,7 @@ namespace JuliaSynth.Model
         private string _variable = "A";
         private string _summary = string.Empty;
         private string? _error;
+        private bool _eachFile;
         #endregion
 
         #region Public Properties
@@ -164,6 +165,30 @@ namespace JuliaSynth.Model
             }
         }
 
+        /// <summary>
+        /// Whether the files are gone through one at a time: the node gives each file's contents in turn, and
+        /// the nodes after it are worked out again for each, with inputs taking their next values in between
+        /// (see <see cref="Node.Next"/>). Otherwise it gives all the files, for a Map to go through.
+        /// </summary>
+        [JsonProperty(Order = 8)]
+        public virtual bool EachFile
+        {
+            get => _eachFile;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _eachFile, value);
+                this.RaisePropertyChanged(nameof(OutputType));
+                this.RaisePropertyChanged(nameof(EachText));
+            }
+        }
+
+        public override string OutputType => EachFile ? EachType : Function.AnyType;
+
+        /// <summary>
+        /// On the node: what it gives, "each a Matrix{Float64}", one at a time or all together.
+        /// </summary>
+        public string EachText => EachFile ? $"one at a time, each a {EachType}" : $"each a {EachType}";
+
         public IReadOnlyList<string> PossibleShapes => FileFormats.ShapesFor(Format);
 
         public bool CanPickShape => PossibleShapes.Count > 1;
@@ -271,7 +296,7 @@ namespace JuliaSynth.Model
             foreach (string name in new[]
             {
                 nameof(Shape), nameof(PossibleShapes), nameof(CanPickShape), nameof(IsDelimited), nameof(IsJld2), nameof(IsImage),
-                nameof(EachType), nameof(FolderName), nameof(Julia), nameof(Code), nameof(Package),
+                nameof(EachType), nameof(EachText), nameof(OutputType), nameof(FolderName), nameof(Julia), nameof(Code), nameof(Package),
             })
             {
                 this.RaisePropertyChanged(name);

@@ -89,6 +89,17 @@
                      ZIndex="3"
                      Margin="0 0 -8 0"/>
 
+      <!-- Next: the value it takes for the next file, when files are gone through one at a time -->
+      <jsControls:Connector Grid.Row="1"
+                     Grid.Column="0"
+                     HorizontalAlignment="Left"
+                     VerticalAlignment="Top"
+                     ZIndex="3"
+                     Margin="-8 0 0 0"
+                     Classes="next"
+                     DataContext="{Binding Path=Next}"
+                     ToolTip.Tip="next: going through files one at a time, this takes the value wired here after each file, as C = update(C, X) in a loop. It starts with its own."/>
+
       <!-- Size and element type, e.g. "2×2 Float64" -->
       <StackPanel Grid.Row="1"
                   Grid.Column="1"

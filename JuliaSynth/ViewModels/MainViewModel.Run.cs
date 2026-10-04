@@ -343,6 +343,7 @@ public partial class MainViewModel
             string stopFile = NewStopFile();
             JuliaScript script = ScriptGenerator.Generate(Nodes, Connections, instrumented: true, PlotFolder, stopFile);
             bool streaming = script.Streams;
+            bool looping = script.Looped.Count > 0;
             int version = _designVersion;
             Dictionary<string, Node> nodes = Nodes.ToDictionary(n => n.ID);
 
@@ -369,7 +370,7 @@ public partial class MainViewModel
                 node.Result = report;
                 if (node is PlotNode plot && report.Status == ReportStatus.Ok)
                 {
-                    _ = LoadPlotAsync(plot, report.Text, streaming ? null : version);
+                    _ = LoadPlotAsync(plot, report.Text, streaming ? null : version, discard: looping);
                 }
 
                 if (streaming)
@@ -392,6 +393,17 @@ public partial class MainViewModel
                     }
                 }
 
+                // Going through a folder file by file, the values are said once it is done: the last file's.
+                else if (looping && script.Looped.Contains(report.Id))
+                {
+                    return;
+                }
+
+                LogResult(node, variable, report);
+            }
+
+            void LogResult(Node node, string variable, Report report)
+            {
                 Log(report.Status switch
                 {
                     ReportStatus.Ok when node is SaveFile => $"{variable}: saved to {report.Text}",
@@ -425,6 +437,14 @@ public partial class MainViewModel
 
             // Let the output still queued for the UI thread come first.
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            if (looping && !streaming)
+            {
+                foreach (Node node in Nodes.Where(n => script.Looped.Contains(n.ID) && n.Result is not null))
+                {
+                    LogResult(node, script.Variables[node.ID], node.Result!);
+                }
+            }
+
             string stream = StreamStatus;
             EndStream();
             Log(result.Cancelled ? "Stopped."
@@ -523,9 +543,10 @@ public partial class MainViewModel
     /// unless the design changed meanwhile.
     /// </summary>
     /// <param name="version">The design version the run started with; null for a stream, shown whatever changed.</param>
-    private async Task LoadPlotAsync(PlotNode plot, string path, int? version)
+    /// <param name="discard">Whether the file is deleted once read: a loop writes one each time it draws.</param>
+    private async Task LoadPlotAsync(PlotNode plot, string path, int? version, bool discard = false)
     {
-        // Drawn again and again in a stream: only the latest drawing read is shown, whichever read ends first.
+        // Drawn again and again in a loop: only the latest drawing read is shown, whichever read ends first.
         int load = _plotLoads[plot.ID] = _plotLoads.GetValueOrDefault(plot.ID) + 1;
         try
         {
@@ -535,8 +556,8 @@ public partial class MainViewModel
                 plot.Plot = data;
             }
 
-            // A stream writes a file each time it draws: read, it isn't needed any more.
-            if (version is null)
+            // A loop writes a file each time it draws: read, it isn't needed any more.
+            if (discard)
             {
                 File.Delete(path);
             }

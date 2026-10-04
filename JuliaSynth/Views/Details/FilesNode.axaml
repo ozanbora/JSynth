@@ -23,7 +23,7 @@
     <FontFamily x:Key="CodeFont">Cascadia Mono,Consolas,Menlo,monospace</FontFamily>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto,auto,auto"
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto,auto,auto,auto"
         ColumnDefinitions="auto,*"
         >
 
@@ -127,12 +127,19 @@
              ToolTip.Tip="The name the array was saved under in every file, e.g. A for jldsave(&quot;run1.jld2&quot;; A)."
              />
 
-    <Label Grid.Row="4"
+    <CheckBox Grid.Row="4"
+              Grid.Column="1"
+              Content="One file at a time"
+              IsChecked="{Binding Path=EachFile}"
+              ToolTip.Tip="Give each file in turn, and work out the nodes after this again for each: inputs with a next value wired take it after each file, as C = update(C, X) in a loop. Otherwise all the files are given together, for a Map to go through."
+              />
+
+    <Label Grid.Row="5"
            Grid.Column="0"
            VerticalAlignment="Center"
            Content="Color"
            />
-    <ColorPicker Grid.Row="4"
+    <ColorPicker Grid.Row="5"
                  Grid.Column="1"
                  Color="{Binding Path=Color}"
                  HorizontalAlignment="Left"
@@ -140,7 +147,7 @@
                  ToolTip.Tip="Select the color you want to display this node."
                  />
 
-    <TextBlock Grid.Row="5"
+    <TextBlock Grid.Row="6"
                Grid.Column="1"
                Margin="0 4 0 0"
                FontSize="12"
@@ -150,7 +157,7 @@
                IsVisible="{Binding Path=Summary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                />
 
-    <TextBlock Grid.Row="6"
+    <TextBlock Grid.Row="7"
                Grid.Column="1"
                Margin="0 4"
                Foreground="OrangeRed"
@@ -159,12 +166,12 @@
                IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
                />
 
-    <Label Grid.Row="7"
+    <Label Grid.Row="8"
            Grid.Column="0"
            VerticalAlignment="Top"
            Content="Julia"
            />
-    <Border Grid.Row="7"
+    <Border Grid.Row="8"
             Grid.Column="1"
             Padding="6"
             CornerRadius="4"

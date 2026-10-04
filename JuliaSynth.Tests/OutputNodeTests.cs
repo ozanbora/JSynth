@@ -35,8 +35,8 @@ namespace JuliaSynth.Tests
             Function f = new() { Parameters = { x } };
 
             Assert.False(display.HasOutput);
-            Assert.Equal("This node has no output to wire from.", Wiring.Validate([], display, f, x));
-            Assert.Null(Wiring.Validate([], f, display, display.Input));
+            Assert.Equal("This node has no output to wire from.", Wiring.Validate(MainViewModel.Nodes, [], display, f, x));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], f, display, display.Input));
         }
 
         [Fact]
@@ -97,11 +97,11 @@ namespace JuliaSynth.Tests
             ArrayBuilder sparse = new() { Kind = "sprand", Shape = "Matrix" };
 
             Assert.Equal("SparseMatrixCSC", save.Input.Type);
-            Assert.NotNull(Wiring.Validate([], dense, save, save.Input));
-            Assert.Null(Wiring.Validate([], sparse, save, save.Input));
+            Assert.NotNull(Wiring.Validate(MainViewModel.Nodes, [], dense, save, save.Input));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], sparse, save, save.Input));
 
             save.Format = ArrayFile.Csv;
-            Assert.Null(Wiring.Validate([], dense, save, save.Input));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], dense, save, save.Input));
         }
 
         [Fact]
@@ -195,10 +195,10 @@ namespace JuliaSynth.Tests
             PlotNode plot = new();
 
             Assert.False(plot.HasOutput);
-            Assert.Null(Wiring.Validate([], new MatrixNode(), plot, plot.Y));
-            Assert.Null(Wiring.Validate([], new VectorNode(), plot, plot.X));
-            Assert.NotNull(Wiring.Validate([], new MatrixNode(), plot, plot.X));
-            Assert.Equal("This node has no output to wire from.", Wiring.Validate([], plot, new DisplayNode(), new DisplayNode().Input));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], new MatrixNode(), plot, plot.Y));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], new VectorNode(), plot, plot.X));
+            Assert.NotNull(Wiring.Validate(MainViewModel.Nodes, [], new MatrixNode(), plot, plot.X));
+            Assert.Equal("This node has no output to wire from.", Wiring.Validate(MainViewModel.Nodes, [], plot, new DisplayNode(), new DisplayNode().Input));
         }
 
         [Fact]

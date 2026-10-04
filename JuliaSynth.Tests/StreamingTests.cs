@@ -13,7 +13,7 @@ namespace JuliaSynth.Tests
 {
     /// <summary>
     /// A design watching a folder runs as a stream: the nodes downstream of the Watch folder node again for
-    /// every file written to it, a Running node carrying its state from file to file, until stopped.
+    /// every file written to it, an input carrying its value from file to file (its next value), until stopped.
     /// </summary>
     public sealed class StreamingTests : IDisposable
     {
@@ -43,22 +43,28 @@ namespace JuliaSynth.Tests
         }
 
         /// <summary>
-        /// Watch folder (CSV) → Running(add) → Display, and a constant computed once, before the stream.
+        /// Watch folder (CSV) and total → add → Display, add → total's next value; and a constant computed once, before the stream.
         /// </summary>
-        private static (WatchNode Watch, RunningNode Total, Float Once) Design(string folder)
+        private static (WatchNode Watch, ArrayBuilder Total, Float Once) Design(string folder)
         {
             new MainViewModel().NewDesign();
             WatchNode watch = new() { Folder = folder };
             Function add = new() { Name = "add", ReturnType = "Matrix{Float64}", Body = "S .+ X" };
             add.Parameters.Add(new Parameter("S", "Matrix{Float64}"));
             add.Parameters.Add(new Parameter("X", "Matrix{Float64}"));
-            RunningNode total = new();
+            ArrayBuilder total = new() { Kind = "zeros", Shape = JuliaTypes.Matrix };
+            foreach (Argument size in total.Parameters.OfType<Argument>())
+            {
+                size.Value = "1";
+            }
+
             DisplayNode shown = new();
             Float once = new() { Value = 2.5 };
             MainViewModel.Nodes.AddRange([watch, add, total, shown, once]);
-            Assert.Null(MainViewModel.Connect(watch, total, total.Items));
-            Assert.Null(MainViewModel.Connect(add, total, total.Update));
-            Assert.Null(MainViewModel.Connect(total, shown, shown.Input));
+            Assert.Null(MainViewModel.Connect(total, add, add.Parameters[0]));
+            Assert.Null(MainViewModel.Connect(watch, add, add.Parameters[1]));
+            Assert.Null(MainViewModel.Connect(add, total, total.Next!));
+            Assert.Null(MainViewModel.Connect(add, shown, shown.Input));
             return (watch, total, once);
         }
 
@@ -78,24 +84,26 @@ namespace JuliaSynth.Tests
         {
             Ui.Run(() =>
             {
-                (WatchNode watch, RunningNode total, Float once) = Design(Watched);
+                (WatchNode watch, ArrayBuilder total, Float once) = Design(Watched);
 
                 JuliaScript run = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true, stopFile: "stop");
                 string plain = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: false).Text;
 
                 Assert.True(run.Streams);
-                string[] parts = run.Text.Split("# The stream:");
+                string[] parts = run.Text.Split("# The loop:");
                 Assert.Equal(2, parts.Length);
                 Assert.Contains("global x1 = Float32(2.5)", parts[0]);
                 Assert.Contains($"_jsynth_watch(raw\"{Watched}\", r\"^.*\\.csv$\"i, true, false; stop = raw\"stop\", ready = () -> _jsynth_watching(\"{watch.ID}\")) do _path, _n, _show", parts[1]);
-                Assert.Contains("_jsynth_frame_start(_show, _jsynth_before_stream)", parts[1]);
+                Assert.Contains("_jsynth_frame_start(_show, _jsynth_before_loop)", parts[1]);
                 Assert.Contains("global frame1 = (path -> readdlm(path, ',', Float64))(_path)", parts[1]);
                 Assert.Contains("_jsynth_frame(", parts[1]);
-                Assert.Contains($"_jsynth_tick(\"{total.ID}\", add, ", parts[1]);
+                Assert.Contains($"_jsynth_blocked(\"{MainViewModel.Nodes.OfType<Function>().Single().ID}\") || (global B1 = add_out; _jsynth_ok(\"{total.ID}\", B1))", parts[1]);
+                Assert.Contains("global B1 = zeros(", parts[0]);
 
                 // Plain Julia watches the folder too, until Ctrl+C.
                 Assert.Contains(WatchNode.Prelude.TrimEnd(), plain);
-                Assert.Contains("(stop with Ctrl+C)", plain);
+                Assert.Contains("until stopped (Ctrl+C)", plain);
+                Assert.Contains("    global B1 = add_out", plain);
                 Assert.DoesNotContain("_jsynth_frame", plain);
 
                 // Without a Watch folder, nothing streams.
@@ -123,7 +131,7 @@ namespace JuliaSynth.Tests
                 }
 
                 File.Copy(Path.Combine(recorded, "a.csv"), Path.Combine(Watched, "a.csv"));
-                (WatchNode watch, RunningNode total, _) = Design(Watched);
+                (WatchNode watch, ArrayBuilder total, _) = Design(Watched);
                 watch.ReplayFolder = recorded;
                 watch.ReplayRate = 20;
                 watch.ExistingFirst = false;
@@ -165,7 +173,7 @@ namespace JuliaSynth.Tests
 
                 Frame("a.csv", 1);
                 Frame("b.csv", 2);
-                (WatchNode watch, RunningNode total, _) = Design(Watched);
+                (WatchNode watch, ArrayBuilder total, _) = Design(Watched);
                 string stop = Path.Combine(_folder, "stop");
                 JuliaScript script = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true, _folder, stop);
 

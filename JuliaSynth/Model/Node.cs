@@ -145,6 +145,20 @@ namespace JuliaSynth.Model
         /// </summary>
         public virtual IEnumerable<Parameter> AllInputs => Inputs;
 
+        /// <summary>
+        /// The port of an input node taking its value for the next file, in a design going through files one
+        /// at a time (a Files node so set, or a Watch folder): the value it starts with is the one set on it,
+        /// and after each file it takes the value wired here, as <c>C = update(C, X)</c> in a loop. Null for
+        /// the nodes that compute their value from others.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public Parameter? Next { get; protected set; }
+
+        /// <summary>
+        /// Every port wires can end at: <see cref="Inputs"/>, and <see cref="Next"/>.
+        /// </summary>
+        public IEnumerable<Parameter> Ports => Next is null ? Inputs : Inputs.Append(Next);
+
         #endregion
         public Node()
         {

@@ -37,7 +37,6 @@ namespace JuliaSynth.ViewModels
             typeof(PlotNode),
             typeof(FilesNode),
             typeof(MapNode),
-            typeof(RunningNode),
             typeof(WatchNode),
             typeof(Argument),
             typeof(List<Argument>),

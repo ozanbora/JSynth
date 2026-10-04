@@ -29,47 +29,53 @@ namespace JuliaSynth.Model
 
         /// <summary>
         /// Whether what <paramref name="source"/> gives fits <paramref name="parameter"/>: its value's type,
-        /// or for a function port, the function itself (see <see cref="Validate"/>).
+        /// for a function port the function itself, and for a next port a value of the input's own type.
         /// </summary>
         public static bool Fits(Node source, Node target, Parameter parameter)
         {
-            return parameter.IsFunctionPort
-                ? source is Function function && function.Parameters.Count == FunctionArity(target, parameter)
+            return parameter == target.Next ? source != target && AreTypesCompatible(source.OutputType, target.OutputType)
+                : parameter.IsFunctionPort ? source is Function function && function.Parameters.Count == 1
                 : AreTypesCompatible(source.OutputType, parameter.Type);
         }
 
         /// <summary>
-        /// How many values the function wired into the function port <paramref name="parameter"/> of
-        /// <paramref name="target"/> takes: Map applies it to one value; Running gives it the state and a value.
+        /// The wires into next ports (see <see cref="Node.Next"/>): they carry a value to the next file, so
+        /// they make no loop, and nothing waits for them.
         /// </summary>
-        public static int FunctionArity(Node target, Parameter parameter)
+        public static bool IsNextWire(IEnumerable<Node> nodes, Connection connection)
         {
-            return target is RunningNode running && parameter == running.Update ? 2 : 1;
+            return nodes.Any(n => n.ID == connection.TargetID && n.Next?.ID == connection.ParameterID);
         }
 
         /// <summary>
         /// Returns why <paramref name="source"/> can't be wired to <paramref name="parameter"/>
         /// of <paramref name="target"/>, or null when it can.
         /// </summary>
-        public static string? Validate(IEnumerable<Connection> connections, Node source, Node target, Parameter parameter)
+        public static string? Validate(IEnumerable<Node> nodes, IEnumerable<Connection> connections, Node source, Node target, Parameter parameter)
         {
             if (!source.HasOutput)
             {
                 return "This node has no output to wire from.";
             }
 
+            if (parameter == target.Next)
+            {
+                return source == target ? "An input already keeps its value from file to file: wire the value it takes next."
+                    : !Fits(source, target, parameter) ? $"{source.OutputType} can't replace a {target.OutputType}: the next value takes its place."
+                    : null;
+            }
+
             // A function port takes the function itself, to apply to each value.
             if (!Fits(source, target, parameter))
             {
-                bool updates = FunctionArity(target, parameter) == 2;
                 return !parameter.IsFunctionPort ? $"{source.OutputType} can't be passed to {parameter.Signature}."
-                    : source is Function function ? $"{function.Name} takes {function.Parameters.Count} values; it must take "
-                        + (updates ? "two: the state, then a value, to update the state with each value." : "one, to be applied to each value.")
-                    : $"Only a function can be wired here: the one {(updates ? "updating the state with each value" : "to apply to each value")}.";
+                    : source is Function function ? $"{function.Name} takes {function.Parameters.Count} values; it must take one, to be applied to each value."
+                    : "Only a function can be wired here: the one to apply to each value.";
             }
 
             // The wire would make the target (indirectly) depend on itself.
-            if (source == target || DependsOn(connections, source.ID, target.ID))
+            List<Node> all = nodes.ToList();
+            if (source == target || DependsOn(connections.Where(c => !IsNextWire(all, c)), source.ID, target.ID))
             {
                 return "This connection would create a loop.";
             }
@@ -115,7 +121,7 @@ namespace JuliaSynth.Model
         public static bool IsAttached(IEnumerable<Node> nodes, Connection connection)
         {
             return nodes.Any(n => n.ID == connection.SourceID)
-                && nodes.Any(n => n.ID == connection.TargetID && n.Inputs.Any(p => p.ID == connection.ParameterID));
+                && nodes.Any(n => n.ID == connection.TargetID && n.Ports.Any(p => p.ID == connection.ParameterID));
         }
     }
 }

@@ -192,6 +192,7 @@ namespace JuliaSynth.Model
 
         public ArrayFile()
         {
+            Next = new Parameter("next", Function.AnyType);
             Color = NodePalette.ArrayFile;
             Update();
         }

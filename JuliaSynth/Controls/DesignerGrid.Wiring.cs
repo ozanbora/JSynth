@@ -157,7 +157,7 @@ namespace JuliaSynth.Controls
             if (target != null && _dragPort != null)
             {
                 _dragError = ResolveEnds(_dragPort, target) is var (source, function, parameter)
-                    ? Wiring.Validate(MainViewModel.Connections.Where(c => c.ParameterID != parameter.ID), source, function, parameter)
+                    ? Wiring.Validate(MainViewModel.Nodes, MainViewModel.Connections.Where(c => c.ParameterID != parameter.ID), source, function, parameter)
                     : "Only an output can be wired to an input.";
 
                 target.Classes.Add(_dragError == null ? "accept" : "reject");
@@ -248,10 +248,18 @@ namespace JuliaSynth.Controls
                         && input.Owner is Model.Node target)
                     {
                         // A type changed after wiring (or a mapped function's parameters): keep the wire but flag it.
+                        // A wire into a next port carries the value on to the next file: dashed, as it goes back.
                         Pen pen = Wiring.Fits(source, target, parameter)
-                            ? new Pen(WireBrush(source.Color), Thickness)
+                            ? new Pen(WireBrush(source.Color), Thickness, parameter == target.Next ? new DashStyle([3, 1.5], 0) : null)
                             : new Pen(InvalidWireBrush, Thickness, new DashStyle([2, 2], 0));
-                        DrawWire(context, pen, output.CenterIn(grid), input.CenterIn(grid));
+                        if (parameter == target.Next)
+                        {
+                            DrawBackWire(context, pen, output.CenterIn(grid), input.CenterIn(grid));
+                        }
+                        else
+                        {
+                            DrawWire(context, pen, output.CenterIn(grid), input.CenterIn(grid));
+                        }
                     }
                 }
 
@@ -276,6 +284,29 @@ namespace JuliaSynth.Controls
                         DrawWire(context, pen, fixedEnd, looseEnd);
                     }
                 }
+            }
+
+            /// <summary>
+            /// A wire carrying a value back to an input for the next file: out to the right of
+            /// <paramref name="from"/>, along under both nodes, and into <paramref name="to"/> from the left.
+            /// </summary>
+            private static void DrawBackWire(DrawingContext context, Pen pen, Point from, Point to)
+            {
+                // Below the ports by more than a node's height, so the wire passes under them.
+                double below = Math.Max(from.Y, to.Y) + 110;
+                const double Turn = 30;
+
+                StreamGeometry geometry = new();
+                using (StreamGeometryContext g = geometry.Open())
+                {
+                    g.BeginFigure(from, false);
+                    g.CubicBezierTo(new Point(from.X + (2 * Turn), from.Y), new Point(from.X + (2 * Turn), below), new Point(from.X, below));
+                    g.LineTo(new Point(to.X, below));
+                    g.CubicBezierTo(new Point(to.X - (2 * Turn), below), new Point(to.X - (2 * Turn), to.Y), to);
+                    g.EndFigure(false);
+                }
+
+                context.DrawGeometry(null, pen, geometry);
             }
 
             /// <summary>

@@ -22,6 +22,11 @@ namespace JuliaSynth.Model
         private IReadOnlyList<IReadOnlyList<string>> _rows = [];
         private string? _error;
 
+        protected ArrayInput()
+        {
+            Next = new Parameter("next", Function.AnyType);
+        }
+
         #region Public Properties
         [JsonProperty]
         public string ElementType

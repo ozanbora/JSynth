@@ -121,7 +121,7 @@ public partial class MainViewModel : ReactiveObject
     public static string? Connect(Node source, Node target, Parameter parameter)
     {
         List<Connection> replaced = Connections.Where(c => c.ParameterID == parameter.ID).ToList();
-        string? error = Wiring.Validate(Connections.Except(replaced), source, target, parameter);
+        string? error = Wiring.Validate(Nodes, Connections.Except(replaced), source, target, parameter);
         if (error is not null)
         {
             return error;
@@ -224,7 +224,7 @@ public partial class MainViewModel : ReactiveObject
     private static void MarkWiredInputs()
     {
         HashSet<string> wired = Connections.Select(c => c.ParameterID).ToHashSet();
-        foreach (Parameter parameter in Nodes.SelectMany(n => n.Inputs))
+        foreach (Parameter parameter in Nodes.SelectMany(n => n.Ports))
         {
             parameter.IsWired = wired.Contains(parameter.ID);
         }
@@ -319,7 +319,6 @@ public partial class MainViewModel : ReactiveObject
             nameof(PlotNode) => new PlotNode(),
             nameof(FilesNode) => new FilesNode(),
             nameof(MapNode) => new MapNode(),
-            nameof(RunningNode) => new RunningNode(),
             nameof(WatchNode) => new WatchNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
@@ -460,7 +459,7 @@ public partial class MainViewModel : ReactiveObject
             node.RenewID();
             newIDs[oldID] = node.ID;
 
-            foreach (Parameter parameter in node.AllInputs)
+            foreach (Parameter parameter in node.Next is null ? node.AllInputs : node.AllInputs.Append(node.Next))
             {
                 string oldParameterID = parameter.ID;
                 parameter.RenewID();

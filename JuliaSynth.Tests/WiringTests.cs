@@ -1,4 +1,5 @@
 using JuliaSynth.Model;
+using JuliaSynth.ViewModels;
 using Xunit;
 
 namespace JuliaSynth.Tests
@@ -32,7 +33,7 @@ namespace JuliaSynth.Tests
             Parameter y = new("y", "Float64");
             Function f = new() { Parameters = { y } };
 
-            Assert.Equal("Int32 can't be passed to y::Float64.", Wiring.Validate([], z, f, y));
+            Assert.Equal("Int32 can't be passed to y::Float64.", Wiring.Validate(MainViewModel.Nodes, [], z, f, y));
         }
 
         [Fact]
@@ -42,7 +43,7 @@ namespace JuliaSynth.Tests
             Parameter p = new("x", "Float64");
             Function f = new() { Parameters = { p } };
 
-            Assert.Null(Wiring.Validate([], x, f, p));
+            Assert.Null(Wiring.Validate(MainViewModel.Nodes, [], x, f, p));
         }
 
         [Fact]
@@ -51,7 +52,7 @@ namespace JuliaSynth.Tests
             Parameter p = new("x", Function.AnyType);
             Function f = new() { Parameters = { p } };
 
-            Assert.Equal("This connection would create a loop.", Wiring.Validate([], f, f, p));
+            Assert.Equal("This connection would create a loop.", Wiring.Validate(MainViewModel.Nodes, [], f, f, p));
         }
 
         [Fact]
@@ -64,7 +65,7 @@ namespace JuliaSynth.Tests
             Connection fToG = new(f.ID, g.ID, gy.ID);
 
             // f already feeds g, so g feeding f would close the loop.
-            Assert.NotNull(Wiring.Validate([fToG], g, f, fx));
+            Assert.NotNull(Wiring.Validate(MainViewModel.Nodes, [fToG], g, f, fx));
         }
 
         [Fact]

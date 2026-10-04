@@ -161,7 +161,7 @@ namespace JuliaSynth.Tests
                 // Nothing downloaded yet: the short set's folder, where it would go.
                 Assert.Equal(Path.Combine(scans, "short"), radar.Build().Nodes.OfType<FilesNode>().Single().Folder);
 
-                // The short set is part of the full one: 12 of its 213 scans, including scans 3 and 25 (interference).
+                // The short set is part of the full one: 12 of its 213 scans, including scans 3 and 25.
                 (ExampleDataSet shortSet, ExampleDataSet fullSet) = (Examples.BoreasRadar.Sets[0], Examples.BoreasRadar.Sets[1]);
                 Assert.Equal((12, 213), (shortSet.Files.Count, fullSet.Files.Count));
                 Assert.Subset(fullSet.Files.ToHashSet(), shortSet.Files.ToHashSet());
@@ -199,10 +199,11 @@ namespace JuliaSynth.Tests
 
                 Assert.True(result.Succeeded);
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
-                Report interference = reports.Single(r => script.Variables[r.Id] == "interference_out");
-                // Another radar's interference in scans 3 and 25 of the stop: 2 and 4 of the short set.
-                Assert.Equal(Path.GetFileName(scans) == "full" ? "2-element Vector{Int64}:\n  3\n 25" : "2-element Vector{Int64}:\n 2\n 4", interference.Text);
-                Assert.Equal("Matrix{Float64}", reports.Single(r => r.Id == design.Nodes.OfType<RunningNode>().Single().ID).Type);
+                // The scans with another radar's interference, listed as the scans go by: the last list. The clutter
+                // map builds up from the first scan: 25 and 144 of the full set; 2 and 4 of the short one, scans 3 and 25 of the stop.
+                Report interference = reports.Last(r => script.Variables[r.Id] == "noted_out");
+                Assert.Equal(Path.GetFileName(scans) == "full" ? "2-element Vector{Int64}:\n  25\n 144" : "2-element Vector{Int64}:\n 2\n 4", interference.Text);
+                Assert.Equal("Matrix{Float64}", reports.Last(r => r.Id == design.Nodes.OfType<ArrayBuilder>().First().ID).Type);
             });
         }
     }

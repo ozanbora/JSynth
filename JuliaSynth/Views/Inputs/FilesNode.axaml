@@ -32,7 +32,7 @@
                  Grid.RowSpan="2"
                  Classes="glyph"
                  Text="∀"
-                 ToolTip.Tip="Files in a folder: read one at a time by a Map"
+                 ToolTip.Tip="Files in a folder: all together, read one at a time by a Map, or given one at a time, the nodes after them worked out again for each (see its edit panel)"
                  />
 
       <StackPanel Grid.Row="0"
@@ -127,7 +127,7 @@
                    />
         <TextBlock Classes="caption"
                    TextTrimming="CharacterEllipsis"
-                   Text="{Binding Path=EachType, StringFormat=each a {0}}"
+                   Text="{Binding Path=EachText}"
                    />
       </StackPanel>
 

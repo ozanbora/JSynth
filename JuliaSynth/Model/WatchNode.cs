@@ -10,8 +10,9 @@ namespace JuliaSynth.Model
     /// <summary>
     /// A folder watched for new files, a sensor's say: a design with one runs as a stream, the nodes
     /// downstream of it again for every file as soon as it is written, until it is stopped. It gives
-    /// each file's contents (a frame) in turn; a <see cref="RunningNode"/> downstream carries a state
-    /// from file to file. Its settings for reading the files are those of <see cref="FilesNode"/>.
+    /// each file's contents (a frame) in turn; an input node with a next value wired (see
+    /// <see cref="Node.Next"/>) carries a state from file to file. Its settings for reading the files are
+    /// those of <see cref="FilesNode"/>.
     /// </summary>
     public class WatchNode : FilesNode
     {
@@ -22,14 +23,13 @@ namespace JuliaSynth.Model
 
         /// <summary>
         /// Julia code watching a folder, for runs and exported scripts alike: <c>_jsynth_watch</c> calls
-        /// back for each file once it is written, and <c>_jsynth_tick</c> carries a Running node's state.
+        /// back for each file once it is written.
         /// </summary>
         public static new string Prelude { get; } = """
             # A folder watched for new files, made by a JuliaSynth Watch folder node: body(path, n, show) for
             # each file once it is written (its size the same at two looks), in name or time order. Files there
             # before the start go first, or are passed over. show: whether to show values for this one, at most
             # four times a second and for the last of those waiting. ready() once it watches. Ends when the stop file appears.
-            struct _JSynthFirst end
             function _jsynth_watch(body, folder, pattern, existing, bytime; stop = nothing, ready = () -> nothing)
                 isdir(folder) || throw(ArgumentError("The folder $(repr(folder)) doesn't exist."))
                 files() = filter(p -> isfile(p) && occursin(pattern, basename(p)), readdir(folder; join = true))
@@ -59,39 +59,47 @@ namespace JuliaSynth.Model
                 end
                 n
             end
-            # The state a Running node carries from file to file, by its id: updated by f with each value,
-            # from init, or from the first value without one. With keep, every state so far.
-            const _jsynth_states = Dict{String, Any}()
-            const _jsynth_kept = Dict{String, Vector{Any}}()
-            function _jsynth_tick(id, f, value, keep; init = _JSynthFirst())
-                state = get(_jsynth_states, id, _JSynthFirst())
-                state = !(state isa _JSynthFirst) ? f(state, value) : init isa _JSynthFirst ? value : f(init, value)
-                _jsynth_states[id] = state
-                keep || return state
-                kept = get!(Vector{Any}, _jsynth_kept, id)
-                push!(kept, state isa AbstractArray ? copy(state) : state)
-                identity.(kept)
-            end
             """.ReplaceLineEndings("\n");
 
-        /// <summary>
-        /// Julia code for a run of a stream: each file starts with the failures there were before the
-        /// stream (one file failing doesn't stop the next), and the watched node says how far it got.
-        /// </summary>
         /// <summary>
         /// What a run reports for the watched folder once it watches, before any file: so a replay starts then.
         /// </summary>
         public const string WatchingText = "Watching for files…";
 
-        public static string RunPrelude { get; } = $"""
+        /// <summary>
+        /// Julia code for a run going through files one at a time, watched or in a folder: each file starts
+        /// with the failures there were before the loop (one file failing doesn't stop the next), values are
+        /// shown at most four times a second, and the node giving the files says how far it got.
+        /// </summary>
+        public static string RunPrelude { get; } = $$"""
+            const _jsynth_total = Ref(0)
             function _jsynth_frame_start(show, before)
                 _jsynth_quiet[] = !show
                 empty!(_jsynth_failed)
                 union!(_jsynth_failed, before)
             end
-            _jsynth_watching(id) = _jsynth_report(id, "ok", "", "{WatchingText}")
-            _jsynth_frame(id, n, path, value) =
-                _jsynth_report(id, "ok", string(typeof(value)), string(n, n == 1 ? " file" : " files", " so far; the latest: ", basename(path)))
+            _jsynth_watching(id) = _jsynth_report(id, "ok", "", "{{WatchingText}}")
+            _jsynth_frame(id, n, path, value) = _jsynth_report(id, "ok", string(typeof(value)),
+                _jsynth_total[] > 0 ? string("file ", n, " of ", _jsynth_total[], ": ", basename(path))
+                : string(n, n == 1 ? " file" : " files", " so far; the latest: ", basename(path)))
+            # The files of a Files node going one at a time: body(path, n, show) for each, in name order.
+            function _jsynth_each(body, id, files)
+                paths = try
+                    files().paths
+                catch e
+                    _jsynth_error(id, e)
+                    return 0
+                end
+                _jsynth_total[] = length(paths)
+                isempty(paths) && _jsynth_report(id, "ok", "", "No file to go through.")
+                shown = 0.0
+                for (n, p) in enumerate(paths)
+                    show = n == length(paths) || time() - shown >= 0.25
+                    show && (shown = time())
+                    body(p, n, show)
+                end
+                length(paths)
+            end
             """.ReplaceLineEndings("\n");
 
         private bool _existingFirst = true;
@@ -151,6 +159,16 @@ namespace JuliaSynth.Model
         }
 
         public bool Replays => _replayFolder.Length > 0;
+
+        /// <summary>
+        /// Always one file at a time, as they come.
+        /// </summary>
+        [JsonIgnore]
+        public override bool EachFile
+        {
+            get => true;
+            set { }
+        }
 
         public override string OutputType => EachType;
 
