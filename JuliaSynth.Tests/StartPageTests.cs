@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
@@ -143,6 +144,31 @@ namespace JuliaSynth.Tests
                 Assert.False(viewModel.IsJuliaMissing);
                 Assert.Contains(viewModel.Output, o => o.Text == $"Found Julia {installed.Version} at {installed.Path}.");
                 viewModel.EndJulia();
+            });
+        }
+
+        // Without Julia, its tallest: with how to install it.
+        [Fact]
+        public void It_fits_a_laptop_window_without_scrolling_even_with_how_to_install_julia()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new();
+                Views.MainWindow window = new() { DataContext = viewModel, Width = 1280, Height = 720 };
+                window.Show();
+                ((System.Windows.Input.ICommand)viewModel.ShowStartPage).Execute(null);
+                viewModel.Julia = null;
+
+                Dispatcher.UIThread.RunJobs();
+                window.UpdateLayout();
+
+                Views.StartPage page = window.GetLogicalDescendants().OfType<Views.StartPage>().Single();
+                ScrollViewer scroller = page.GetLogicalDescendants().OfType<ScrollViewer>().First();
+                Assert.True(scroller.Extent.Height <= scroller.Viewport.Height, $"{scroller.Extent.Height} tall, in {scroller.Viewport.Height}");
+
+                viewModel.EndJulia();
+                window.Close();
             });
         }
 
