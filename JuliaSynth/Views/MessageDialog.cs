@@ -12,9 +12,10 @@ namespace JuliaSynth.Views;
 /// </summary>
 public sealed class MessageDialog : Window
 {
-    private MessageDialog(string title, string message, string[] buttons)
+    internal MessageDialog(string title, string message, string[] buttons)
     {
         Title = title;
+        Icon = AppIcon.Window;
         SizeToContent = SizeToContent.WidthAndHeight;
         CanResize = false;
         ShowInTaskbar = false;

@@ -35,6 +35,7 @@ public sealed class PlotWindow : Window
     {
         _model = model;
         Title = string.IsNullOrEmpty(model.Title) ? "Plot - JuliaSynth" : $"{model.Title} - JuliaSynth";
+        Icon = AppIcon.Window;
         Width = 900;
         Height = 600;
 

@@ -9,6 +9,8 @@
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- The program file's icon on Windows (Explorer, the taskbar); windows get theirs from JuliaSynth/Assets/Icon too. -->
+    <ApplicationIcon>../JuliaSynth/Assets/Icon/juliasynth.ico</ApplicationIcon>
     <DisableWinExeOutputInference>true</DisableWinExeOutputInference>
   </PropertyGroup>
 

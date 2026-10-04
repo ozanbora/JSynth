@@ -452,3 +452,6 @@ $RECYCLE.BIN/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# The Icon rule above (macOS folder icons) would hide JuliaSynth's own icons, a folder of that name.
+!JuliaSynth/Assets/Icon/

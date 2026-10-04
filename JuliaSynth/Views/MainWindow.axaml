@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="JuliaSynth.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/Icon/juliasynth.ico"
         Title="{Binding Path=Title}"
         MinWidth="640"
         MinHeight="400"
