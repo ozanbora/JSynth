@@ -694,15 +694,30 @@ public partial class MainViewModel : ReactiveObject
     public string Title => $"{(FilePath is null ? "Untitled" : Path.GetFileName(FilePath))}{(IsDirty ? " •" : string.Empty)} - JuliaSynth";
 
     /// <summary>
-    /// Opens the last design, else a nodes.json from before design files, else keeps the starting design
-    /// and shows the start page.
+    /// Opens the design open when JuliaSynth last closed (see <see cref="RememberOpenDesign"/>), else a
+    /// nodes.json from before design files, else keeps the starting design and shows the start page.
     /// </summary>
     public void StartUp()
     {
         _ = FindJuliaAtStartAsync();
         DeleteOldPlotFiles();
+        StartAutoSave();
 
-        foreach (string? path in new[] { AppSettings.Load().LastFile, LegacyFile })
+        AppSettings settings = AppSettings.Load();
+        if (settings.LastUntitled && settings.LastFile is string untitled && File.Exists(untitled))
+        {
+            try
+            {
+                OpenUntitled(untitled);
+                return;
+            }
+            catch (Exception e) when (IsFileError(e))
+            {
+                // Unreadable: fall back to the starting design.
+            }
+        }
+
+        foreach (string? path in new[] { settings.LastUntitled ? null : settings.LastFile, LegacyFile })
         {
             if (path is not null && File.Exists(path))
             {
@@ -721,6 +736,47 @@ public partial class MainViewModel : ReactiveObject
         IsStartPageOpen = true;
     }
 
+    /// <summary>
+    /// Where a design never saved is kept between runs of JuliaSynth: next to the settings.
+    /// </summary>
+    internal static string UntitledFile => Path.Combine(Path.GetDirectoryName(AppSettings.SettingsPath)!, "untitled" + FileExtension);
+
+    /// <summary>
+    /// As JuliaSynth closes: remembers the design open, for <see cref="StartUp"/> to open again. A design
+    /// file is reopened (as last saved); a design never saved (an example, say) is kept to reopen, unless
+    /// its changes were just discarded or it is empty, which leave the start page to show.
+    /// </summary>
+    public void RememberOpenDesign()
+    {
+        if (FilePath is null && !IsDirty && Nodes.Count > 0)
+        {
+            try
+            {
+                KeepUntitled();
+                return;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                // Not kept: the start page shows instead.
+            }
+        }
+
+        AppSettings settings = AppSettings.Load();
+        settings.LastUntitled = false;
+        settings.LastFile = FilePath;
+        settings.Save();
+    }
+
+    /// <summary>
+    /// The design kept by <see cref="RememberOpenDesign"/>, open again as never saved.
+    /// </summary>
+    private void OpenUntitled(string path)
+    {
+        ReadDesign(path);
+        FilePath = null;
+        DesignOpened();
+    }
+
     public void NewDesign()
     {
         IsStartPageOpen = false;
@@ -734,6 +790,17 @@ public partial class MainViewModel : ReactiveObject
     /// <exception cref="JsonException">The file isn't a design.</exception>
     public void OpenDesign(string path)
     {
+        ReadDesign(path);
+        FilePath = Path.GetFullPath(path);
+        Remember(FilePath);
+        DesignOpened();
+    }
+
+    /// <summary>
+    /// Replaces the design with the one in <paramref name="path"/>, with no history to undo.
+    /// </summary>
+    private void ReadDesign(string path)
+    {
         string json = File.ReadAllText(path);
         IsStartPageOpen = false;
 
@@ -745,9 +812,6 @@ public partial class MainViewModel : ReactiveObject
 
         Load(document);
         History.Reset();
-        FilePath = Path.GetFullPath(path);
-        Remember(FilePath);
-        DesignOpened();
     }
 
     /// <exception cref="IOException">The file can't be written.</exception>
@@ -772,6 +836,7 @@ public partial class MainViewModel : ReactiveObject
     {
         AppSettings settings = AppSettings.Load();
         settings.LastFile = path;
+        settings.LastUntitled = false;
         settings.Save();
     }
     #endregion

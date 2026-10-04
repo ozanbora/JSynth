@@ -22,6 +22,7 @@ public partial class App : Application
             viewModel.StartUp();
             desktop.Exit += (_, _) =>
             {
+                viewModel.RememberOpenDesign();
                 viewModel.EndJulia();
                 MainViewModel.DeletePlotFiles();
             };

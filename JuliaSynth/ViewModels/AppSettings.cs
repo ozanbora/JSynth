@@ -22,6 +22,16 @@ namespace JuliaSynth.ViewModels
         public string? LastFile { get; set; }
 
         /// <summary>
+        /// Whether <see cref="LastFile"/> holds a design never saved, kept to reopen as such.
+        /// </summary>
+        public bool LastUntitled { get; set; }
+
+        /// <summary>
+        /// Whether designs save themselves a moment after each change.
+        /// </summary>
+        public bool AutoSave { get; set; } = true;
+
+        /// <summary>
         /// The Julia program picked by the user; null to look for one.
         /// </summary>
         public string? JuliaPath { get; set; }

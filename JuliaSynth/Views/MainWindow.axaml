@@ -46,6 +46,8 @@
               <MenuItem Header="_Open…" InputGesture="Ctrl+O" HotKey="Ctrl+O" Click="Open_Click"/>
               <MenuItem Header="_Save" InputGesture="Ctrl+S" HotKey="Ctrl+S" Click="Save_Click"/>
               <MenuItem Header="Save _As…" InputGesture="Ctrl+Shift+S" HotKey="Ctrl+Shift+S" Click="SaveAs_Click"/>
+              <MenuItem Header="_Autosave" ToggleType="CheckBox" IsChecked="{Binding Path=AutoSave}"
+                        ToolTip.Tip="Save the design a moment after each change; a design never saved is kept to open again"/>
               <Separator/>
               <!-- Filled from Examples.All -->
               <MenuItem x:Name="ExamplesMenu" Header="_Examples"/>

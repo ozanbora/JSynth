@@ -202,7 +202,8 @@ public partial class MainWindow : Window
     {
         base.OnClosing(e);
 
-        if (_closeConfirmed || ViewModel?.IsDirty != true)
+        // Autosaving leaves nothing to ask about, unless it can't save.
+        if (_closeConfirmed || ViewModel?.AutoSaveNow() != false)
         {
             return;
         }

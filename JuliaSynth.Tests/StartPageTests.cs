@@ -31,6 +31,7 @@ namespace JuliaSynth.Tests
 
         public void Dispose()
         {
+            MainViewModel.StopAutoSave();
             AppSettings.SettingsPath = _originalSettingsPath;
             Directory.Delete(_folder, recursive: true);
         }
@@ -52,6 +53,53 @@ namespace JuliaSynth.Tests
                 next.StartUp();
                 Assert.False(next.IsStartPageOpen);
                 next.EndJulia();
+            });
+        }
+
+        [Fact]
+        public void The_design_open_at_closing_opens_at_the_next_start_saved_or_not()
+        {
+            Ui.Run(() =>
+            {
+                // An example, never saved: kept, and open again as such.
+                MainViewModel.LoadStartingDesign();
+                MainViewModel first = new();
+                string path = Path.Combine(_folder, "kept.jsynth");
+                first.SaveDesign(path);
+                first.OpenExample(Examples.All.Single(e => e.Name == "PageRank"));
+                string[] example = MainViewModel.Nodes.Select(n => n.ID).ToArray();
+                first.RememberOpenDesign();
+                first.EndJulia();
+
+                MainViewModel second = new();
+                second.StartUp();
+                Assert.False(second.IsStartPageOpen);
+                Assert.Null(second.FilePath);
+                Assert.False(second.IsDirty);
+                Assert.Equal(example, MainViewModel.Nodes.Select(n => n.ID));
+
+                // A design file: open again from the file.
+                second.OpenDesign(path);
+                second.RememberOpenDesign();
+                second.EndJulia();
+
+                MainViewModel third = new();
+                third.StartUp();
+                Assert.Equal(path, third.FilePath);
+
+                // A design never saved whose changes were discarded at closing: the start page instead.
+                third.NewDesign();
+                third.OpenExample(Examples.All[0]);
+                MainViewModel.Nodes[0].Row += 1;
+                Assert.True(third.IsDirty);
+                third.RememberOpenDesign();
+                third.EndJulia();
+
+                MainViewModel fourth = new();
+                fourth.StartUp();
+                Assert.True(fourth.IsStartPageOpen);
+                Assert.Null(fourth.FilePath);
+                fourth.EndJulia();
             });
         }
 
