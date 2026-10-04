@@ -1,5 +1,6 @@
 using JuliaSynth.Runtime;
 using ScottPlot;
+using System.Linq;
 
 namespace JuliaSynth.Controls;
 
@@ -16,6 +17,14 @@ public static class PlotRenderer
     public static void Draw(Plot plot, PlotData? data, string title, Color foreground, bool compact)
     {
         plot.Clear();
+
+        // A heatmap's colour bar is a panel beside the plot, which Clear leaves: drawn again and again (live,
+        // in a stream), they would pile up.
+        foreach (ScottPlot.Panels.ColorBar bar in plot.Axes.GetPanels().OfType<ScottPlot.Panels.ColorBar>().ToList())
+        {
+            plot.Axes.Remove(bar);
+        }
+
         plot.Axes.Title.Label.Text = title;
         Style(plot, foreground, compact);
 
@@ -76,6 +85,26 @@ public static class PlotRenderer
         {
             plot.Axes.Rules.Add(new ScottPlot.AxisRules.SquareZoomOut(plot.Axes.Bottom, plot.Axes.Left));
         }
+    }
+
+    /// <summary>
+    /// Shows <paramref name="data"/> in place of <paramref name="shown"/>, drawn in <paramref name="plot"/>, when
+    /// both are heatmaps of the same size: only the numbers change, the colour bar, axes and zoom stay, so a
+    /// heatmap drawn again and again (live, in a stream) changes smoothly. False when it needs drawing anew.
+    /// </summary>
+    public static bool Update(Plot plot, PlotData? shown, PlotData? data)
+    {
+        if (shown is not { Kind: PlotKind.Heatmap, Values: double[,] before } || data is not { Kind: PlotKind.Heatmap, Values: double[,] after }
+            || shown.Rows != data.Rows || shown.Columns != data.Columns
+            || before.GetLength(0) != after.GetLength(0) || before.GetLength(1) != after.GetLength(1)
+            || plot.GetPlottables().OfType<ScottPlot.Plottables.Heatmap>().SingleOrDefault() is not ScottPlot.Plottables.Heatmap heatmap)
+        {
+            return false;
+        }
+
+        heatmap.Intensities = after;
+        heatmap.Update();
+        return true;
     }
 
     /// <summary>

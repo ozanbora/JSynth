@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using JuliaSynth.Controls;
+using JuliaSynth.Runtime;
 using ScottPlot;
 using ScottPlot.Avalonia;
 using System;
@@ -28,6 +29,7 @@ public sealed class PlotWindow : Window
     };
 
     private PlotReadout? _describe;
+    private PlotData? _drawn;
     private ScottPlot.Plottables.Crosshair? _crosshair;
     private ScottPlot.Plottables.Marker? _point;
 
@@ -57,6 +59,8 @@ public sealed class PlotWindow : Window
 
     internal ScottPlot.Plottables.Crosshair? Crosshair => _crosshair;
 
+    internal Plot Chart => _chart.Plot;
+
     /// <summary>
     /// Draws once the window has its theme: its colours are only known then.
     /// </summary>
@@ -79,8 +83,17 @@ public sealed class PlotWindow : Window
 
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // New numbers for the same heatmap (live, in a stream) only change its colours: the colour bar, axes,
+        // zoom and crosshair stay.
+        if (e.PropertyName == nameof(Model.PlotNode.Plot) && PlotRenderer.Update(_chart.Plot, _drawn, _model.Plot))
+        {
+            _drawn = _model.Plot;
+            _describe = new PlotReadout(_model.Plot!);
+            _chart.Refresh();
+        }
+
         // A cleared plot (the design changed) keeps the last one here until the next run.
-        if ((e.PropertyName == nameof(Model.PlotNode.Plot) && _model.Plot is not null) || e.PropertyName == nameof(Model.PlotNode.Title))
+        else if ((e.PropertyName == nameof(Model.PlotNode.Plot) && _model.Plot is not null) || e.PropertyName == nameof(Model.PlotNode.Title))
         {
             Redraw();
         }
@@ -88,8 +101,19 @@ public sealed class PlotWindow : Window
 
     private void Redraw()
     {
+        // A matrix drawn again at the same size (live, in a stream) keeps where it was zoomed and panned to.
+        bool sameMatrix = _drawn is { Kind: PlotKind.Heatmap or PlotKind.Spy } last && _model.Plot is PlotData now
+            && now.Kind == last.Kind && now.Rows == last.Rows && now.Columns == last.Columns;
+        AxisLimits limits = _chart.Plot.Axes.GetLimits();
+
         ScottPlot.Color foreground = PlotNode.ForegroundColor(this);
         PlotRenderer.Draw(_chart.Plot, _model.Plot, _model.Title, foreground, compact: false);
+        if (sameMatrix)
+        {
+            _chart.Plot.Axes.SetLimits(limits);
+        }
+
+        _drawn = _model.Plot;
         _describe = _model.Plot is null ? null : new PlotReadout(_model.Plot);
 
         // Added last, so they are drawn over the data.

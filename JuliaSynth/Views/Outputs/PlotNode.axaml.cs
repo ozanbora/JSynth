@@ -15,6 +15,7 @@ namespace JuliaSynth.Views.Outputs;
 public partial class PlotNode : Node
 {
     private Model.PlotNode? _model;
+    private Runtime.PlotData? _drawn;
 
     public PlotNode() : base()
     {
@@ -58,7 +59,13 @@ public partial class PlotNode : Node
 
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(Model.PlotNode.Plot) or nameof(Model.PlotNode.Title))
+        // New numbers for the same heatmap (live, in a stream) only change its colours.
+        if (e.PropertyName is nameof(Model.PlotNode.Plot) && PlotRenderer.Update(Chart.Plot, _drawn, _model?.Plot))
+        {
+            _drawn = _model?.Plot;
+            Chart.Refresh();
+        }
+        else if (e.PropertyName is nameof(Model.PlotNode.Plot) or nameof(Model.PlotNode.Title))
         {
             Redraw();
         }
@@ -67,6 +74,7 @@ public partial class PlotNode : Node
     private void Redraw()
     {
         PlotRenderer.Draw(Chart.Plot, _model?.Plot, _model?.Title ?? string.Empty, ForegroundColor(this), compact: true);
+        _drawn = _model?.Plot;
         Chart.Refresh();
     }
 
