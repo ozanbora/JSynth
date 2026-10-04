@@ -94,10 +94,11 @@ namespace JuliaSynth.Tests
                 Assert.Equal(2, parts.Length);
                 Assert.Contains("global x1 = Float32(2.5)", parts[0]);
                 Assert.Contains($"_jsynth_watch(raw\"{Watched}\", r\"^.*\\.csv$\"i, true, false; stop = raw\"stop\", ready = () -> _jsynth_watching(\"{watch.ID}\")) do _path, _n, _show", parts[1]);
-                Assert.Contains("_jsynth_frame_start(_show, _jsynth_before_loop)", parts[1]);
+                Assert.Contains("_jsynth_frame_start(_show, _jsynth_before_loop, _jsynth_held_before_loop)", parts[1]);
                 Assert.Contains("global frame1 = (path -> readdlm(path, ',', Float64))(_path)", parts[1]);
                 Assert.Contains("_jsynth_frame(", parts[1]);
-                Assert.Contains($"_jsynth_blocked(\"{MainViewModel.Nodes.OfType<Function>().Single().ID}\") || (global B1 = add_out; _jsynth_ok(\"{total.ID}\", B1))", parts[1]);
+                // An input whose next value failed keeps (and shows) the value it has.
+                Assert.Contains($"_jsynth_blocked(\"{MainViewModel.Nodes.OfType<Function>().Single().ID}\") || (global B1 = add_out)\n    _jsynth_ok(\"{total.ID}\", B1)", parts[1]);
                 Assert.Contains("global B1 = zeros(", parts[0]);
 
                 // Plain Julia watches the folder too, until Ctrl+C.

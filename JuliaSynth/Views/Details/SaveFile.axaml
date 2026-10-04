@@ -86,6 +86,14 @@
              ToolTip.Tip="The name to store the value under; Load from file reads it back by this name."
              />
 
+    <CheckBox Grid.Row="2"
+              Grid.Column="1"
+              Content="One row per file"
+              IsChecked="{Binding Path=AppendRows}"
+              IsVisible="{Binding Path=CanAppendRows}"
+              ToolTip.Tip="Going through files one at a time: each file's value is added as a row, after the file's name, rather than the file being written anew. Each run starts the file anew."
+              />
+
     <TextBlock Grid.Row="3"
                Grid.Column="1"
                Margin="0 4"

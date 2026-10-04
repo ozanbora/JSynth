@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JuliaSynth.Views.WindowNode"
+
+             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+             xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
+             xmlns:jsConverters="clr-namespace:JuliaSynth.Converters"
+
+             x:DataType="jsModel:WindowNode"
+             Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
+             >
+  <Design.DataContext>
+    <jsModel:WindowNode />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
+    <jsConverters:DecimalToLongConverter x:Key="DecimalConverter"/>
+  </UserControl.Resources>
+
+  <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+          Classes="node"
+          Classes.selected="{Binding Path=IsSelected}"
+          >
+    <Grid RowDefinitions="30,48,*"
+          ColumnDefinitions="40,*">
+
+      <TextBlock Grid.Column="0"
+                 Grid.Row="0"
+                 Grid.RowSpan="2"
+                 Classes="glyph"
+                 Text="⧗"
+                 />
+
+      <StackPanel Grid.Row="0"
+                  Grid.Column="1"
+                  Classes="nodeActions">
+
+        <jsControls:ResultBadge/>
+
+        <Button Classes="nodeAction"
+                Content="Ξ"
+                ToolTip.Tip="Edit"
+              >
+          <Button.Flyout>
+            <Flyout Placement="Top"
+                    ShowMode="Transient"
+                    >
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Label VerticalAlignment="Center" Content="Keep the last"/>
+                <NumericUpDown x:Name="SizeBox"
+                               Width="130"
+                               Minimum="1"
+                               Maximum="1000000"
+                               Increment="1"
+                               FormatString="0"
+                               Value="{Binding Path=Size, Converter={StaticResource DecimalConverter}}"
+                               ToolTip.Tip="How many of the last values it keeps: going through files one at a time, those of the last files."
+                               />
+                <Label VerticalAlignment="Center" Content="values"/>
+              </StackPanel>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+
+        <TextBlock Classes="nodeInfo"
+                   Text="𝑖"
+                   >
+          <ToolTip.Tip>
+            <TextBlock TextWrapping="Wrap"
+                       MaxWidth="360"
+                       Text="Window: the last values wired into value, oldest first, as a vector. Going through files one at a time, those of the last few files: e.g. the mean of the last 6 strengths of a vibration, smoothing out one-off spikes."/>
+          </ToolTip.Tip>
+        </TextBlock>
+
+        <Button Classes="nodeAction danger"
+                Content="✕"
+                ToolTip.Tip="Delete"
+                Click="Delete_Click"
+                />
+
+      </StackPanel>
+
+      <!-- Output -->
+      <jsControls:Connector Grid.Row="1"
+                            Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            ZIndex="3"
+                            Margin="0 0 -8 0"/>
+
+      <DockPanel Grid.Row="1"
+                 Grid.Column="1"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Bottom"
+                 Margin="4 0 8 0"
+                 >
+        <TextBlock DockPanel.Dock="Left"
+                   FontSize="18"
+                   Text="{Binding Path=SizeText}"
+                   />
+        <TextBlock Classes="caption"
+                   VerticalAlignment="Bottom"
+                   Margin="4 0 0 2"
+                   Text="{Binding Path=OutputType}"
+                   />
+      </DockPanel>
+
+      <ItemsControl Grid.Row="2"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    ItemsSource="{Binding Path=Inputs}"
+                    ClipToBounds="False"
+                    >
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="jsModel:Parameter">
+            <Grid Height="20">
+              <jsControls:Connector HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    ZIndex="3"
+                                    Margin="-8 0 0 0"
+                                    />
+              <TextBlock HorizontalAlignment="Left"
+                         Margin="16 0 8 0"
+                         Classes="caption"
+                         TextTrimming="CharacterEllipsis"
+                         Text="{Binding Path=Signature}"
+                         />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </Grid>
+  </Border>
+
+</UserControl>

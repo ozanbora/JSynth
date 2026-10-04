@@ -73,10 +73,12 @@ namespace JuliaSynth.Model
         /// </summary>
         public static string RunPrelude { get; } = $$"""
             const _jsynth_total = Ref(0)
-            function _jsynth_frame_start(show, before)
+            function _jsynth_frame_start(show, before, held)
                 _jsynth_quiet[] = !show
                 empty!(_jsynth_failed)
                 union!(_jsynth_failed, before)
+                empty!(_jsynth_held)
+                union!(_jsynth_held, held)
             end
             _jsynth_watching(id) = _jsynth_report(id, "ok", "", "{{WatchingText}}")
             _jsynth_frame(id, n, path, value) = _jsynth_report(id, "ok", string(typeof(value)),

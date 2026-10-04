@@ -93,7 +93,8 @@ namespace JuliaSynth.Model
 
     /// <summary>
     /// Writes a value to a file: CSV or TSV (any array), Matrix Market (sparse matrices) or JLD2 (anything),
-    /// the formats Load from file reads. The file is overwritten on every run.
+    /// the formats Load from file reads. The file is overwritten on every run, or, going through files one at a
+    /// time, gets a row per file (see <see cref="AppendRows"/>).
     /// </summary>
     public class SaveFile : OutputNode
     {
@@ -101,6 +102,7 @@ namespace JuliaSynth.Model
         private string _path = string.Empty;
         private string _format = ArrayFile.Csv;
         private string _variable = "A";
+        private bool _appendRows;
         #endregion
 
         #region Public Properties
@@ -159,6 +161,52 @@ namespace JuliaSynth.Model
             }
         }
 
+        /// <summary>
+        /// One row per file: going through files one at a time, each file's value is added as a row, after the
+        /// file's name, to a CSV or TSV file that each run starts anew, rather than the file being overwritten.
+        /// </summary>
+        [JsonProperty(Order = 4)]
+        public bool AppendRows
+        {
+            get => _appendRows;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _appendRows, value);
+                Update();
+            }
+        }
+
+        /// <summary>
+        /// Rows are added to CSV and TSV files only.
+        /// </summary>
+        public bool CanAppendRows => Format is ArrayFile.Csv or ArrayFile.Tsv;
+
+        /// <summary>
+        /// Whether it adds a row each time rather than writing the file anew.
+        /// </summary>
+        public bool Appends => AppendRows && CanAppendRows;
+
+        /// <summary>
+        /// Julia code starting the file of rows anew, before the first row of a run.
+        /// </summary>
+        public string StartRows => $"rm({ArrayFile.PathLiteral(_path)}; force = true)";
+
+        /// <summary>
+        /// Julia code adding <paramref name="input"/> as a row; <paramref name="named"/>: after the name of the file
+        /// being gone through (<c>_path</c>).
+        /// </summary>
+        public string RowStatement(string input, bool named)
+        {
+            string row = named ? $"[basename(_path); vec(collect({input}))]" : $"vec(collect({input}))";
+            string delimiter = Format == ArrayFile.Tsv ? "'\t'" : "','";
+            return $"open(io -> writedlm(io, permutedims({row}), {delimiter}), {ArrayFile.PathLiteral(_path)}, \"a\")";
+        }
+
+        /// <summary>
+        /// <see cref="RowStatement"/> for a run: it reports where the rows go.
+        /// </summary>
+        public string JuliaRow(string input, bool named) => $"begin\n    {RowStatement(input, named)}\n    abspath({ArrayFile.PathLiteral(_path)})\nend";
+
         public bool IsJld2 => Format == ArrayFile.Jld2;
 
         public string FileName => _path.Length == 0 ? "no file" : System.IO.Path.GetFileName(_path);
@@ -182,7 +230,7 @@ namespace JuliaSynth.Model
         /// <summary>
         /// The Julia code writing a value called <c>value</c>, for the edit panel.
         /// </summary>
-        public string Code => $"using {string.Join(", ", Packages)}\n{Statement(Input.Name)}";
+        public string Code => $"using {string.Join(", ", Packages)}\n{(Appends ? RowStatement(Input.Name, named: true) : Statement(Input.Name))}";
         #endregion
 
         public SaveFile()
@@ -213,7 +261,7 @@ namespace JuliaSynth.Model
             // Matrix Market files hold sparse matrices; the others take anything writedlm or JLD2 can write.
             Input.Type = Format == ArrayFile.MatrixMarket ? JuliaTypes.SparseMatrix : Function.AnyType;
 
-            foreach (string name in new[] { nameof(Format), nameof(IsJld2), nameof(FileName), nameof(Problem), nameof(Error), nameof(Code) })
+            foreach (string name in new[] { nameof(Format), nameof(IsJld2), nameof(CanAppendRows), nameof(Appends), nameof(FileName), nameof(Problem), nameof(Error), nameof(Code) })
             {
                 this.RaisePropertyChanged(name);
             }

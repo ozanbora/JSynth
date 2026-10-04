@@ -19,7 +19,7 @@ namespace JuliaSynth.Tests
         private static Example Named(string name) => Examples.All.Single(e => e.Name == name);
 
         /// <summary>
-        /// For an example whose data is downloaded: tiny PNG files of the same names in a temporary folder,
+        /// For an example whose data is downloaded: tiny files of the same names (PNG images, or tables) in a temporary folder,
         /// remembered as where the data was downloaded to, in settings of their own, until disposed.
         /// </summary>
         private sealed class StandInData : IDisposable
@@ -37,7 +37,15 @@ namespace JuliaSynth.Tests
                     _ = Directory.CreateDirectory(files);
                     foreach (string file in data.Sets[0].Files)
                     {
-                        PngTests.WriteGreyPng(Path.Combine(files, file), new int[1, 1], 8);
+                        if (file.EndsWith(".png", StringComparison.Ordinal))
+                        {
+                            PngTests.WriteGreyPng(Path.Combine(files, file), new int[1, 1], 8);
+                        }
+                        else
+                        {
+                            // A bearing snapshot: a reading a row, a column a bearing.
+                            File.WriteAllText(Path.Combine(files, file), "0.1\t0.2\t-0.1\t0.3\n-0.2\t0.1\t0.2\t-0.3\n");
+                        }
                     }
 
                     AppSettings settings = AppSettings.Load();

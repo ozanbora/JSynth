@@ -38,7 +38,8 @@ namespace JuliaSynth.Runtime
         /// <summary>
         /// Julia code defining the functions a script reports with:
         /// <c>_jsynth_ok(id, value)</c>, <c>_jsynth_error(id, exception)</c> and <c>_jsynth_skip(id, why)</c>.
-        /// Failed and skipped ids are collected in <c>_jsynth_failed</c>, so later values can depend on them.
+        /// Failed and skipped ids are collected in <c>_jsynth_failed</c>, so later values can depend on them; those
+        /// held back by a false condition in <c>_jsynth_held</c> as well.
         /// </summary>
         public static string Prelude { get; } = """
             const _JSYNTH = "\x1eJSYNTH\t"
@@ -72,6 +73,10 @@ namespace JuliaSynth.Runtime
                 _jsynth_report(id, "skipped", "", why)
             end
             _jsynth_blocked(ids...) = any(in(_jsynth_failed), ids)
+            # Held back by an Only when node whose condition is false: not worked out, keeping the value it had.
+            const _jsynth_held = Set{String}()
+            _jsynth_held_by(ids...) = any(in(_jsynth_held), ids)
+            _jsynth_hold(id) = (push!(_jsynth_held, id); push!(_jsynth_failed, id); nothing)
             """.ReplaceLineEndings("\n");
 
         /// <summary>

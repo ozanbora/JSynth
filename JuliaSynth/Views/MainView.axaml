@@ -71,6 +71,9 @@
                   <Separator/>
                   <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Window: the last values (⧗)" Tag="WindowNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="File name: of the file a loop is at (“”)" Tag="FileNameNode" Click="AddAtPointer_Click"/>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
@@ -162,6 +165,15 @@
               </DataTemplate>
               <DataTemplate DataType="jsModel:MapNode">
                 <jsViews:MapNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:WindowNode">
+                <jsViews:WindowNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:WhenNode">
+                <jsViews:WhenNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:FileNameNode">
+                <jsViews:FileNameNode DataContext="{Binding}"/>
               </DataTemplate>
               <DataTemplate DataType="jsModel:Function">
                 <jsViews:Function DataContext="{Binding}"/>
@@ -421,6 +433,9 @@
                 <Separator/>
                 <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Window: the last values (⧗)" Tag="WindowNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="File name: of the file a loop is at (“”)" Tag="FileNameNode" Click="AddAtCenter_Click"/>
               </MenuFlyout>
             </DropDownButton.Flyout>
           </DropDownButton>

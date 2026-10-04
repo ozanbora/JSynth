@@ -29,6 +29,7 @@
     <PackageReference Include="ReactiveUI.Avalonia" Version="12.1.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="ScottPlot.Avalonia" Version="5.1.59" />
+    <PackageReference Include="SharpCompress" Version="0.50.4" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,102 @@
+using Newtonsoft.Json;
+using ReactiveUI;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+
+namespace JuliaSynth.Model
+{
+    /// <summary>
+    /// The last values given to it, oldest first, as a vector: going through files one at a time, the
+    /// values of the last few files, e.g. the last 6 strengths of a vibration, to smooth them.
+    /// </summary>
+    public class WindowNode : Node
+    {
+        /// <summary>
+        /// Julia code keeping the last values, for runs and exported scripts alike.
+        /// </summary>
+        public static string Prelude { get; } = """
+            # The last n values given to a JuliaSynth Window node, oldest first: x added to them.
+            function _jsynth_window!(values, x, n)
+                push!(values, x isa AbstractArray ? copy(x) : x)
+                length(values) > n && deleteat!(values, 1:length(values) - n)
+                identity.(values)
+            end
+            """.ReplaceLineEndings("\n");
+
+        private long _size = 10;
+
+        [JsonProperty]
+        public Parameter Value { get; private set; } = new("value", Function.AnyType);
+
+        /// <summary>
+        /// How many of the last values it keeps, from 1 to a million.
+        /// </summary>
+        [JsonProperty]
+        public long Size
+        {
+            get => _size;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _size, Math.Clamp(value, 1L, 1_000_000L));
+                this.RaisePropertyChanged(nameof(SizeText));
+            }
+        }
+
+        /// <summary>
+        /// On the node: "last 6".
+        /// </summary>
+        public string SizeText => $"last {Size.ToString(CultureInfo.InvariantCulture)}";
+
+        public override IReadOnlyList<Parameter> Inputs => [Value];
+
+        public override string OutputType => JuliaTypes.Vector;
+
+        public WindowNode()
+        {
+            Color = NodePalette.Window;
+        }
+
+        /// <summary>
+        /// Julia code giving the last values with <paramref name="value"/> added to those kept in <paramref name="values"/>.
+        /// </summary>
+        public string Julia(string values, string value) => $"_jsynth_window!({values}, {value}, {Size.ToString(CultureInfo.InvariantCulture)})";
+    }
+
+    /// <summary>
+    /// Passes its value on only when the condition holds. When it doesn't, the nodes after it aren't worked
+    /// out: going through files one at a time, they keep the values they had, e.g. an alarm's first time.
+    /// </summary>
+    public class WhenNode : Node
+    {
+        [JsonProperty]
+        public Parameter Value { get; private set; } = new("value", Function.AnyType);
+
+        /// <summary>
+        /// Whether the value passes: true or false.
+        /// </summary>
+        [JsonProperty]
+        public Parameter Condition { get; private set; } = new("condition", "Bool");
+
+        public override IReadOnlyList<Parameter> Inputs => [Value, Condition];
+
+        public WhenNode()
+        {
+            Color = NodePalette.When;
+        }
+    }
+
+    /// <summary>
+    /// The name of the file being gone through, in a loop through files one at a time: often when it was
+    /// written, as sensors name their files by the time.
+    /// </summary>
+    public class FileNameNode : Node
+    {
+        public override string OutputType => "String";
+
+        public FileNameNode()
+        {
+            Color = NodePalette.FileName;
+        }
+    }
+}

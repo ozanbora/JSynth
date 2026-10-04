@@ -94,6 +94,11 @@ namespace JuliaSynth.Model
                 _ = script.AppendLine(WatchNode.RunPrelude.TrimEnd());
             }
 
+            if (nodes.OfType<WindowNode>().Any())
+            {
+                _ = script.AppendLine().AppendLine(WindowNode.Prelude.TrimEnd());
+            }
+
             // Functions wired into a Map are applied by it: one whose parameter isn't wired has no value of its own.
             Dictionary<string, Node> byID = nodes.ToDictionary(n => n.ID);
             HashSet<string> applied = connections
@@ -151,14 +156,43 @@ namespace JuliaSynth.Model
                 looped.UnionWith(Downstream(input, connections, byID));
             }
 
+            // The name of the file the loop is at changes from file to file too.
+            foreach (FileNameNode name in nodes.OfType<FileNameNode>().Where(_ => root is not null))
+            {
+                looped.UnionWith(Downstream(name, connections, byID));
+            }
+
             // An input with a next value starts with its own, worked out once, before the loop.
             looped.ExceptWith(carried.Select(c => c.ID));
+
+            // The nodes after an Only when node, held back while its condition is false: those it holds back.
+            Dictionary<string, List<WhenNode>> gates = [];
+            foreach (WhenNode when in order.OfType<WhenNode>())
+            {
+                foreach (string id in Downstream(when, connections, byID).Where(id => id != when.ID))
+                {
+                    (gates.TryGetValue(id, out List<WhenNode>? list) ? list : gates[id] = []).Add(when);
+                }
+            }
 
             LoopContext? loop = root is null ? null : new(root, looped);
 
             if (order.Count > 0)
             {
                 _ = script.AppendLine().AppendLine("# Values");
+            }
+
+            // What keeps from value to value: the values a Window keeps, and files of rows started anew.
+            foreach (Node node in order)
+            {
+                if (node is WindowNode)
+                {
+                    _ = script.AppendLine($"{variables[node.ID]}_values = []");
+                }
+                else if (node is SaveFile { Appends: true, Problem: null } rows)
+                {
+                    _ = script.AppendLine(rows.StartRows);
+                }
             }
 
             foreach (Node node in order.Where(n => !looped.Contains(n.ID)))
@@ -182,8 +216,9 @@ namespace JuliaSynth.Model
                 if (instrumented)
                 {
                     _ = script.AppendLine("const _jsynth_before_loop = copy(_jsynth_failed)")
+                        .AppendLine("const _jsynth_held_before_loop = copy(_jsynth_held)")
                         .AppendLine(start)
-                        .AppendLine($"{Indent}_jsynth_frame_start(_show, _jsynth_before_loop)")
+                        .AppendLine($"{Indent}_jsynth_frame_start(_show, _jsynth_before_loop, _jsynth_held_before_loop)")
                         .Append(Indented(body))
                         .AppendLine("end")
                         .AppendLine("_jsynth_quiet[] = false");
@@ -222,6 +257,7 @@ namespace JuliaSynth.Model
                         string input = variables[wire.TargetID];
                         _ = code.AppendLine(instrumented
                             ? $"_next{i + 1} = _jsynth_blocked({StringLiteral(wire.SourceID)}) ? {input} : {next}"
+                            : GateOf(wire.SourceID) is string held ? $"_next{i + 1} = {held} ? {next} : {input}"
                             : $"_next{i + 1} = {next}");
                         next = $"_next{i + 1}";
                     }
@@ -232,12 +268,31 @@ namespace JuliaSynth.Model
                 foreach ((Connection wire, string next) in values)
                 {
                     string input = variables[wire.TargetID];
-                    _ = !instrumented ? code.AppendLine($"global {input} = {next}")
+                    _ = !instrumented ? code.Append(Gated(GateOf(wire.SourceID), $"global {input} = {next}"))
                         : chained ? code.AppendLine($"global {input} = {next}").AppendLine($"_jsynth_ok({StringLiteral(wire.TargetID)}, {input})")
-                        : code.AppendLine($"_jsynth_blocked({StringLiteral(wire.SourceID)}) || (global {input} = {next}; _jsynth_ok({StringLiteral(wire.TargetID)}, {input}))");
+                        : code.AppendLine($"_jsynth_blocked({StringLiteral(wire.SourceID)}) || (global {input} = {next})").AppendLine($"_jsynth_ok({StringLiteral(wire.TargetID)}, {input})");
                 }
 
                 return code.ToString();
+            }
+
+            // In a plain script, whether the Only when nodes before a node let its value through: passed1_ok && ...
+            string? GateOf(string id, bool self = true)
+            {
+                IEnumerable<WhenNode> whens = gates.TryGetValue(id, out List<WhenNode>? before) ? before : [];
+                if (self && byID[id] is WhenNode when)
+                {
+                    whens = whens.Append(when);
+                }
+
+                List<string> flags = whens.Select(w => $"{variables[w.ID]}_ok").ToList();
+                return flags.Count == 0 ? null : string.Join(" && ", flags);
+            }
+
+            static string Gated(string? gate, string code)
+            {
+                code = code.EndsWith('\n') ? code : code + "\n";
+                return gate is null ? code : $"if {gate}\n{Indented(code)}end\n";
             }
 
             // One node's value: computed (and reported, in a run), or why it isn't.
@@ -255,14 +310,23 @@ namespace JuliaSynth.Model
 
                 // Values of a loop are assigned in a function (the one called for each file) or a loop: globals, by name.
                 string assign = inStream ? $"global {variable}" : variable;
+                // An Only when node's condition, which says whether its value passes.
+                string? condition = node is WhenNode gate && inputs.FirstOrDefault(c => c.ParameterID == gate.Condition.ID) is Connection test
+                    ? variables[test.SourceID]
+                    : null;
+
                 if (!instrumented)
                 {
                     // Showing or saving a value is something to do, not a value to keep; plots are drawn by
-                    // JuliaSynth, so a plain script only says how to draw them in Julia.
-                    return (problem is not null ? $"# {variable}: {problem}"
+                    // JuliaSynth, so a plain script only says how to draw them in Julia. A node after an Only when
+                    // node is worked out only when its condition held.
+                    string line = problem is not null ? $"# {variable}: {problem}"
+                        : node is SaveFile { Appends: true } rows ? rows.RowStatement(variables[inputs[0].SourceID], named: inStream)
                         : node is OutputNode output ? output.Statement(variables[inputs[0].SourceID])
                         : node is PlotNode plot ? PlotHint(plot, inputs, variables)
-                        : $"{assign} = {expression}") + "\n";
+                        : node is WhenNode ? $"{(inStream ? "global " : string.Empty)}{variable}_ok = {condition}\nif {variable}_ok\n{Indent}{assign} = {expression}\nend"
+                        : $"{assign} = {expression}";
+                    return problem is not null ? line + "\n" : Gated(GateOf(node.ID, self: false), line);
                 }
 
                 StringBuilder code = new($"# {variable}\n");
@@ -288,6 +352,22 @@ namespace JuliaSynth.Model
                     conditions.Add(($"_jsynth_blocked({id})", "nothing"));
                 }
 
+                // Held back, it shows the value it keeps: on a file whose values are shown, the one it got may not have
+                // been (a plot keeps showing its last drawing).
+                string kept = node is PlotNode ? "nothing" : $"@isdefined({variable}) && _jsynth_ok({id}, {variable})";
+
+                // Held back by a false condition before it: going through files, it keeps the value it had.
+                string[] holders = inputs.Where(c => byID[c.SourceID] is WhenNode || gates.ContainsKey(c.SourceID))
+                    .Select(c => StringLiteral(c.SourceID))
+                    .Distinct()
+                    .ToArray();
+                if (holders.Length > 0)
+                {
+                    conditions.Add(($"_jsynth_held_by({string.Join(", ", holders)})", inStream
+                        ? $"(_jsynth_hold({id}); {kept})"
+                        : $"(_jsynth_hold({id}); _jsynth_skip({id}, \"A condition before it is false: nothing passed.\"))"));
+                }
+
                 if (blockers.Length > 0)
                 {
                     conditions.Add(($"_jsynth_blocked({string.Join(", ", blockers)})", $"_jsynth_skip({id}, \"An input failed.\")"));
@@ -299,8 +379,13 @@ namespace JuliaSynth.Model
                 }
 
                 // The files say which file the loop is at, rather than showing the file.
+                // An Only when node passes its value, or holds back the nodes after it.
                 string compute = node == root
                     ? $"try\n{Indent}global {variable} = {expression}\n{Indent}_jsynth_frame({id}, _n, _path, {variable})\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
+                    : node is WhenNode
+                        ? $"try\n{Indent}if {condition}\n{Indent}{Indent}global {variable} = {expression}\n{Indent}{Indent}_jsynth_ok({id}, {variable})\n{Indent}else\n{Indent}{Indent}_jsynth_hold({id})\n"
+                            + (inStream ? $"{Indent}{Indent}{kept}\n" :$"{Indent}{Indent}_jsynth_report({id}, \"skipped\", \"\", \"The condition is false: nothing passes.\")\n")
+                            + $"{Indent}end\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
                     : Guarded(node.ID, $"global {variable} = {expression}", report: true, variable);
 
                 if (conditions.Count == 0)
@@ -378,6 +463,18 @@ namespace JuliaSynth.Model
                         : "Only one folder is gone through file by file in a design, and a watched one comes first: this one isn't."));
                 case FilesNode files:
                     return files.Error is null ? (files.Julia, null) : (null, files.Error);
+                case FileNameNode:
+                    return loop is not null
+                        ? ("basename(_path)", null)
+                        : (null, "There's a file name only while files are gone through one at a time.");
+                case WindowNode window:
+                    return Input(window.Value) is string kept
+                        ? (window.Julia($"{variables[window.ID]}_values", kept), null)
+                        : (null, "Wire in the values to keep.");
+                case WhenNode only:
+                    return Input(only.Value) is string passed && Input(only.Condition) is not null
+                        ? (passed, null)
+                        : (null, "Wire in a value, and the condition on which it passes.");
                 case MapNode map:
                 {
                     if (Input(map.Items) is not string items)
@@ -438,7 +535,7 @@ namespace JuliaSynth.Model
                     }
 
                     return Input(output.Input) is string value
-                        ? (output.Julia(value), null)
+                        ? (output is SaveFile { Appends: true } rows ? rows.JuliaRow(value, named: loop is not null) : output.Julia(value), null)
                         : (null, output is DisplayNode ? "Wire a value in to show it." : "Wire a value in to save it.");
                 }
 
@@ -588,6 +685,9 @@ namespace JuliaSynth.Model
                     SparseInput => "S",
                     ArrayBuilder => "B",
                     ArrayFile => "D",
+                    WindowNode => "window",
+                    WhenNode => "passed",
+                    FileNameNode => "name",
                     FilesNode { EachFile: true } => "frame",
                     FilesNode => "files",
                     MapNode => "mapped",

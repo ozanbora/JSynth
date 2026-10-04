@@ -320,6 +320,9 @@ public partial class MainViewModel : ReactiveObject
             nameof(FilesNode) => new FilesNode(),
             nameof(MapNode) => new MapNode(),
             nameof(WatchNode) => new WatchNode(),
+            nameof(WindowNode) => new WindowNode(),
+            nameof(WhenNode) => new WhenNode(),
+            nameof(FileNameNode) => new FileNameNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
 

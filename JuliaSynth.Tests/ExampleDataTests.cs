@@ -171,6 +171,43 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void Real_julia_notes_the_first_bearing_alarm_in_the_real_snapshots()
+        {
+            Ui.Run(async () =>
+            {
+                // Runs only where the snapshots were downloaded (by opening the example).
+                AppSettings.SettingsPath = _originalSettingsPath;
+                string folder = Examples.ImsBearings.Folder;
+                string? snapshots = Examples.ImsBearings.DownloadedFolder;
+                AppSettings.SettingsPath = Path.Combine(_folder, "settings.json");
+                if (snapshots is null || await JuliaLocator.FindAsync(null) is not JuliaInstallation julia)
+                {
+                    return;
+                }
+
+                AppSettings settings = AppSettings.Load();
+                settings.DataFolders[Examples.ImsBearings.Name] = folder;
+                settings.Save();
+                MainViewModel.DesignDocument design = Examples.All.Single(e => e.Name == "Bearing wear").Build();
+                design.Nodes.OfType<SaveFile>().Single().Path = Path.Combine(_folder, "bearing-wear.csv");
+                JuliaScript script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: true, _folder);
+
+                using JuliaSession session = new(julia.Path);
+                ConcurrentQueue<Report> reports = new();
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+
+                Assert.True(result.Succeeded);
+                Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
+
+                // Bearing 1, 2.5 days before its outer race failed; the stopped rig's last snapshot has no row.
+                bool full = Path.GetFileName(snapshots) == "full";
+                Report alarm = reports.Last(r => r.Id == design.Nodes.OfType<DisplayNode>().Single().ID);
+                Assert.Equal($"2004.02.16.{(full ? "05.52" : "10.32")}.39: bearing 1, 11% stronger than when new", alarm.Text);
+                Assert.Equal(full ? 982 : 123, File.ReadAllLines(Path.Combine(_folder, "bearing-wear.csv")).Length);
+            });
+        }
+
+        [Fact]
         public void Real_julia_finds_the_interference_in_the_real_scans()
         {
             Ui.Run(async () =>

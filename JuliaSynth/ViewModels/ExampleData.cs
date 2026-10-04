@@ -40,6 +40,10 @@ namespace JuliaSynth.ViewModels
     public sealed record ExampleData(string Name, string About, string Credit, string BaseUrl, IReadOnlyList<ExampleDataSet> Sets)
     {
         /// <summary>
+        /// Where the files are when they come in an archive, rather than one by one at <see cref="BaseUrl"/>.
+        /// </summary>
+        public ExampleArchive? Archive { get; init; }
+        /// <summary>
         /// The file next to the data that says where it comes from.
         /// </summary>
         public const string ReadmeName = "README.txt";
@@ -105,6 +109,17 @@ namespace JuliaSynth.ViewModels
             await File.WriteAllTextAsync(Path.Combine(folder, ReadmeName), $"{Name}\n\n{About}\n\n{Credit}\n\nDownloaded by JuliaSynth from {BaseUrl}\n", cancellationToken);
 
             int done = 0;
+            if (Archive is ExampleArchive archive)
+            {
+                if (!IsIn(folder, set))
+                {
+                    await archive.ExtractAsync(client, set.Files, files, () => progress?.Invoke(++done), cancellationToken);
+                }
+
+                Remember(folder);
+                return;
+            }
+
             foreach (string name in set.Files)
             {
                 string path = Path.Combine(files, name);
@@ -124,6 +139,11 @@ namespace JuliaSynth.ViewModels
                 progress?.Invoke(++done);
             }
 
+            Remember(folder);
+        }
+
+        private void Remember(string folder)
+        {
             AppSettings settings = AppSettings.Load();
             settings.DataFolders[Name] = folder;
             settings.Save();

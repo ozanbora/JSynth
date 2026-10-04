@@ -37,7 +37,7 @@
     <Border Background="{DynamicResource CanvasBackgroundBrush}" Opacity="0.85"/>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
       <Border x:Name="Card"
-              MaxWidth="1000"
+              MaxWidth="1240"
               Margin="16 12"
               Padding="24 18"
               HorizontalAlignment="Center"
@@ -132,8 +132,8 @@
             <ItemsControl x:Name="ExampleCards" ItemsSource="{Binding Path=StartExamples}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <!-- Cards all the same size, in rows: four to a row, so three rows hold the examples. -->
-                  <WrapPanel ItemWidth="236" ItemHeight="92"/>
+                  <!-- Cards all the same size, in rows: five to a row on a wide window, so three rows hold the examples. -->
+                  <WrapPanel ItemWidth="232" ItemHeight="92"/>
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
