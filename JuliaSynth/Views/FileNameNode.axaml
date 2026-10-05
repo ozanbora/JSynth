@@ -37,6 +37,12 @@
 
         <jsControls:ResultBadge/>
 
+        <Button Classes="nodeAction"
+                Content="⇄"
+                Click="Toggle_Click"
+                ToolTip.Tip="file name: the name of the file a loop is at. file path: its whole path, to open a file that goes with it. Click to switch."
+                />
+
         <TextBlock Classes="nodeInfo"
                    Text="𝑖"
                    >
@@ -70,7 +76,7 @@
                  >
         <TextBlock DockPanel.Dock="Left"
                    FontSize="18"
-                   Text="file name"
+                   Text="{Binding Path=Label}"
                    />
         <TextBlock Classes="caption"
                    VerticalAlignment="Bottom"

@@ -189,9 +189,9 @@ namespace JuliaSynth.Model
                 {
                     _ = script.AppendLine($"{variables[node.ID]}_values = []");
                 }
-                else if (node is SaveFile { Appends: true, Problem: null } rows)
+                else if (node is SaveFile { SavesPerFile: true, Problem: null } rows)
                 {
-                    _ = script.AppendLine(rows.StartRows);
+                    _ = script.AppendLine(rows.StartPerFile);
                 }
             }
 
@@ -321,7 +321,7 @@ namespace JuliaSynth.Model
                     // JuliaSynth, so a plain script only says how to draw them in Julia. A node after an Only when
                     // node is worked out only when its condition held.
                     string line = problem is not null ? $"# {variable}: {problem}"
-                        : node is SaveFile { Appends: true } rows ? rows.RowStatement(variables[inputs[0].SourceID], named: inStream)
+                        : node is SaveFile { SavesPerFile: true } rows ? rows.PerFileStatement(variables[inputs[0].SourceID], named: inStream)
                         : node is OutputNode output ? output.Statement(variables[inputs[0].SourceID])
                         : node is PlotNode plot ? PlotHint(plot, inputs, variables)
                         : node is WhenNode ? $"{(inStream ? "global " : string.Empty)}{variable}_ok = {condition}\nif {variable}_ok\n{Indent}{assign} = {expression}\nend"
@@ -463,9 +463,9 @@ namespace JuliaSynth.Model
                         : "Only one folder is gone through file by file in a design, and a watched one comes first: this one isn't."));
                 case FilesNode files:
                     return files.Error is null ? (files.Julia, null) : (null, files.Error);
-                case FileNameNode:
+                case FileNameNode name:
                     return loop is not null
-                        ? ("basename(_path)", null)
+                        ? (name.Julia, null)
                         : (null, "There's a file name only while files are gone through one at a time.");
                 case WindowNode window:
                     return Input(window.Value) is string kept
@@ -535,7 +535,7 @@ namespace JuliaSynth.Model
                     }
 
                     return Input(output.Input) is string value
-                        ? (output is SaveFile { Appends: true } rows ? rows.JuliaRow(value, named: loop is not null) : output.Julia(value), null)
+                        ? (output is SaveFile { SavesPerFile: true } rows ? rows.JuliaPerFile(value, named: loop is not null) : output.Julia(value), null)
                         : (null, output is DisplayNode ? "Wire a value in to show it." : "Wire a value in to save it.");
                 }
 
@@ -612,6 +612,7 @@ namespace JuliaSynth.Model
             {
                 ArrayFile file => FileFormats.Imports(file.Format),
                 FilesNode files => FileFormats.Imports(files.Format),
+                SaveFile { Format: FileFormats.Png } => ["ColorTypes"],
                 _ => [],
             };
         }

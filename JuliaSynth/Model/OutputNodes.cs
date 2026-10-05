@@ -94,7 +94,7 @@ namespace JuliaSynth.Model
     /// <summary>
     /// Writes a value to a file: CSV or TSV (any array), Matrix Market (sparse matrices) or JLD2 (anything),
     /// the formats Load from file reads. The file is overwritten on every run, or, going through files one at a
-    /// time, gets a row per file (see <see cref="AppendRows"/>).
+    /// time, gets a row, or a picture, per file (see <see cref="PerFile"/>).
     /// </summary>
     public class SaveFile : OutputNode
     {
@@ -102,7 +102,7 @@ namespace JuliaSynth.Model
         private string _path = string.Empty;
         private string _format = ArrayFile.Csv;
         private string _variable = "A";
-        private bool _appendRows;
+        private bool _perFile;
         #endregion
 
         #region Public Properties
@@ -162,52 +162,78 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
-        /// One row per file: going through files one at a time, each file's value is added as a row, after the
-        /// file's name, to a CSV or TSV file that each run starts anew, rather than the file being overwritten.
+        /// Saving per file: going through files one at a time, each file's value is added as a row, after the file's
+        /// name, to a CSV or TSV file that each run starts anew; or saved as a picture of its own (PNG), named after the
+        /// file: mask.png makes mask-in000001.png, mask-in000002.png, ... in its folder.
         /// </summary>
         [JsonProperty(Order = 4)]
-        public bool AppendRows
+        public bool PerFile
         {
-            get => _appendRows;
+            get => _perFile;
             set
             {
-                _ = this.RaiseAndSetIfChanged(ref _appendRows, value);
+                _ = this.RaiseAndSetIfChanged(ref _perFile, value);
                 Update();
             }
         }
 
         /// <summary>
-        /// Rows are added to CSV and TSV files only.
+        /// Rows go to CSV and TSV files, pictures to PNG ones.
         /// </summary>
-        public bool CanAppendRows => Format is ArrayFile.Csv or ArrayFile.Tsv;
+        public bool CanSavePerFile => Format is ArrayFile.Csv or ArrayFile.Tsv or ArrayFile.Png;
 
         /// <summary>
-        /// Whether it adds a row each time rather than writing the file anew.
+        /// Whether it saves something per file rather than writing the file anew.
         /// </summary>
-        public bool Appends => AppendRows && CanAppendRows;
+        public bool SavesPerFile => PerFile && CanSavePerFile;
 
         /// <summary>
-        /// Julia code starting the file of rows anew, before the first row of a run.
+        /// The per-file option, as the edit panel says it.
         /// </summary>
-        public string StartRows => $"rm({ArrayFile.PathLiteral(_path)}; force = true)";
+        public string PerFileLabel => Format == ArrayFile.Png ? "A picture per file" : "One row per file";
 
         /// <summary>
-        /// Julia code adding <paramref name="input"/> as a row; <paramref name="named"/>: after the name of the file
-        /// being gone through (<c>_path</c>).
+        /// Julia code to run before the first file: the file of rows started anew, or the folder of pictures made.
         /// </summary>
-        public string RowStatement(string input, bool named)
+        public string StartPerFile => Format == ArrayFile.Png
+            ? $"mkpath(dirname(abspath({ArrayFile.PathLiteral(_path)})))"
+            : $"rm({ArrayFile.PathLiteral(_path)}; force = true)";
+
+        /// <summary>
+        /// Julia code saving <paramref name="input"/> for one file: a row, or a picture; <paramref name="named"/>: after,
+        /// or named after, the file being gone through (<c>_path</c>).
+        /// </summary>
+        public string PerFileStatement(string input, bool named)
         {
+            string path = ArrayFile.PathLiteral(_path);
+            if (Format == ArrayFile.Png)
+            {
+                return named ? Picture(PerFilePath, input) : Picture(path, input);
+            }
+
             // A text (a note, say) is one cell, not a cell a character.
             string cells = $"({input} isa AbstractString ? [{input}] : vec(collect({input})))";
             string row = named ? $"[basename(_path); {cells}]" : cells;
             string delimiter = Format == ArrayFile.Tsv ? "'\\t'" : "','";
-            return $"open(io -> writedlm(io, permutedims({row}), {delimiter}), {ArrayFile.PathLiteral(_path)}, \"a\")";
+            return $"open(io -> writedlm(io, permutedims({row}), {delimiter}), {path}, \"a\")";
         }
 
         /// <summary>
-        /// <see cref="RowStatement"/> for a run: it reports where the rows go.
+        /// <see cref="PerFileStatement"/> for a run: it reports where the row or the picture went.
         /// </summary>
-        public string JuliaRow(string input, bool named) => $"begin\n    {RowStatement(input, named)}\n    abspath({ArrayFile.PathLiteral(_path)})\nend";
+        public string JuliaPerFile(string input, bool named) => Format == ArrayFile.Png && named
+            ? $"let p = {PerFilePath}\n    {Picture("p", input)}\n    abspath(p)\nend"
+            : $"begin\n    {PerFileStatement(input, named)}\n    abspath({ArrayFile.PathLiteral(_path)})\nend";
+
+        /// <summary>
+        /// The picture of the file being gone through: mask.png's folder, mask-in000001.png.
+        /// </summary>
+        private string PerFilePath => $"joinpath(dirname(abspath({ArrayFile.PathLiteral(_path)})), string(\"{System.IO.Path.GetFileNameWithoutExtension(_path)}-\", splitext(basename(_path))[1], \".png\"))";
+
+        /// <summary>
+        /// Julia code saving the matrix <paramref name="input"/> as a grey picture at <paramref name="path"/>: 0 black, 1 white.
+        /// </summary>
+        private static string Picture(string path, string input) => $"PNGFiles.save({path}, ColorTypes.Gray.(clamp.(Float64.({input}), 0, 1)))";
 
         public bool IsJld2 => Format == ArrayFile.Jld2;
 
@@ -226,13 +252,14 @@ namespace JuliaSynth.Model
         {
             ArrayFile.Csv or ArrayFile.Tsv => ["DelimitedFiles"],
             ArrayFile.MatrixMarket => ["MatrixMarket", "SparseArrays"],
+            ArrayFile.Png => ["PNGFiles"],
             _ => ["JLD2"],
         };
 
         /// <summary>
         /// The Julia code writing a value called <c>value</c>, for the edit panel.
         /// </summary>
-        public string Code => $"using {string.Join(", ", Packages)}\n{(Appends ? RowStatement(Input.Name, named: true) : Statement(Input.Name))}";
+        public string Code => $"using {string.Join(", ", Packages)}\n{(SavesPerFile ? PerFileStatement(Input.Name, named: true) : Statement(Input.Name))}";
         #endregion
 
         public SaveFile()
@@ -254,6 +281,7 @@ namespace JuliaSynth.Model
                 ArrayFile.Csv => $"writedlm({path}, {input}, ',')",
                 ArrayFile.Tsv => $"writedlm({path}, {input}, '\\t')",
                 ArrayFile.MatrixMarket => $"MatrixMarket.mmwrite({path}, {input})",
+                ArrayFile.Png => Picture(path, input),
                 _ => $"JLD2.jldsave({path}; {Variable} = {input})",
             };
         }
@@ -263,7 +291,7 @@ namespace JuliaSynth.Model
             // Matrix Market files hold sparse matrices; the others take anything writedlm or JLD2 can write.
             Input.Type = Format == ArrayFile.MatrixMarket ? JuliaTypes.SparseMatrix : Function.AnyType;
 
-            foreach (string name in new[] { nameof(Format), nameof(IsJld2), nameof(CanAppendRows), nameof(Appends), nameof(FileName), nameof(Problem), nameof(Error), nameof(Code) })
+            foreach (string name in new[] { nameof(Format), nameof(IsJld2), nameof(CanSavePerFile), nameof(SavesPerFile), nameof(PerFileLabel), nameof(FileName), nameof(Problem), nameof(Error), nameof(Code) })
             {
                 this.RaisePropertyChanged(name);
             }

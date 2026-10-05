@@ -88,10 +88,10 @@
 
     <CheckBox Grid.Row="2"
               Grid.Column="1"
-              Content="One row per file"
-              IsChecked="{Binding Path=AppendRows}"
-              IsVisible="{Binding Path=CanAppendRows}"
-              ToolTip.Tip="Going through files one at a time: each file's value is added as a row, after the file's name, rather than the file being written anew. Each run starts the file anew."
+              Content="{Binding Path=PerFileLabel}"
+              IsChecked="{Binding Path=PerFile}"
+              IsVisible="{Binding Path=CanSavePerFile}"
+              ToolTip.Tip="Going through files one at a time. CSV or TSV: each file's value is added as a row, after the file's name, to a file each run starts anew. PNG: each file's value (a matrix from 0 to 1) is saved as a grey picture of its own, named after the file: mask.png makes mask-in000001.png, ..."
               />
 
     <TextBlock Grid.Row="3"

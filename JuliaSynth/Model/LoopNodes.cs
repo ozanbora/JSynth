@@ -92,6 +92,34 @@ namespace JuliaSynth.Model
     /// </summary>
     public class FileNameNode : Node
     {
+        private bool _wholePath;
+
+        /// <summary>
+        /// Whether it gives the file's whole path rather than its name: to open a file that goes with it, say a
+        /// frame's marked twin in the same folder.
+        /// </summary>
+        [JsonProperty]
+        public bool WholePath
+        {
+            get => _wholePath;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _wholePath, value);
+                this.RaisePropertyChanged(nameof(Label));
+                this.RaisePropertyChanged(nameof(Julia));
+            }
+        }
+
+        /// <summary>
+        /// On the node: "file name" or "file path".
+        /// </summary>
+        public string Label => WholePath ? "file path" : "file name";
+
+        /// <summary>
+        /// The Julia expression giving the name, or path, of the file a loop is at (<c>_path</c>).
+        /// </summary>
+        public string Julia => WholePath ? "abspath(_path)" : "basename(_path)";
+
         public override string OutputType => "String";
 
         public FileNameNode()

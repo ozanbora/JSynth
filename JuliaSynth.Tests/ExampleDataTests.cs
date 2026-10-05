@@ -246,6 +246,43 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void Real_julia_scores_what_moves_in_the_real_highway_frames()
+        {
+            Ui.Run(async () =>
+            {
+                // Runs only where the frames were downloaded (by opening the example) and PNG files can be read.
+                AppSettings.SettingsPath = _originalSettingsPath;
+                string folder = Examples.CdnetHighway.Folder;
+                string? frames = Examples.CdnetHighway.DownloadedFolder;
+                AppSettings.SettingsPath = Path.Combine(_folder, "settings.json");
+                if (frames is null
+                    || await JuliaLocator.FindAsync(null) is not JuliaInstallation julia
+                    || (await new JuliaPackages(julia.Path).FindMissingAsync(["PNGFiles", "ColorTypes"], _folder)).Count > 0)
+                {
+                    return;
+                }
+
+                AppSettings settings = AppSettings.Load();
+                settings.DataFolders[Examples.CdnetHighway.Name] = folder;
+                settings.Save();
+                MainViewModel.DesignDocument design = Examples.All.Single(e => e.Name == "Motion in video").Build();
+                design.Nodes.OfType<SaveFile>().Single().Path = Path.Combine(_folder, "masks", "mask.png");
+                JuliaScript script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: true, _folder);
+
+                using JuliaSession session = new(julia.Path);
+                ConcurrentQueue<Report> reports = new();
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+
+                Assert.True(result.Succeeded);
+                Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
+                bool full = Path.GetFileName(frames) == "full";
+                Report score = reports.Last(r => r.Id == design.Nodes.OfType<DisplayNode>().Single().ID);
+                Assert.Equal(full ? "(precision = 0.873, recall = 0.808, F = 0.839)" : "(precision = 0.835, recall = 0.812, F = 0.823)", score.Text);
+                Assert.Equal(full ? 1700 : 800, Directory.GetFiles(Path.Combine(_folder, "masks")).Length);
+            });
+        }
+
+        [Fact]
         public void Real_julia_finds_the_interference_in_the_real_scans()
         {
             Ui.Run(async () =>

@@ -71,7 +71,7 @@ namespace JuliaSynth.Tests
             Function firstTime = Define("first_time", "Bool", "h && c == 0", ("h", "Bool"), ("c", "Int64"));
             WhenNode first = new();
             DisplayNode firstHigh = new();
-            SaveFile levels = new() { Path = Rows, AppendRows = true };
+            SaveFile levels = new() { Path = Rows, PerFile = true };
             MainViewModel.Nodes.AddRange([files, level, window, last2, name, high, alarms, count, firstTime, first, firstHigh, levels]);
 
             foreach ((Node source, Node target, Parameter parameter) in new (Node, Node, Parameter)[]
@@ -153,6 +153,53 @@ namespace JuliaSynth.Tests
                 Assert.Equal("2-element Vector{Float64}:\n 2.0\n 4.0", loop.Last2.Result?.Text ?? log);
                 Assert.Equal(ReportStatus.Ok, loop.Levels.Result?.Status);
                 Assert.Equal("a.csv,1.0\nb.csv,2.0\nc.csv,4.0\n", File.ReadAllText(Rows).ReplaceLineEndings("\n"));
+                viewModel.EndJulia();
+            });
+        }
+
+        [Fact]
+        public void Real_julia_saves_a_picture_per_file_named_after_it_and_gives_the_whole_path()
+        {
+            Ui.Run(async () =>
+            {
+                if (await JuliaLocator.FindAsync(null) is not JuliaInstallation julia)
+                {
+                    return;
+                }
+
+                // Files (1, 2, 4) → a 2×2 picture of the value over 4, saved per file; the file's whole path shown.
+                new MainViewModel().NewDesign();
+                FilesNode files = new() { Folder = Frames, EachFile = true };
+                Function picture = Define("picture", "Matrix{Float64}", "fill(X[1] / 4, 2, 2)", ("X", "Matrix{Float64}"));
+                string pictures = Path.Combine(_folder, "pictures");
+                SaveFile saved = new() { Path = Path.Combine(pictures, "p.png"), PerFile = true };
+                FileNameNode path = new() { WholePath = true };
+                DisplayNode shown = new();
+                MainViewModel.Nodes.AddRange([files, picture, saved, path, shown]);
+                Assert.Null(MainViewModel.Connect(files, picture, picture.Parameters[0]));
+                Assert.Null(MainViewModel.Connect(picture, saved, saved.Input));
+                Assert.Null(MainViewModel.Connect(path, shown, shown.Input));
+                Assert.Equal("A picture per file", saved.PerFileLabel);
+
+                string plain = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: false).Text;
+                Assert.Contains("import ColorTypes", plain);
+                Assert.Contains($"mkpath(dirname(abspath(raw\"{Path.Combine(pictures, "p.png")}\")))", plain);
+                Assert.Contains("global name1 = abspath(_path)", plain);
+
+                MainViewModel viewModel = new() { Julia = julia };
+                await viewModel.RunDesignAsync();
+                Dispatcher.UIThread.RunJobs();
+                Assert.Equal(Path.Combine(Frames, "c.csv"), shown.Result?.Text);
+                Assert.Equal(Path.Combine(pictures, "p-c.png"), saved.Result?.Text);
+
+                // 1/4, 2/4 and 4/4 of white.
+                foreach ((string name, int level) in new[] { ("p-a.png", 64), ("p-b.png", 128), ("p-c.png", 255) })
+                {
+                    using SkiaSharp.SKBitmap grey = SkiaSharp.SKBitmap.Decode(Path.Combine(pictures, name));
+                    Assert.Equal((2, 2), (grey.Width, grey.Height));
+                    Assert.InRange(grey.GetPixel(0, 0).Red, level - 1, level);
+                }
+
                 viewModel.EndJulia();
             });
         }
