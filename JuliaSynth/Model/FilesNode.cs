@@ -218,7 +218,12 @@ namespace JuliaSynth.Model
         /// <summary>
         /// What each file becomes, e.g. <c>Matrix{Float64}</c>: the type a function applied to them takes.
         /// </summary>
-        public string EachType => JuliaTypes.Compose(Shape, ElementType);
+        public string EachType => FileFormats.IsStructured(Format) ? Function.AnyType : JuliaTypes.Compose(Shape, ElementType);
+
+        /// <summary>
+        /// Whether the files hold arrays, with an element type to pick: not JSON's structures.
+        /// </summary>
+        public bool HoldsArrays => !FileFormats.IsStructured(Format);
 
         public string FolderName => _folder.Length == 0 ? "no folder" : System.IO.Path.GetFileName(_folder.TrimEnd('/', '\\')) is { Length: > 0 } name ? name : _folder;
 
@@ -298,6 +303,11 @@ namespace JuliaSynth.Model
         protected virtual bool NeedsFiles => true;
 
         /// <summary>
+        /// Whether a missing folder is made when it is needed (a Watch folder fetching from the web), rather than an error.
+        /// </summary>
+        protected virtual bool MakesFolder => false;
+
+        /// <summary>
         /// Checks the settings again and says what changed.
         /// </summary>
         protected void Update()
@@ -312,7 +322,7 @@ namespace JuliaSynth.Model
             foreach (string name in new[]
             {
                 nameof(Shape), nameof(PossibleShapes), nameof(CanPickShape), nameof(IsDelimited), nameof(IsJld2), nameof(IsImage),
-                nameof(EachType), nameof(EachText), nameof(OutputType), nameof(FolderName), nameof(Julia), nameof(Code), nameof(Package),
+                nameof(EachType), nameof(HoldsArrays), nameof(EachText), nameof(OutputType), nameof(FolderName), nameof(Julia), nameof(Code), nameof(Package),
             })
             {
                 this.RaisePropertyChanged(name);
@@ -344,7 +354,7 @@ namespace JuliaSynth.Model
 
             if (!Directory.Exists(_folder))
             {
-                return (string.Empty, "The folder doesn't exist.");
+                return MakesFolder ? ("The folder is made when the stream starts.", null) : (string.Empty, "The folder doesn't exist.");
             }
 
             try

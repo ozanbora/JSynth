@@ -67,17 +67,19 @@
                 SelectedValue="{Binding Path=Format}"
                 ItemsSource="{x:Static jsModel:FileFormats.All}"
                 VerticalAlignment="Center"
-                ToolTip.Tip="How the files are read. CSV and TSV: values separated by commas or tabs. Matrix Market (.mtx): sparse matrices. JLD2: arrays saved from Julia. PNG: an image, as a matrix of grey levels (lossless)."
+                ToolTip.Tip="How the files are read. CSV and TSV: values separated by commas or tabs. Matrix Market (.mtx): sparse matrices. JLD2: arrays saved from Julia. PNG: an image, as a matrix of grey levels (lossless). JSON: objects, lists, numbers and text, as a web service answers (with the JSON package)."
                 />
     </StackPanel>
 
     <Label Grid.Row="2"
            Grid.Column="0"
            VerticalAlignment="Center"
+           IsVisible="{Binding Path=HoldsArrays}"
            Content="Each makes"
            />
     <StackPanel Grid.Row="2"
                 Grid.Column="1"
+                IsVisible="{Binding Path=HoldsArrays}"
                 Orientation="Horizontal"
                 Spacing="4"
                 >

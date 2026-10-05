@@ -61,7 +61,7 @@
                 SelectedValue="{Binding Path=Format}"
                 ItemsSource="{x:Static jsModel:ArrayFile.Formats}"
                 VerticalAlignment="Center"
-                ToolTip.Tip="CSV and TSV: values separated by commas or tabs. Matrix Market (.mtx): the usual format for sparse matrices. JLD2: arrays saved from Julia. PNG: an image, as a matrix of grey levels (lossless)."
+                ToolTip.Tip="CSV and TSV: values separated by commas or tabs. Matrix Market (.mtx): the usual format for sparse matrices. JLD2: arrays saved from Julia. PNG: an image, as a matrix of grey levels (lossless). JSON: objects, lists, numbers and text, as a web service answers (with the JSON package)."
                 />
 
       <Label Content="Color" VerticalAlignment="Center"/>
@@ -75,10 +75,12 @@
     <Label Grid.Row="2"
            Grid.Column="0"
            VerticalAlignment="Center"
+           IsVisible="{Binding Path=HoldsArrays}"
            Content="Makes"
            />
     <StackPanel Grid.Row="2"
                 Grid.Column="1"
+                IsVisible="{Binding Path=HoldsArrays}"
                 Orientation="Horizontal"
                 Spacing="4"
                 >

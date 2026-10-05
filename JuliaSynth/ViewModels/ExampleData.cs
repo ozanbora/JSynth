@@ -56,13 +56,15 @@ namespace JuliaSynth.ViewModels
         /// <summary>
         /// Where the data goes unless the user picks another folder: Documents/JuliaSynth/Example data/Name.
         /// </summary>
-        public string DefaultFolder
+        public string DefaultFolder => FolderOf(Name);
+
+        /// <summary>
+        /// Documents/JuliaSynth/Example data/<paramref name="name"/>: where examples keep their data.
+        /// </summary>
+        public static string FolderOf(string name)
         {
-            get
-            {
-                string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                return Path.Combine(documents.Length > 0 ? documents : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "JuliaSynth", "Example data", Name);
-            }
+            string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            return Path.Combine(documents.Length > 0 ? documents : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "JuliaSynth", "Example data", name);
         }
 
         /// <summary>

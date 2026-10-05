@@ -30,7 +30,8 @@ namespace JuliaSynth.Model
             # each file once it is written (its size the same at two looks), in name or time order. Files there
             # before the start go first, or are passed over. show: whether to show values for this one, at most
             # four times a second and for the last of those waiting. ready() once it watches. Ends when the stop file appears.
-            function _jsynth_watch(body, folder, pattern, existing, bytime; stop = nothing, ready = () -> nothing)
+            # latest: when several files are waiting, only the newest is gone through.
+            function _jsynth_watch(body, folder, pattern, existing, bytime; stop = nothing, ready = () -> nothing, latest = false)
                 isdir(folder) || throw(ArgumentError("The folder $(repr(folder)) doesn't exist."))
                 files() = filter(p -> isfile(p) && occursin(pattern, basename(p)), readdir(folder; join = true))
                 stopped() = stop !== nothing && isfile(stop)
@@ -46,6 +47,11 @@ namespace JuliaSynth.Model
                         s > 0 && get(sizes, p, -1) == s ? push!(due, p) : (sizes[p] = s)
                     end
                     sort!(due; by = p -> bytime ? (mtime(p), p) : (0.0, p))
+                    # Latest only: the files waiting before the newest are passed over.
+                    if latest && length(due) > 1
+                        foreach(p -> (push!(seen, p); delete!(sizes, p)), due[1:end - 1])
+                        due = due[end:end]
+                    end
                     for (i, p) in enumerate(due)
                         stopped() && return n
                         push!(seen, p)
@@ -108,6 +114,9 @@ namespace JuliaSynth.Model
         private string _order = ByName;
         private string _replayFolder = string.Empty;
         private double _replayRate = 4;
+        private bool _latestOnly;
+        private string _fetchUrl = string.Empty;
+        private double _fetchEvery = 15;
 
         /// <summary>
         /// Whether files already in the folder when the stream starts go first, or are passed over.
@@ -163,6 +172,57 @@ namespace JuliaSynth.Model
         public bool Replays => _replayFolder.Length > 0;
 
         /// <summary>
+        /// When several files are waiting, only the newest is worked through, the others passed over: for live data,
+        /// where only the present matters.
+        /// </summary>
+        [JsonProperty(Order = 13)]
+        public bool LatestOnly
+        {
+            get => _latestOnly;
+            set => this.RaiseAndSetIfChanged(ref _latestOnly, value);
+        }
+
+        /// <summary>
+        /// A web address JuliaSynth fetches again and again while the stream runs, saving each answer as a new file in
+        /// the watched folder, named by the time: a web service as the sensor. Empty for none.
+        /// </summary>
+        [JsonProperty(Order = 14)]
+        public string FetchUrl
+        {
+            get => _fetchUrl;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _fetchUrl, (value ?? string.Empty).Trim());
+                this.RaisePropertyChanged(nameof(Fetches));
+                Update();
+            }
+        }
+
+        /// <summary>
+        /// Seconds between fetches, from 1 to a day.
+        /// </summary>
+        [JsonProperty(Order = 15)]
+        public double FetchEvery
+        {
+            get => _fetchEvery;
+            set => this.RaiseAndSetIfChanged(ref _fetchEvery, Math.Clamp(double.IsFinite(value) ? value : 15, 1, 86_400));
+        }
+
+        public bool Fetches => _fetchUrl.Length > 0;
+
+        protected override bool MakesFolder => Fetches;
+
+        /// <summary>
+        /// The name of a fetched answer's file: the time it was fetched (UTC), with the extension of the files watched
+        /// for, as they sort in time order: 2026-10-05T07-12-30.json.
+        /// </summary>
+        public string FetchedName(DateTime utc)
+        {
+            string extension = System.IO.Path.GetExtension(Pattern) is { Length: > 1 } ext && !ext.Contains('*') && !ext.Contains('?') ? ext : ".txt";
+            return utc.ToString("yyyy-MM-dd'T'HH-mm-ss", CultureInfo.InvariantCulture) + extension;
+        }
+
+        /// <summary>
         /// Always one file at a time, as they come.
         /// </summary>
         [JsonIgnore]
@@ -187,15 +247,26 @@ namespace JuliaSynth.Model
         /// <param name="stopFile">For a run: the file whose appearing ends the stream; the run is told when it watches.</param>
         public string Watch(string? stopFile)
         {
-            string stop = stopFile is null ? string.Empty : $"; stop = {ArrayFile.PathLiteral(stopFile)}, ready = () -> _jsynth_watching(\"{ID}\")";
-            return $"_jsynth_watch({ArrayFile.PathLiteral(Folder)}, r\"{PatternRegex(Pattern)}\"i, {(ExistingFirst ? "true" : "false")}, {(Order == ByTime ? "true" : "false")}{stop})";
+            List<string> options = [];
+            if (LatestOnly)
+            {
+                options.Add("latest = true");
+            }
+
+            if (stopFile is not null)
+            {
+                options.Add($"stop = {ArrayFile.PathLiteral(stopFile)}, ready = () -> _jsynth_watching(\"{ID}\")");
+            }
+
+            string named = options.Count == 0 ? string.Empty : $"; {string.Join(", ", options)}";
+            return $"_jsynth_watch({ArrayFile.PathLiteral(Folder)}, r\"{PatternRegex(Pattern)}\"i, {(ExistingFirst ? "true" : "false")}, {(Order == ByTime ? "true" : "false")}{named})";
         }
 
         public override string Julia => $"{Watch(null)} do path, n, show\n    frame = ({ReadFunction})(path)\n    # ... the nodes downstream, for each file\nend";
 
         public override bool IsViewState(string property)
         {
-            return base.IsViewState(property) || property == nameof(Replays);
+            return base.IsViewState(property) || property is nameof(Replays) or nameof(Fetches);
         }
 
         /// <summary>

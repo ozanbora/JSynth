@@ -349,6 +349,16 @@ namespace JuliaSynth.ViewModels
                 + "perfect) of every frame so far: 0.82 on the first 800 frames, 0.84 on all. The frames are downloaded when the example opens, 800 or all "
                 + "1,700; reading PNG files needs PNGFiles and ColorTypes.",
                 MotionInVideo) { Data = CdnetHighway },
+            new("Live air traffic",
+                "Streaming: the aircraft over the Netherlands, Belgium and western Germany right now, from the OpenSky "
+                + "Network's live web service. The Watch folder node fetches its address every 15 seconds and saves each answer "
+                + "as a JSON file, named by the time; latest only means a slow run skips to the newest answer rather than falling "
+                + "behind. airborne turns an answer into a row an aircraft (position, altitude, climb rate, speed), plotted as a "
+                + "map; their count is saved a row a fetch to traffic.csv and plotted; steep lists those climbing or descending steeply. "
+                + "Press Stop to end it. Without an account OpenSky answers 400 times a day: at one fetch every 15 seconds, about "
+                + "an hour and 40 minutes. OpenSky's data is for research and other non-commercial use "
+                + "(https://opensky-network.org); reading JSON needs the JSON package.",
+                LiveAirTraffic),
         ];
 
 
@@ -971,6 +981,61 @@ namespace JuliaSynth.ViewModels
                 (frames, frame, "y"), (moving, mask, "y"), (moving, saved, 0),
                 (path, twin, 0), (moving, score, 0), (twin, score, 1), (path, score, 2), (totals, add, 0), (score, add, 1), (add, totals, "next"),
                 (add, fScore, 0), (fScore, shown, 0));
+        }
+
+        /// <summary>
+        /// OpenSky's live aircraft over the Netherlands, Belgium and western Germany: latitude 50.5° to 52.5° N,
+        /// longitude 3.5° to 7.5° E, an area OpenSky counts as one request.
+        /// </summary>
+        internal const string OpenSkyUrl = "https://opensky-network.org/api/states/all?lamin=50.5&lomin=3.5&lamax=52.5&lomax=7.5";
+
+        private static MainViewModel.DesignDocument LiveAirTraffic()
+        {
+            // OpenSky's answers are saved here as they come, one file a fetch, named by the time: the folder is made when
+            // the stream starts.
+            string live = ExampleData.FolderOf("OpenSky aircraft");
+
+            WatchNode watch = new()
+            {
+                Format = FileFormats.Json, Folder = live, ExistingFirst = false, LatestOnly = true,
+                FetchUrl = OpenSkyUrl, FetchEvery = 15, Row = 6, Column = Inputs,
+            };
+
+            Function airborne = Define("airborne", "Matrix{Float64}", 6, Stage1,
+                """
+                # The aircraft in the air, a row each: longitude, latitude, altitude (m), climb rate (m/s), speed (m/s).
+                # OpenSky gives each as a list: [icao24, callsign, country, time, last contact, longitude, latitude,
+                # barometric altitude, on ground, speed, heading, climb rate, ...], nothing where it doesn't know.
+                flying = [s for s in something(get(J, "states", nothing), []) if s[6] !== nothing && s[7] !== nothing && s[9] == false]
+                isempty(flying) ? zeros(0, 5) : permutedims(reduce(hcat, [Float64[s[6], s[7], something(s[8], 0), something(s[12], 0), something(s[10], 0)] for s in flying]))
+                """,
+                ("J", Function.AnyType));
+            Function longitude = Define("longitude", "Vector{Float64}", 6, Stage2, "A[:, 1]", ("A", "Matrix{Float64}"));
+            Function latitude = Define("latitude", "Vector{Float64}", 16, Stage2, "A[:, 2]", ("A", "Matrix{Float64}"));
+            PlotNode map = new() { Title = "Aircraft over the Netherlands and Belgium (longitude, latitude), live", Kind = "Scatter", Row = 12, Column = Stage3 + 8 };
+
+            // How many, fetch by fetch: saved a row each, and plotted.
+            Function count = Define("aircraft", "Int64", 28, Stage1, "size(A, 1)  # how many are in the air over the area", ("A", "Matrix{Float64}"));
+            SaveFile saved = new() { Path = System.IO.Path.Combine(live, "traffic.csv"), PerFile = true, Row = 28, Column = Stage2 };
+            ArrayBuilder trend = Empty(JuliaTypes.Vector, "Float64", 28);
+            Function grow = Define("grow", "Vector{Float64}", 28, Stage3, "[T; n]  # the count of every fetch so far", ("T", "Vector{Float64}"), ("n", "Int64"));
+            PlotNode counted = new() { Title = "Aircraft in the air, fetch by fetch", Kind = "Line", Row = 34, Column = Stage3 + 22 };
+
+            // Who climbs or descends steeply now.
+            Function steep = Define("steep", Function.AnyType, 42, Stage1,
+                """
+                # The aircraft climbing or descending more than 10 m/s (about 2,000 ft a minute): after take-off, or on the way down.
+                flying = [s for s in something(get(J, "states", nothing), []) if s[12] !== nothing && abs(s[12]) > 10 && s[9] == false]
+                isempty(flying) ? "None" : join(["$(strip(something(s[2], s[1]))) $(s[12] > 0 ? "↑" : "↓") $(round(Int, abs(s[12]))) m/s at $(round(Int, something(s[8], 0))) m" for s in flying], "\n")
+                """,
+                ("J", Function.AnyType));
+            DisplayNode shown = Shown(42, Stage2 + 4);
+
+            return Design(
+                [watch, airborne, longitude, latitude, map, count, saved, trend, grow, counted, steep, shown],
+                (watch, airborne, 0), (airborne, longitude, 0), (airborne, latitude, 0), (latitude, map, "y"), (longitude, map, "x"),
+                (airborne, count, 0), (count, saved, 0), (trend, grow, 0), (count, grow, 1), (grow, trend, "next"), (grow, counted, "y"),
+                (watch, steep, 0), (steep, shown, 0));
         }
 
         private static string DataFolder(string name)

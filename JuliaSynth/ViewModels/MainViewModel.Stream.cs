@@ -23,8 +23,9 @@ public partial class MainViewModel
     private string _streamStatus = string.Empty;
     private string? _streamFolder;
     private string? _stopFile;
-    private CancellationTokenSource? _replay;
+    private CancellationTokenSource? _sources;
     private (List<FileInfo> Files, string Into, double Rate)? _pendingReplay;
+    private WatchNode? _pendingFetch;
 
     // Values are logged the first time a node shows one in a stream, failures when they change: not every file's.
     private readonly HashSet<string> _streamLogged = [];
@@ -111,6 +112,19 @@ public partial class MainViewModel
     /// </summary>
     private void BeginStream(WatchNode watched, string stopFile)
     {
+        // A folder fetched into is made now, before Julia looks at it.
+        if (watched.Fetches)
+        {
+            try
+            {
+                _ = Directory.CreateDirectory(watched.Folder);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                Log($"The folder to fetch into can't be made: {e.Message}", OutputKind.Error);
+            }
+        }
+
         _stopFile = stopFile;
         _streamFolder = watched.Folder;
         _streamStatus = string.Empty;
@@ -120,26 +134,34 @@ public partial class MainViewModel
         _pendingReplay = watched.Replays && PrepareReplay(watched.ReplayFolder, watched.Folder, watched.Pattern) is List<FileInfo> files
             ? (files, watched.Folder, watched.ReplayRate)
             : null;
+        _pendingFetch = watched.Fetches ? watched : null;
     }
 
     /// <summary>
-    /// The stream watches its folder now: the replay can start.
+    /// The stream watches its folder now: the replay, or the fetching, can start.
     /// </summary>
     private void StreamWatching()
     {
+        _sources ??= new CancellationTokenSource();
         if (_pendingReplay is (List<FileInfo> files, string into, double rate))
         {
             _pendingReplay = null;
-            _replay = new CancellationTokenSource();
-            _ = ReplayAsync(files, into, rate, _replay.Token);
+            _ = ReplayAsync(files, into, rate, _sources.Token);
+        }
+
+        if (_pendingFetch is WatchNode watched)
+        {
+            _pendingFetch = null;
+            _ = FetchAsync(Http, watched.FetchUrl, watched.Folder, watched.FetchEvery, watched.FetchedName, _sources.Token);
         }
     }
 
     private void EndStream()
     {
         _pendingReplay = null;
-        _replay?.Cancel();
-        _replay = null;
+        _pendingFetch = null;
+        _sources?.Cancel();
+        _sources = null;
         if (_stopFile is string stop)
         {
             try
@@ -226,6 +248,60 @@ public partial class MainViewModel
         {
             Log($"Nothing replayed: {e.Message}", OutputKind.Error);
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Fetches <paramref name="url"/> every <paramref name="every"/> seconds and saves each answer into
+    /// <paramref name="into"/> as a new file, named by <paramref name="name"/> from the time (UTC): a web service as
+    /// the sensor. Each is written to a temporary name and then renamed, so the stream never reads half of one. A
+    /// failed fetch is said once and tried again; a service saying it was asked too often (429) ends the fetching.
+    /// </summary>
+    internal async Task FetchAsync(System.Net.Http.HttpClient client, string url, string into, double every, Func<DateTime, string> name, CancellationToken cancellationToken)
+    {
+        string? failure = null;
+        try
+        {
+            Log($"Fetching {url} every {every:0.#} s into {into}, a web service as the sensor.", OutputKind.Info);
+            _ = Directory.CreateDirectory(into);
+            while (true)
+            {
+                try
+                {
+                    using System.Net.Http.HttpResponseMessage response = await client.GetAsync(url, cancellationToken);
+                    if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                    {
+                        Log($"Stopped fetching: {url} says it was asked too often (429). Services limit how often they may be asked: try again later, or less often.", OutputKind.Error);
+                        return;
+                    }
+
+                    _ = response.EnsureSuccessStatusCode();
+                    byte[] body = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                    string target = Path.Combine(into, name(DateTime.UtcNow));
+                    await File.WriteAllBytesAsync(target + ".part", body, cancellationToken);
+                    File.Move(target + ".part", target, overwrite: true);
+                    failure = null;
+                }
+                catch (System.Net.Http.HttpRequestException e) when (e.Message != failure)
+                {
+                    failure = e.Message;
+                    Log($"Fetching failed, trying again every {every:0.#} s: {e.Message}", OutputKind.Error);
+                }
+                catch (System.Net.Http.HttpRequestException)
+                {
+                    // Failing as before: said already.
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(every), cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The stream ended.
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log($"The fetching stopped: {e.Message}", OutputKind.Error);
         }
     }
 

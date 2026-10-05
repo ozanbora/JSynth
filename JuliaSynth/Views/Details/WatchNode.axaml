@@ -12,7 +12,7 @@
   <StackPanel Spacing="10">
     <jsDetails:FilesNode/>
 
-    <Grid RowDefinitions="auto,auto,auto,auto,auto"
+    <Grid RowDefinitions="auto,auto,auto,auto,auto,auto,auto,auto"
           ColumnDefinitions="auto,*"
           >
       <Label Grid.Row="0"
@@ -40,26 +40,38 @@
                 ToolTip.Tip="The order of files waiting together: by name (timestamped names, frame-0001, ...), or by the time they were written."
                 />
 
-      <TextBlock Grid.Row="2"
+      <Label Grid.Row="2"
+             Grid.Column="0"
+             VerticalAlignment="Center"
+             Content="Behind"
+             />
+      <CheckBox Grid.Row="2"
+                Grid.Column="1"
+                Content="Latest only: skip to the newest file"
+                IsChecked="{Binding Path=LatestOnly}"
+                ToolTip.Tip="When files come faster than they are worked through, and several are waiting: only the newest is, the others are passed over. For live data, where only the present matters (where aircraft are now, say). Not ticked: every file, in turn."
+                />
+
+      <TextBlock Grid.Row="3"
                  Grid.Column="0"
                  Grid.ColumnSpan="2"
                  Margin="0 8 0 0"
                  FontWeight="SemiBold"
-                 Text="Stand-in for a sensor"
+                 Text="Where new files come from (optional)"
                  />
 
-      <Label Grid.Row="3"
+      <Label Grid.Row="4"
              Grid.Column="0"
              VerticalAlignment="Center"
              Content="Replay"
              />
-      <Grid Grid.Row="3"
+      <Grid Grid.Row="4"
             Grid.Column="1"
             ColumnDefinitions="*,auto"
             >
         <TextBox Grid.Column="0"
                  Text="{Binding Path=ReplayFolder}"
-                 PlaceholderText="A folder of recorded files (optional)"
+                 PlaceholderText="A folder of recorded files"
                  ToolTip.Tip="While the stream runs, JuliaSynth copies the matching files of this folder into the watched one, one at a time, as a sensor would write them: for trying a design without the sensor."
                  />
         <Button Grid.Column="1"
@@ -69,13 +81,13 @@
                 />
       </Grid>
 
-      <Label Grid.Row="4"
+      <Label Grid.Row="5"
              Grid.Column="0"
              VerticalAlignment="Center"
              Content="Rate"
              IsVisible="{Binding Path=Replays}"
              />
-      <StackPanel Grid.Row="4"
+      <StackPanel Grid.Row="5"
                   Grid.Column="1"
                   Orientation="Horizontal"
                   Spacing="6"
@@ -90,6 +102,43 @@
                        />
         <TextBlock VerticalAlignment="Center"
                    Text="files a second"
+                   />
+      </StackPanel>
+
+      <Label Grid.Row="6"
+             Grid.Column="0"
+             VerticalAlignment="Center"
+             Content="Fetch"
+             />
+      <TextBox Grid.Row="6"
+               Grid.Column="1"
+               Text="{Binding Path=FetchUrl}"
+               PlaceholderText="A web address answering with data (optional)"
+               ToolTip.Tip="While the stream runs, JuliaSynth fetches this address again and again and saves each answer as a new file in the watched folder, named by the time: a web service as the sensor (live aircraft positions, say)."
+               />
+
+      <Label Grid.Row="7"
+             Grid.Column="0"
+             VerticalAlignment="Center"
+             Content="Every"
+             IsVisible="{Binding Path=Fetches}"
+             />
+      <StackPanel Grid.Row="7"
+                  Grid.Column="1"
+                  Orientation="Horizontal"
+                  Spacing="6"
+                  IsVisible="{Binding Path=Fetches}"
+                  >
+        <NumericUpDown Width="130"
+                       Minimum="1"
+                       Maximum="86400"
+                       Increment="5"
+                       FormatString="0.#"
+                       Value="{Binding Path=FetchEvery}"
+                       ToolTip.Tip="How often to fetch. Web services limit how often they may be asked: OpenSky, 400 times a day without an account."
+                       />
+        <TextBlock VerticalAlignment="Center"
+                   Text="seconds"
                    />
       </StackPanel>
     </Grid>

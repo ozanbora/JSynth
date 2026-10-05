@@ -21,6 +21,7 @@ namespace JuliaSynth.Model
         public const string MatrixMarket = FileFormats.MatrixMarket;
         public const string Jld2 = FileFormats.Jld2;
         public const string Png = FileFormats.Png;
+        public const string Json = FileFormats.Json;
 
         public static IReadOnlyList<string> Formats => FileFormats.All;
 
@@ -174,7 +175,12 @@ namespace JuliaSynth.Model
         /// </summary>
         public string Symbol => IsVector ? "𝒗" : "𝑨";
 
-        public override string OutputType => JuliaTypes.Compose(Shape, ElementType);
+        public override string OutputType => FileFormats.IsStructured(Format) ? Function.AnyType : JuliaTypes.Compose(Shape, ElementType);
+
+        /// <summary>
+        /// Whether the file holds an array, with an element type to pick: not JSON's structure.
+        /// </summary>
+        public bool HoldsArrays => !FileFormats.IsStructured(Format);
 
         public string FileName => _path.Length == 0 ? "no file" : System.IO.Path.GetFileName(_path);
 
@@ -240,7 +246,7 @@ namespace JuliaSynth.Model
             foreach (string name in new[]
             {
                 nameof(Format), nameof(Shape), nameof(PossibleShapes), nameof(CanPickShape), nameof(IsDelimited),
-                nameof(IsJld2), nameof(IsImage), nameof(IsVector), nameof(Symbol), nameof(OutputType), nameof(FileName), nameof(Julia),
+                nameof(IsJld2), nameof(IsImage), nameof(IsVector), nameof(Symbol), nameof(OutputType), nameof(HoldsArrays), nameof(FileName), nameof(Julia),
                 nameof(Code), nameof(Package),
             })
             {

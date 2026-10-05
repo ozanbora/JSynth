@@ -253,6 +253,7 @@ namespace JuliaSynth.Model
             ArrayFile.Csv or ArrayFile.Tsv => ["DelimitedFiles"],
             ArrayFile.MatrixMarket => ["MatrixMarket", "SparseArrays"],
             ArrayFile.Png => ["PNGFiles"],
+            ArrayFile.Json => ["JSON"],
             _ => ["JLD2"],
         };
 
@@ -282,6 +283,7 @@ namespace JuliaSynth.Model
                 ArrayFile.Tsv => $"writedlm({path}, {input}, '\\t')",
                 ArrayFile.MatrixMarket => $"MatrixMarket.mmwrite({path}, {input})",
                 ArrayFile.Png => Picture(path, input),
+                ArrayFile.Json => $"write({path}, JSON.json({input}))",
                 _ => $"JLD2.jldsave({path}; {Variable} = {input})",
             };
         }

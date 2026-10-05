@@ -16,12 +16,19 @@ namespace JuliaSynth.Model
         public const string MatrixMarket = "Matrix Market";
         public const string Jld2 = "JLD2";
         public const string Png = "PNG image";
+        public const string Json = "JSON";
 
-        public static IReadOnlyList<string> All { get; } = [Csv, Tsv, MatrixMarket, Jld2, Png];
+        public static IReadOnlyList<string> All { get; } = [Csv, Tsv, MatrixMarket, Jld2, Png, Json];
 
         public static bool IsDelimited(string format) => format is Csv or Tsv;
 
         public static bool IsImage(string format) => format == Png;
+
+        /// <summary>
+        /// Whether a file of <paramref name="format"/> holds a structure (JSON: objects, lists, numbers and text) rather
+        /// than an array: it has no shape or element type to pick, and its value is whatever it holds.
+        /// </summary>
+        public static bool IsStructured(string format) => format == Json;
 
         /// <summary>
         /// The shapes a file of <paramref name="format"/> can be read as.
@@ -31,6 +38,7 @@ namespace JuliaSynth.Model
             Csv or Tsv => [JuliaTypes.Vector, JuliaTypes.Matrix],
             MatrixMarket => [JuliaTypes.SparseMatrix],
             Png => [JuliaTypes.Matrix],
+            Json => [JuliaTypes.Scalar],
             _ => [JuliaTypes.Vector, JuliaTypes.Matrix, JuliaTypes.SparseVector, JuliaTypes.SparseMatrix],
         };
 
@@ -44,6 +52,7 @@ namespace JuliaSynth.Model
             ".mtx" => MatrixMarket,
             ".jld2" => Jld2,
             ".png" => Png,
+            ".json" => Json,
             _ => null,
         };
 
@@ -56,6 +65,7 @@ namespace JuliaSynth.Model
             Tsv => "*.tsv",
             MatrixMarket => "*.mtx",
             Png => "*.png",
+            Json => "*.json",
             _ => "*.jld2",
         };
 
@@ -67,6 +77,7 @@ namespace JuliaSynth.Model
             Csv or Tsv => "DelimitedFiles",
             MatrixMarket => "MatrixMarket, SparseArrays",
             Png => "PNGFiles",
+            Json => "JSON",
             _ => "JLD2, SparseArrays",
         };
 
@@ -118,6 +129,7 @@ namespace JuliaSynth.Model
                 // for a float type, else as the values stored (0 to 255, or 65535 for a 16-bit image).
                 Png when JuliaTypes.Floats.Contains(elementType) => $"{type}(ColorTypes.gray.(ColorTypes.Gray.(PNGFiles.load({path}))))",
                 Png => $"{type}(reinterpret.(ColorTypes.gray.(ColorTypes.Gray.(PNGFiles.load({path})))))",
+                Json => $"JSON.parsefile({path})",
                 _ => $"convert({type}, JLD2.load({path}, {ArrayFile.PathLiteral(variable)}))",
             };
         }
