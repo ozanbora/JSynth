@@ -43,6 +43,11 @@ namespace JuliaSynth.ViewModels
         /// Where the files are when they come in an archive, rather than one by one at <see cref="BaseUrl"/>.
         /// </summary>
         public ExampleArchive? Archive { get; init; }
+
+        /// <summary>
+        /// Where each file is, by its name, when that isn't <see cref="BaseUrl"/> + name: a query of a web service, say.
+        /// </summary>
+        public Func<string, string>? FileUrl { get; init; }
         /// <summary>
         /// The file next to the data that says where it comes from.
         /// </summary>
@@ -126,7 +131,7 @@ namespace JuliaSynth.ViewModels
                 if (!new FileInfo(path).Exists)
                 {
                     string partial = path + ".part";
-                    using (HttpResponseMessage response = await client.GetAsync(BaseUrl + name, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                    using (HttpResponseMessage response = await client.GetAsync(FileUrl is null ? BaseUrl + name : FileUrl(name), HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                     {
                         _ = response.EnsureSuccessStatusCode();
                         await using FileStream file = File.Create(partial);

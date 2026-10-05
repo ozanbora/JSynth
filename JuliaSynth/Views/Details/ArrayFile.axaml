@@ -38,7 +38,7 @@
           >
       <TextBox Grid.Column="0"
                Text="{Binding Path=Path}"
-               PlaceholderText="C:\data\signal.csv"
+               PlaceholderText="{x:Static jsModel:FileFormats.ExampleFile}"
                ToolTip.Tip="Where Julia finds the file. A relative path is relative to the folder Julia runs in."
                />
       <Button Grid.Column="1"
@@ -95,13 +95,21 @@
                 />
     </StackPanel>
 
-    <CheckBox Grid.Row="3"
-              Grid.Column="1"
-              Content="First line is a header"
-              IsChecked="{Binding Path=HasHeader}"
-              IsVisible="{Binding Path=IsDelimited}"
-              ToolTip.Tip="Skip a first line that names the columns instead of holding values."
-              />
+    <StackPanel Grid.Row="3"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="12"
+                IsVisible="{Binding Path=IsDelimited}"
+                >
+      <CheckBox Content="First line is a header"
+                IsChecked="{Binding Path=HasHeader}"
+                ToolTip.Tip="Skip a first line that names the columns instead of holding values. With comments, the first line that isn't one."
+                />
+      <CheckBox Content="Lines starting with # are comments"
+                IsChecked="{Binding Path=HasComments}"
+                ToolTip.Tip="Skip lines starting with #, which describe the data rather than hold it: a GeoCSV file's from a seismometer, say."
+                />
+    </StackPanel>
 
     <TextBlock Grid.Row="3"
                Grid.Column="1"

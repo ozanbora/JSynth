@@ -197,8 +197,10 @@ namespace JuliaSynth.Model
         /// </summary>
         public string RowStatement(string input, bool named)
         {
-            string row = named ? $"[basename(_path); vec(collect({input}))]" : $"vec(collect({input}))";
-            string delimiter = Format == ArrayFile.Tsv ? "'\t'" : "','";
+            // A text (a note, say) is one cell, not a cell a character.
+            string cells = $"({input} isa AbstractString ? [{input}] : vec(collect({input})))";
+            string row = named ? $"[basename(_path); {cells}]" : cells;
+            string delimiter = Format == ArrayFile.Tsv ? "'\\t'" : "','";
             return $"open(io -> writedlm(io, permutedims({row}), {delimiter}), {ArrayFile.PathLiteral(_path)}, \"a\")";
         }
 

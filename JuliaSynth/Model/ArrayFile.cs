@@ -33,6 +33,7 @@ namespace JuliaSynth.Model
         private string _shape = JuliaTypes.Matrix;
         private string _elementType = "Float64";
         private bool _hasHeader;
+        private bool _hasComments;
         private string _variable = "A";
         private string _summary = string.Empty;
         private string? _error;
@@ -128,6 +129,21 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
+        /// Whether lines of a CSV or TSV file starting with # are comments, to be skipped: GeoCSV files describe their
+        /// data so, a seismometer's say.
+        /// </summary>
+        [JsonProperty(Order = 12)]
+        public bool HasComments
+        {
+            get => _hasComments;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _hasComments, value);
+                Update();
+            }
+        }
+
+        /// <summary>
         /// The name the array was saved under in a JLD2 file.
         /// </summary>
         [JsonProperty(Order = 6)]
@@ -174,7 +190,7 @@ namespace JuliaSynth.Model
         /// <summary>
         /// The Julia expression reading the file, e.g. <c>readdlm(raw"C:\data\a.csv", ',', Float64)</c>.
         /// </summary>
-        public string Julia => FileFormats.Read(Format, PathLiteral(_path), Shape, ElementType, HasHeader, Variable);
+        public string Julia => FileFormats.Read(Format, PathLiteral(_path), Shape, ElementType, HasHeader, Variable, HasComments);
 
         /// <summary>
         /// <see cref="Julia"/>, after the <c>using</c> it needs.
@@ -275,12 +291,25 @@ namespace JuliaSynth.Model
         {
             char separator = Format == Csv ? ',' : '\t';
             using StreamReader reader = new(_path);
-            if (HasHeader)
+
+            // The next line that isn't a comment, when # starts them.
+            string? Next()
             {
-                _ = reader.ReadLine();
+                string? line;
+                do
+                {
+                    line = reader.ReadLine();
+                }
+                while (HasComments && line is not null && line.TrimStart().StartsWith('#'));
+                return line;
             }
 
-            if (reader.ReadLine() is not string first)
+            if (HasHeader)
+            {
+                _ = Next();
+            }
+
+            if (Next() is not string first)
             {
                 return ("empty", "The file holds no values.");
             }
@@ -299,7 +328,7 @@ namespace JuliaSynth.Model
             }
 
             int rows = 1;
-            while (reader.ReadLine() is string line)
+            while (Next() is string line)
             {
                 if (line.Trim().Length > 0)
                 {

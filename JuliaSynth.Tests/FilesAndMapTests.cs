@@ -3,10 +3,12 @@ using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using JuliaSynth.Controls;
 using JuliaSynth.Model;
+using JuliaSynth.Runtime;
 using JuliaSynth.ViewModels;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace JuliaSynth.Tests
@@ -108,6 +110,46 @@ namespace JuliaSynth.Tests
             files.Format = FileFormats.MatrixMarket;
             Assert.EndsWith("path -> SparseMatrixCSC{Float32, Int64}(MatrixMarket.mmread(path)))", files.Julia);
             Assert.Equal("MatrixMarket, SparseArrays", files.Package);
+        }
+
+        [Fact]
+        public async Task Real_julia_reads_a_geocsv_file_past_its_comments_and_header()
+        {
+            if (await JuliaLocator.FindAsync(null) is not JuliaInstallation julia)
+            {
+                return;
+            }
+
+            string geo = Path.Combine(_folder, "minute.geo");
+            File.WriteAllText(geo, "# dataset: GeoCSV 2.0\n# sample_rate_hz: 20\nSample\n3\n-4\n5\n");
+            string read = FileFormats.Read(FileFormats.Csv, ArrayFile.PathLiteral(geo), JuliaTypes.Vector, "Float64", true, "A", hasComments: true);
+            using JuliaSession session = new(julia.Path);
+            System.Collections.Concurrent.ConcurrentQueue<OutputLine> output = new();
+            RunResult result = await session.RunAsync($"using DelimitedFiles\nprintln({read})", _folder, output.Enqueue);
+            Assert.True(result.Succeeded, string.Join("\n", output.Select(l => l.Text)));
+            Assert.Contains(output, l => l.Text == "[3.0, -4.0, 5.0]");
+        }
+
+        [Fact]
+        public void Lines_starting_with_a_hash_can_be_comments_as_in_a_seismometers_geocsv()
+        {
+            // A GeoCSV file: comments about the station, a header line, then the readings.
+            string geo = Path.Combine(_folder, "minute.geo");
+            File.WriteAllText(geo, "# dataset: GeoCSV 2.0\n# sample_rate_hz: 20\nSample\n3\n-4\n5\n");
+
+            Assert.Equal("readdlm(path, ',', Float64)", FileFormats.Read(FileFormats.Csv, "path", JuliaTypes.Matrix, "Float64", false, "A"));
+            Assert.Equal("readdlm(path, ',', Float64; comments = true)", FileFormats.Read(FileFormats.Csv, "path", JuliaTypes.Matrix, "Float64", false, "A", hasComments: true));
+            Assert.Equal("vec(readdlm(path, '\\t', Int64; header = true, comments = true)[1])", FileFormats.Read(FileFormats.Tsv, "path", JuliaTypes.Vector, "Int64", true, "A", hasComments: true));
+
+            // Load from file checks the first values, past the comments and the header.
+            ArrayFile file = new() { Path = geo, Format = FileFormats.Csv, Shape = JuliaTypes.Vector, HasHeader = true };
+            Assert.NotNull(file.Error);
+            file.HasComments = true;
+            Assert.Null(file.Error);
+            Assert.Equal("3-element", file.Summary);
+
+            FilesNode files = new() { Folder = _folder, Pattern = "*.geo", Shape = JuliaTypes.Vector, HasHeader = true, HasComments = true };
+            Assert.Equal("path -> vec(readdlm(path, ',', Float64; header = true, comments = true)[1])", files.ReadFunction);
         }
 
         [Fact]

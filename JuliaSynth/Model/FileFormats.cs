@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -76,18 +77,41 @@ namespace JuliaSynth.Model
         public static IReadOnlyList<string> Imports(string format) => format == Png ? ["ColorTypes"] : [];
 
         /// <summary>
+        /// A folder of data files as this system writes one, for an empty folder box to suggest.
+        /// </summary>
+        public static string ExampleFolder { get; } = OperatingSystem.IsWindows() ? @"C:\data\runs" : "/home/me/data/runs";
+
+        /// <summary>
+        /// A data file as this system writes one, for an empty file box to suggest.
+        /// </summary>
+        public static string ExampleFile { get; } = OperatingSystem.IsWindows() ? @"C:\data\signal.csv" : "/home/me/data/signal.csv";
+
+        /// <summary>
+        /// The Julia character between the values of a CSV or TSV file.
+        /// </summary>
+        private static string Delimiter(string format) => format == Csv ? "','" : "'\\t'";
+
+        /// <summary>
         /// Julia code reading the file at <paramref name="path"/> (a Julia expression: a string literal,
         /// or a variable) as <paramref name="shape"/> of <paramref name="elementType"/>.
         /// </summary>
         /// <param name="hasHeader">A CSV or TSV file's first line names the columns.</param>
         /// <param name="variable">The name the array was saved under in a JLD2 file.</param>
-        public static string Read(string format, string path, string shape, string elementType, bool hasHeader, string variable)
+        /// <param name="hasComments">A CSV or TSV file's lines starting with # are comments (GeoCSV's, say), skipped.</param>
+        public static string Read(string format, string path, string shape, string elementType, bool hasHeader, string variable, bool hasComments = false)
         {
             string type = JuliaTypes.Compose(shape, elementType);
             return format switch
             {
                 // readdlm always makes a matrix; vec makes a vector of it, column by column.
-                Csv or Tsv => Dense(shape, $"readdlm({path}, {(format == Csv ? "','" : "'\\t'")}, {elementType}{(hasHeader ? "; skipstart = 1" : string.Empty)})"),
+                // With comments, the header is the first line that isn't one: readdlm then gives the values and it.
+                Csv or Tsv => Dense(shape, (hasHeader, hasComments) switch
+                {
+                    (true, true) => $"readdlm({path}, {Delimiter(format)}, {elementType}; header = true, comments = true)[1]",
+                    (true, false) => $"readdlm({path}, {Delimiter(format)}, {elementType}; skipstart = 1)",
+                    (false, true) => $"readdlm({path}, {Delimiter(format)}, {elementType}; comments = true)",
+                    _ => $"readdlm({path}, {Delimiter(format)}, {elementType})",
+                }),
                 MatrixMarket => $"{type}(MatrixMarket.mmread({path}))",
 
                 // Grey levels (colour turned to grey by luminance), row 1 at the top: as intensities from 0 to 1

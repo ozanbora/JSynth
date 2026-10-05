@@ -106,7 +106,7 @@ namespace JuliaSynth.Tests
                 // In it: the last 2 levels, the file's name, a row after the name, and the first high level's name.
                 Assert.Contains("global window1 = _jsynth_window!(window1_values, level_out, 2)", parts[1]);
                 Assert.Contains("global name1 = basename(_path)", parts[1]);
-                Assert.Contains($"open(io -> writedlm(io, permutedims([basename(_path); vec(collect(level_out))]), ','), raw\"{Rows}\", \"a\")", parts[1]);
+                Assert.Contains($"open(io -> writedlm(io, permutedims([basename(_path); (level_out isa AbstractString ? [level_out] : vec(collect(level_out)))]), ','), raw\"{Rows}\", \"a\")", parts[1]);
                 Assert.Contains("global passed1_ok = first_time_out\n    if passed1_ok\n        global passed1 = name1\n    end", parts[1]);
                 Assert.Contains("    if passed1_ok\n        display(passed1)\n    end", parts[1]);
 

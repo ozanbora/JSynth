@@ -47,6 +47,7 @@ namespace JuliaSynth.Model
         private string _shape = JuliaTypes.Matrix;
         private string _elementType = "Float64";
         private bool _hasHeader;
+        private bool _hasComments;
         private string _variable = "A";
         private string _summary = string.Empty;
         private string? _error;
@@ -152,6 +153,21 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
+        /// Whether lines of a CSV or TSV file starting with # are comments, to be skipped: GeoCSV files describe their
+        /// data so, a seismometer's say.
+        /// </summary>
+        [JsonProperty(Order = 12)]
+        public bool HasComments
+        {
+            get => _hasComments;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _hasComments, value);
+                Update();
+            }
+        }
+
+        /// <summary>
         /// The name the array was saved under in each JLD2 file.
         /// </summary>
         [JsonProperty(Order = 7)]
@@ -223,7 +239,7 @@ namespace JuliaSynth.Model
         /// <summary>
         /// The Julia function reading one file, e.g. <c>path -> readdlm(path, ',', Float64)</c>.
         /// </summary>
-        public string ReadFunction => $"path -> {FileFormats.Read(Format, "path", Shape, ElementType, HasHeader, Variable)}";
+        public string ReadFunction => $"path -> {FileFormats.Read(Format, "path", Shape, ElementType, HasHeader, Variable, HasComments)}";
 
         /// <summary>
         /// <see cref="Julia"/>, after the <c>using</c> it needs.

@@ -208,6 +208,44 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void Real_julia_finds_the_ridgecrest_quakes_in_the_real_seismograms()
+        {
+            Ui.Run(async () =>
+            {
+                // Runs only where the seismograms were downloaded (by opening the example).
+                AppSettings.SettingsPath = _originalSettingsPath;
+                string folder = Examples.RidgecrestSeismograms.Folder;
+                string? minutes = Examples.RidgecrestSeismograms.DownloadedFolder;
+                AppSettings.SettingsPath = Path.Combine(_folder, "settings.json");
+                if (minutes is null || await JuliaLocator.FindAsync(null) is not JuliaInstallation julia)
+                {
+                    return;
+                }
+
+                AppSettings settings = AppSettings.Load();
+                settings.DataFolders[Examples.RidgecrestSeismograms.Name] = folder;
+                settings.Save();
+                MainViewModel.DesignDocument design = Examples.All.Single(e => e.Name == "Earthquake detector").Build();
+                design.Nodes.OfType<SaveFile>().Single().Path = Path.Combine(_folder, "quakes.csv");
+                JuliaScript script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: true, _folder);
+
+                using JuliaSession session = new(julia.Path);
+                ConcurrentQueue<Report> reports = new();
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+
+                Assert.True(result.Succeeded);
+                Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
+
+                // The M4.0 foreshock, an M2.5, an M1.5 100 km away, a 4 times the catalogue hasn't, the M6.4; then aftershocks.
+                string[] quakes = File.ReadAllLines(Path.Combine(_folder, "quakes.csv"));
+                string[] expected = ["17:03:37 UTC, 247×", "17:10:32 UTC, 6×", "17:27:34 UTC, 4×", "17:32:49 UTC, 4×", "17:34:43 UTC, 25×"];
+                expected = Path.GetFileName(minutes) == "full" ? [.. expected, "18:02:41 UTC, 4×", "18:06:58 UTC, 6×", "18:19:57 UTC, 7×", "18:27:16 UTC, 10×"] : expected;
+                Assert.Equal(expected.Length, quakes.Length);
+                Assert.All(expected.Zip(quakes), pair => Assert.Contains(pair.First, pair.Second));
+            });
+        }
+
+        [Fact]
         public void Real_julia_finds_the_interference_in_the_real_scans()
         {
             Ui.Run(async () =>

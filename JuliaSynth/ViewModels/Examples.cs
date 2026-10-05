@@ -160,6 +160,51 @@ namespace JuliaSynth.ViewModels
             Archive = new("https://data.nasa.gov/docs/legacy/IMS.zip", "IMS/2nd_test.rar"),
         };
 
+        /// <summary>
+        /// One-minute files of station PFO's vertical seismometer on 4 July 2019: 3 hours from 15:40 UTC, the M6.4
+        /// Ridgecrest earthquake 200 km away at 17:33:49, its M4.0 foreshock at 17:02:55.
+        /// </summary>
+        private static readonly string[] SeismogramMinutes = [.. Enumerable.Range(0, 180)
+            .Select(i => $"PFO.BHZ.{new DateTime(2019, 7, 4, 15, 40, 0).AddMinutes(i).ToString("yyyy-MM-dd'T'HH-mm", System.Globalization.CultureInfo.InvariantCulture)}.csv")];
+
+        /// <summary>
+        /// The time a seismogram minute's file starts at: PFO.BHZ.2019-07-04T17-03.csv, 2019-07-04T17:03:00.
+        /// </summary>
+        private static DateTime MinuteOf(string name) =>
+            DateTime.ParseExact(name["PFO.BHZ.".Length..^".csv".Length], "yyyy-MM-dd'T'HH-mm", System.Globalization.CultureInfo.InvariantCulture);
+
+        private static string Stamp(DateTime time) => time.ToString("yyyy-MM-dd'T'HH':'mm':'ss", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>
+        /// Station PFO around the Ridgecrest earthquakes, from EarthScope's FDSN web service, a file a minute: the hour
+        /// with the foreshock and the M6.4, or 3 hours.
+        /// </summary>
+        internal static ExampleData RidgecrestSeismograms { get; } = new(
+            "Ridgecrest seismograms",
+            "The vertical seismometer of station PFO at Piñon Flat, California, on 4 July 2019, 20 readings a second: the M6.4 "
+                + "Ridgecrest earthquake, 200 km away, struck at 17:33:49 UTC, 31 minutes after an M4.0 foreshock. A file a "
+                + "minute, as a station's data logger writes them, each a GeoCSV file: lines starting with # describe the station, "
+                + "then a line \"Sample\" and the 1,200 readings, in counts.",
+            "Station PFO of the Global Seismograph Network (IRIS/IDA, network II), operated by the Scripps Institution of "
+                + "Oceanography: Scripps Institution of Oceanography (1986), Global Seismograph Network - IRIS/IDA, International "
+                + "Federation of Digital Seismograph Networks, https://doi.org/10.7914/SN/II. Openly available from the EarthScope "
+                + "Consortium's FDSN web services (https://service.earthscope.org/fdsnws/dataselect/1/), saved unchanged.",
+            "https://service.earthscope.org/fdsnws/dataselect/1/query",
+            [
+                new("Short",
+                    "The hour from 16:40 UTC: the foreshock, then the M6.4. 60 files.",
+                    SeismogramMinutes[60..120],
+                    450_000),
+                new("Full",
+                    "3 hours from 15:40 UTC: a quiet hour before, and the hour of aftershocks after. 180 files.",
+                    SeismogramMinutes,
+                    1_350_000),
+            ])
+        {
+            FileUrl = name => $"https://service.earthscope.org/fdsnws/dataselect/1/query?net=II&sta=PFO&loc=00&cha=BHZ"
+                + $"&start={Stamp(MinuteOf(name))}&end={Stamp(MinuteOf(name).AddMinutes(1))}&format=geocsv.slist",
+        };
+
         public static IReadOnlyList<Example> All { get; } = [
             new("Loan payment",
                 "Finance: the monthly payment on a 250,000 loan at 4.5% a year over 30 years, and the interest paid in total. "
@@ -232,6 +277,16 @@ namespace JuliaSynth.ViewModels
                 + "than when new, the alarm notes when and which: bearing 1 on 16 February, 2.5 days before its outer race failed. "
                 + "The snapshots are downloaded when the example opens, every 8th or all 984.",
                 BearingWear) { Data = ImsBearings },
+            new("Earthquake detector",
+                "Seismology: a seismometer's recording, a file a minute, gone through as a station's data logger writes them: "
+                + "station PFO in California on 4 July 2019, as the M6.4 Ridgecrest earthquake struck 200 km away. energy gives "
+                + "each second's energy; a Window keeps the last 5 minutes' typical level, the background. ratio says how much "
+                + "each second shook over it; 4 times is a quake, and a new one (the minute before had none) is noted with when and how "
+                + "strong, and saved a row each to quakes.csv next to the data. In the hour from 16:40 UTC it notes the M4.0 foreshock "
+                + "(17:03, 247 times the background), an M2.5 (17:10) and an M1.5 100 km away (17:27) as the USGS catalogue lists "
+                + "them, a 4 times at 17:32 it doesn't, and the M6.4 (17:34); the 3 hours add 4 of its aftershocks. The plots show each minute's seismogram and the "
+                + "loudest second of every minute. The files are downloaded when the example opens, the hour or 3 hours.",
+                EarthquakeDetector) { Data = RidgecrestSeismograms },
         ];
 
 
@@ -717,6 +772,73 @@ namespace JuliaSynth.ViewModels
             string folder = ImsBearings.DownloadedFolder ?? ExampleData.SetFolder(ImsBearings.Folder, ImsBearings.Sets[0]);
             FilesNode files = new() { Format = FileFormats.Tsv, Pattern = "2004.*", Folder = folder, EachFile = true };
             return BearingSnapshotsGoneThrough(files, System.IO.Path.Combine(ImsBearings.Folder, "bearing-wear.csv"));
+        }
+
+        private static MainViewModel.DesignDocument EarthquakeDetector()
+        {
+            // The full set when it was downloaded, else the short one, a minute at a time.
+            string folder = RidgecrestSeismograms.DownloadedFolder ?? ExampleData.SetFolder(RidgecrestSeismograms.Folder, RidgecrestSeismograms.Sets[0]);
+            FilesNode files = new()
+            {
+                Format = FileFormats.Csv, Pattern = "PFO.BHZ.*.csv", Shape = JuliaTypes.Vector, HasHeader = true, HasComments = true,
+                Folder = folder, EachFile = true, Row = 6, Column = Inputs,
+            };
+            PlotNode seismogram = new() { Title = "The minute's seismogram (counts)", Kind = "Line", Row = 23, Column = Stage2 };
+
+            // The background: the typical energy of a second over the last 5 minutes.
+            Function energy = Define("energy", "Vector{Float64}", 6, Stage1,
+                """
+                # The energy of each second: the mean square of the changes from reading to reading (20 a second),
+                # which leaves out the slow swell of the ocean's microseism.
+                d = diff(x)
+                [sum(abs2, d[(s - 1) * 20 + 1:s * 20]) / 20 for s in 1:length(d) ÷ 20]
+                """,
+                ("x", "Vector{Float64}"));
+            Function level = Define("level", "Float64", 6, Stage2,
+                "sort(e)[cld(length(e), 2)]  # the minute's typical second: the median, which a short quake hardly moves",
+                ("e", "Vector{Float64}"));
+            WindowNode last = new() { Size = 5, Row = 6, Column = Stage3 };
+            Function background = Define("background", "Float64", 6, Stage3 + 14, "sum(W) / length(W)  # the last 5 minutes' typical energy", ("W", "Vector"));
+
+            // How much each second shook over the background, and whether the minute had a quake.
+            Function ratio = Define("ratio", "Vector{Float64}", 17, Stage3 + 28, "sqrt.(e ./ B)  # each second's shaking over the background's, as amplitudes", ("e", "Vector{Float64}"), ("B", "Float64"));
+            Function loudest = Define("loudest", "Float64", 17, Stage3 + 42, "maximum(r)", ("r", "Vector{Float64}"));
+            Function quake = Define("quake", "Bool", 29, Stage3 + 42, "m > 4  # 4 times the background's shaking", ("m", "Float64"));
+
+            // A new quake: one the minute before didn't have (a quake's shaking lasts into the next minute).
+            Integer before = Whole(0, 29);
+            Function shook = Define("shook", "Int64", 29, Stage3 + 56, "Int(q)  # whether this minute had a quake, for the next", ("q", "Bool"));
+            Function newQuake = Define("new_quake", "Bool", 41, Stage3 + 56, "q && b == 0  # a quake the minute before didn't have", ("q", "Bool"), ("b", "Int64"));
+            Integer quakes = Whole(0, 41);
+            Function tally = Define("tally", "Int64", 41, Stage3 + 70, "n + q  # the quakes so far", ("n", "Int64"), ("q", "Bool"));
+
+            // Each new quake noted: when, from the file's name and the loudest second, and how strong; saved a row each.
+            FileNameNode name = new() { Row = 53, Column = Stage3 + 28 };
+            Function note = Define("note", Function.AnyType, 53, Stage3 + 42,
+                """
+                # When, from the file's name (PFO.BHZ.2019-07-04T17-03.csv) and the loudest second, and how strong.
+                s = argmax(r) - 1
+                string(name[9:18], " ", name[20:21], ":", name[23:24], ":", lpad(s, 2, '0'), " UTC, ", round(Int, maximum(r)), "× the background")
+                """,
+                ("name", Function.AnyType), ("r", "Vector{Float64}"));
+            WhenNode noted = new() { Row = 53, Column = Stage3 + 56 };
+            DisplayNode shown = Shown(53, Stage3 + 72);
+            SaveFile saved = new() { Path = System.IO.Path.Combine(RidgecrestSeismograms.Folder, "quakes.csv"), AppendRows = true, Row = 65, Column = Stage3 + 70 };
+
+            // The loudest second of every minute so far, as a power of 10.
+            ArrayBuilder trend = Empty(JuliaTypes.Vector, "Float64", 77);
+            Function grow = Define("grow", "Vector{Float64}", 77, Stage3 + 56, "[T; log10(m)]  # the loudest second of every minute so far, as a power of 10", ("T", "Vector{Float64}"), ("m", "Float64"));
+            PlotNode loudness = new() { Title = "Loudest second each minute (log10 of × the background)", Kind = "Line", Row = 79, Column = Stage3 + 74 };
+
+            return Design(
+                [files, seismogram, energy, level, last, background, ratio, loudest, quake, before, shook, newQuake, quakes, tally,
+                    name, note, noted, shown, saved, trend, grow, loudness],
+                (files, seismogram, "y"), (files, energy, 0), (energy, level, 0), (level, last, 0), (last, background, 0),
+                (energy, ratio, 0), (background, ratio, 1), (ratio, loudest, 0), (loudest, quake, 0),
+                (quake, shook, 0), (shook, before, "next"), (quake, newQuake, 0), (before, newQuake, 1),
+                (quakes, tally, 0), (newQuake, tally, 1), (tally, quakes, "next"),
+                (name, note, 0), (ratio, note, 1), (note, noted, "value"), (newQuake, noted, "condition"), (noted, shown, 0), (noted, saved, 0),
+                (trend, grow, 0), (loudest, grow, 1), (grow, trend, "next"), (grow, loudness, "y"));
         }
 
         private static string DataFolder(string name)
