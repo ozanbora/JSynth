@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JuliaSynth.Views.MergeNode"
+
+             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+             xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
+
+             x:DataType="jsModel:MergeNode"
+             Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
+             >
+  <Design.DataContext>
+    <jsModel:MergeNode />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
+  </UserControl.Resources>
+
+  <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+          Classes="node"
+          Classes.selected="{Binding Path=IsSelected}"
+          >
+    <Grid RowDefinitions="30,48,*"
+          ColumnDefinitions="40,*">
+
+      <TextBlock Grid.Column="0"
+                 Grid.Row="0"
+                 Grid.RowSpan="2"
+                 Classes="glyph"
+                 Text="∪"
+                 />
+
+      <StackPanel Grid.Row="0"
+                  Grid.Column="1"
+                  Classes="nodeActions">
+
+        <jsControls:ResultBadge/>
+
+        <TextBlock Classes="nodeInfo"
+                   Text="𝑖"
+                   >
+          <ToolTip.Tip>
+            <TextBlock TextWrapping="Wrap"
+                       MaxWidth="360"
+                       Text="Merge: several streams as one. Wire folders going through their files one at a time (Files nodes or Watch folders) all to its one port: their files are gone through together, in name order (by time, when named by it; for the same name, the folder higher on the canvas first), or as they are written when watched. It gives the file just come, whichever folder it is in, and on its folder output the name of that folder. Each folder's own value is its latest file, so a node wired from a folder works with the latest it has, e.g. a storm's latest position for each tide gauge reading; before a folder's first file, the nodes after it wait."/>
+          </ToolTip.Tip>
+        </TextBlock>
+
+        <Button Classes="nodeAction danger"
+                Content="✕"
+                ToolTip.Tip="Delete"
+                Click="Delete_Click"
+                />
+
+      </StackPanel>
+
+      <!-- Output -->
+      <jsControls:Connector Grid.Row="1"
+                            Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            ZIndex="3"
+                            Margin="0 0 -8 0"/>
+
+      <DockPanel Grid.Row="1"
+                 Grid.Column="1"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Bottom"
+                 Margin="4 0 8 0"
+                 >
+        <TextBlock DockPanel.Dock="Left"
+                   FontSize="18"
+                   Text="merge"
+                   />
+        <TextBlock Classes="caption"
+                   VerticalAlignment="Bottom"
+                   Margin="4 0 0 2"
+                   Text="{Binding Path=OutputType}"
+                   />
+      </DockPanel>
+
+      <!-- Input: the folders, all wired to its one port -->
+      <ItemsControl Grid.Row="2"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    ItemsSource="{Binding Path=Inputs}"
+                    ClipToBounds="False"
+                    >
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="jsModel:Parameter">
+            <Grid Height="20">
+              <jsControls:Connector HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    ZIndex="3"
+                                    Margin="-8 0 0 0"
+                                    />
+              <TextBlock HorizontalAlignment="Left"
+                         Margin="16 0 8 0"
+                         Classes="caption"
+                         TextTrimming="CharacterEllipsis"
+                         Text="{Binding Path=Signature}"
+                         />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Second output: the name of the folder the file is in -->
+      <Grid Grid.Row="2"
+            Grid.Column="1"
+            Height="20"
+            VerticalAlignment="Top"
+            >
+        <TextBlock HorizontalAlignment="Right"
+                   VerticalAlignment="Center"
+                   Margin="0 0 16 0"
+                   Classes="caption"
+                   Text="folder: String"
+                   ToolTip.Tip="The name of the folder the file just come is in, e.g. Cedar Key: to tell which stream it came from."
+                   />
+        <jsControls:Connector HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
+                              ZIndex="3"
+                              Margin="0 0 -8 0"
+                              Output="folder"
+                              />
+      </Grid>
+
+    </Grid>
+  </Border>
+
+</UserControl>

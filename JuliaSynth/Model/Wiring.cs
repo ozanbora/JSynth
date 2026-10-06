@@ -31,11 +31,11 @@ namespace JuliaSynth.Model
         /// Whether what <paramref name="source"/> gives fits <paramref name="parameter"/>: its value's type,
         /// for a function port the function itself, and for a next port a value of the input's own type.
         /// </summary>
-        public static bool Fits(Node source, Node target, Parameter parameter)
+        public static bool Fits(Node source, Node target, Parameter parameter, string? output = null)
         {
-            return parameter == target.Next ? source != target && AreTypesCompatible(source.OutputType, target.OutputType)
+            return parameter == target.Next ? source != target && AreTypesCompatible(source.OutputTypeOf(output), target.OutputType)
                 : parameter.IsFunctionPort ? source is Function function && function.Parameters.Count == 1
-                : AreTypesCompatible(source.OutputType, parameter.Type);
+                : AreTypesCompatible(source.OutputTypeOf(output), parameter.Type);
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace JuliaSynth.Model
         /// Returns why <paramref name="source"/> can't be wired to <paramref name="parameter"/>
         /// of <paramref name="target"/>, or null when it can.
         /// </summary>
-        public static string? Validate(IEnumerable<Node> nodes, IEnumerable<Connection> connections, Node source, Node target, Parameter parameter)
+        public static string? Validate(IEnumerable<Node> nodes, IEnumerable<Connection> connections, Node source, Node target, Parameter parameter, string? output = null)
         {
             if (!source.HasOutput)
             {
@@ -61,14 +61,14 @@ namespace JuliaSynth.Model
             if (parameter == target.Next)
             {
                 return source == target ? "An input already keeps its value from file to file: wire the value it takes next."
-                    : !Fits(source, target, parameter) ? $"{source.OutputType} can't replace a {target.OutputType}: the next value takes its place."
+                    : !Fits(source, target, parameter, output) ? $"{source.OutputTypeOf(output)} can't replace a {target.OutputType}: the next value takes its place."
                     : null;
             }
 
             // A function port takes the function itself, to apply to each value.
-            if (!Fits(source, target, parameter))
+            if (!Fits(source, target, parameter, output))
             {
-                return !parameter.IsFunctionPort ? $"{source.OutputType} can't be passed to {parameter.Signature}."
+                return !parameter.IsFunctionPort ? $"{source.OutputTypeOf(output)} can't be passed to {parameter.Signature}."
                     : source is Function function ? $"{function.Name} takes {function.Parameters.Count} values; it must take one, to be applied to each value."
                     : "Only a function can be wired here: the one to apply to each value.";
             }

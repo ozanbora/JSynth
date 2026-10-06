@@ -114,25 +114,26 @@ public partial class MainViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// Wires <paramref name="source"/>'s output to <paramref name="parameter"/> of
-    /// <paramref name="target"/>, replacing the wire already on that parameter.
+    /// Wires <paramref name="source"/>'s value (or its <paramref name="output"/> of that name, for a node with more
+    /// than its value) to <paramref name="parameter"/> of <paramref name="target"/>, replacing the wire already on that
+    /// parameter (on one taking many wires, the one from the same output).
     /// </summary>
     /// <returns>Why the connection isn't allowed, or null when it was made.</returns>
-    public static string? Connect(Node source, Node target, Parameter parameter)
+    public static string? Connect(Node source, Node target, Parameter parameter, string? output = null)
     {
-        List<Connection> replaced = Connections.Where(c => c.ParameterID == parameter.ID).ToList();
-        string? error = Wiring.Validate(Nodes, Connections.Except(replaced), source, target, parameter);
+        List<Connection> replaced = Connections.Where(c => c.ParameterID == parameter.ID && (!parameter.TakesMany || (c.SourceID == source.ID && c.Output == output))).ToList();
+        string? error = Wiring.Validate(Nodes, Connections.Except(replaced), source, target, parameter, output);
         if (error is not null)
         {
             return error;
         }
 
         Connections.RemoveAll(replaced);
-        Connections.Add(new Connection(source.ID, target.ID, parameter.ID));
+        Connections.Add(new Connection(source.ID, target.ID, parameter.ID, output));
         target.Wired(Connections);
 
-        // Folders go in step file by file.
-        if (target is ZipNode && source is FilesNode files)
+        // Folders go together file by file.
+        if (target is ZipNode or MergeNode && source is FilesNode files)
         {
             files.EachFile = true;
         }
@@ -140,9 +141,12 @@ public partial class MainViewModel : ReactiveObject
         return null;
     }
 
+    /// <summary>
+    /// The wire ending at <paramref name="parameter"/>; on one taking many wires, the last made.
+    /// </summary>
     public static Connection? ConnectionTo(Parameter parameter)
     {
-        return Connections.FirstOrDefault(c => c.ParameterID == parameter.ID);
+        return Connections.LastOrDefault(c => c.ParameterID == parameter.ID);
     }
 
     public static void Disconnect(Connection connection)
@@ -332,6 +336,7 @@ public partial class MainViewModel : ReactiveObject
             nameof(WhenNode) => new WhenNode(),
             nameof(FileNameNode) => new FileNameNode(),
             nameof(ZipNode) => new ZipNode(),
+            nameof(MergeNode) => new MergeNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
 
@@ -506,7 +511,7 @@ public partial class MainViewModel : ReactiveObject
             node.IsSelected = true;
         }
 
-        Connections.AddRange(pasted.Connections.Select(c => new Connection(newIDs[c.SourceID], newIDs[c.TargetID], newIDs[c.ParameterID])));
+        Connections.AddRange(pasted.Connections.Select(c => new Connection(newIDs[c.SourceID], newIDs[c.TargetID], newIDs[c.ParameterID], c.Output)));
     }
     #endregion
 

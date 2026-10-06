@@ -160,20 +160,21 @@ namespace JuliaSynth.Model
 
             // A design going through files one at a time, as they are written to a watched folder (a stream,
             // until stopped) or those of a folder: the nodes after the files again for each, and after the inputs
-            // taking a next value; the others once, before. Folders zipped come first, then a watched folder; one
-            // loop a design. Zipped, the loop goes through a watched one's files (else the first one's), and the
-            // others' files of the same names go with them.
-            ZipNode? zip = order.OfType<ZipNode>().FirstOrDefault(z => ZipStreams(z, connections, byID).Problem is null);
-            List<FilesNode> zipped = zip is null ? [] : ZipStreams(zip, connections, byID).Streams;
-            FilesNode? root = zipped.OfType<WatchNode>().FirstOrDefault() ?? zipped.FirstOrDefault()
+            // taking a next value; the others once, before. Folders zipped or merged come first, then a watched
+            // folder; one loop a design. Zipped or merged, the loop is led by a watched one (else the first one).
+            // Zipped, the others' files of the same names go with its; merged, their files are gone through too.
+            Node? streams = order.Where(n => n is ZipNode or MergeNode).FirstOrDefault(s => FolderStreams(s, connections, byID).Problem is null);
+            List<FilesNode> folders = streams is null ? [] : FolderStreams(streams, connections, byID).Streams;
+            FilesNode? root = folders.OfType<WatchNode>().FirstOrDefault() ?? folders.FirstOrDefault()
                 ?? order.OfType<WatchNode>().FirstOrDefault(w => w.Error is null)
                 ?? order.OfType<FilesNode>().FirstOrDefault(f => f.EachFile && f.Error is null);
-            List<FilesNode> twins = zipped.Where(f => f != root).Distinct().ToList();
+            List<FilesNode> twins = streams is ZipNode ? folders.Where(f => f != root).ToList() : [];
+            List<FilesNode> merged = streams is MergeNode ? folders : [];
             List<Node> carried = root is null ? [] : nextWires.Select(c => byID[c.TargetID]).Distinct().ToList();
             HashSet<string> looped = root is null ? [] : Downstream(root, connections, byID);
-            foreach (FilesNode twin in twins)
+            foreach (FilesNode folder in folders)
             {
-                looped.UnionWith(Downstream(twin, connections, byID));
+                looped.UnionWith(Downstream(folder, connections, byID));
             }
 
             foreach (Node input in carried)
@@ -190,17 +191,20 @@ namespace JuliaSynth.Model
             // An input with a next value starts with its own, worked out once, before the loop.
             looped.ExceptWith(carried.Select(c => c.ID));
 
-            // The nodes after an Only when node, held back while its condition is false: those it holds back.
-            Dictionary<string, List<WhenNode>> gates = [];
-            foreach (WhenNode when in order.OfType<WhenNode>())
+            // The nodes after an Only when node, held back while its condition is false: those it holds back. Merged,
+            // the nodes after a folder (not through the merge, which gives whichever file came) wait for its first file.
+            Dictionary<string, List<Node>> gates = [];
+            foreach (Node gate in order.Where(n => n is WhenNode || merged.Contains(n)))
             {
-                foreach (string id in Downstream(when, connections, byID).Where(id => id != when.ID))
+                HashSet<string> after = Downstream(gate, connections, byID, stop: streams is MergeNode ? streams.ID : null);
+                foreach (string id in after.Where(id => id != gate.ID))
                 {
-                    (gates.TryGetValue(id, out List<WhenNode>? list) ? list : gates[id] = []).Add(when);
+                    (gates.TryGetValue(id, out List<Node>? list) ? list : gates[id] = []).Add(gate);
                 }
             }
 
-            LoopContext? loop = root is null ? null : new(root, twins, zip, looped);
+            LoopContext? loop = root is null ? null : new(root, twins, merged, streams, looped);
+            string streamNumber = $"_stream = _jsynth_stream(_path, {FilesNode.FoldersJulia(merged.Select(m => m.Folder))})\n";
 
             if (order.Count > 0)
             {
@@ -227,12 +231,16 @@ namespace JuliaSynth.Model
 
             if (root is not null)
             {
-                string body = string.Concat(order.Where(n => looped.Contains(n.ID)).Select(NodeCode)) + Reassignments();
+                // Merged, which folder the file is in: the folder numbered as the merge's ports.
+                string body = (merged.Count > 0 ? streamNumber : string.Empty)
+                    + string.Concat(order.Where(n => looped.Contains(n.ID)).Select(NodeCode)) + Reassignments();
                 string frame = variables[root.ID];
                 List<string> inStep = twins.Select(t => t.Folder).ToList();
-                string files = inStep.Count > 0 ? $"_jsynth_in_step({root.Julia}, {FilesNode.FoldersJulia(inStep)})" : root.Julia;
+                string files = inStep.Count > 0 ? $"_jsynth_in_step({root.Julia}, {FilesNode.FoldersJulia(inStep)})"
+                    : merged.Count > 0 ? $"_jsynth_merged([{string.Join(", ", merged.Select(m => m.Julia))}])"
+                    : root.Julia;
                 string start = root is WatchNode watched
-                    ? $"{watched.Watch(instrumented ? stopFile : null, inStep)} do _path, _n, _show"
+                    ? $"{watched.Watch(instrumented ? stopFile : null, inStep, merged.Where(m => m != root).ToList())} do _path, _n, _show"
                     : instrumented
                         ? $"_jsynth_each({StringLiteral(root.ID)}, () -> {files}) do _path, _n, _show"
                         : $"for _path in {files}.paths";
@@ -243,6 +251,14 @@ namespace JuliaSynth.Model
                 {
                     what += $", with the files of the same name in {string.Join(", ", twins.Select(t => variables[t.ID]))}";
                 }
+                else if (merged.Count > 0)
+                {
+                    what = root is WatchNode
+                        ? $"again for every file written to the folders of {string.Join(", ", merged.Select(m => variables[m.ID]))}, {(instrumented ? "until stopped" : "until stopped (Ctrl+C)")}"
+                        : $"again for each file of the folders of {string.Join(", ", merged.Select(m => variables[m.ID]))}, in name order";
+                    frame = variables[streams!.ID];
+                }
+
                 _ = script.AppendLine().AppendLine($"# The loop: the values from {frame} on, {what}");
                 if (instrumented)
                 {
@@ -263,7 +279,7 @@ namespace JuliaSynth.Model
             {
                 // Without files to go through one at a time, there is no next file to take a value for.
                 _ = script.AppendLine().AppendLine(string.Join("\n", nextWires.Select(c =>
-                    $"# {variables[c.TargetID]} keeps its value: it takes {variables[c.SourceID]} for the next file only when files are gone through one at a time.")));
+                    $"# {variables[c.TargetID]} keeps its value: it takes {ValueOf(variables, c)} for the next file only when files are gone through one at a time.")));
             }
 
             // After each file, the inputs with a next value take it, all together: the values they get are
@@ -282,7 +298,7 @@ namespace JuliaSynth.Model
                 for (int i = 0; i < nextWires.Count; i++)
                 {
                     Connection wire = nextWires[i];
-                    string next = variables[wire.SourceID];
+                    string next = ValueOf(variables, wire);
                     if (chained)
                     {
                         string input = variables[wire.TargetID];
@@ -310,13 +326,14 @@ namespace JuliaSynth.Model
             // In a plain script, whether the Only when nodes before a node let its value through: passed1_ok && ...
             string? GateOf(string id, bool self = true)
             {
-                IEnumerable<WhenNode> whens = gates.TryGetValue(id, out List<WhenNode>? before) ? before : [];
+                IEnumerable<Node> whens = gates.TryGetValue(id, out List<Node>? before) ? before : [];
                 if (self && byID[id] is WhenNode when)
                 {
                     whens = whens.Append(when);
                 }
 
-                List<string> flags = whens.Select(w => $"{variables[w.ID]}_ok").ToList();
+                // A folder merged has a value once its first file came.
+                List<string> flags = whens.Select(w => w is WhenNode ? $"{variables[w.ID]}_ok" : $"@isdefined({variables[w.ID]})").ToList();
                 return flags.Count == 0 ? null : string.Join(" && ", flags);
             }
 
@@ -337,13 +354,21 @@ namespace JuliaSynth.Model
 
                 string variable = variables[node.ID];
                 bool inStream = looped.Contains(node.ID);
+
+                // Merged, its number among the folders (from 1), else 0.
+                int stream = node is FilesNode streamed ? merged.IndexOf(streamed) + 1 : 0;
                 (string? expression, string? problem) = Expression(node, inputs, variables, byID, instrumented, plotFolder, inStream ? loop : null);
+
+                // The merge's second output: the name of the folder the file is in.
+                string folderOf = node == streams && node is MergeNode && problem is null
+                    ? $"{(inStream ? "global " : string.Empty)}{variable}_{MergeNode.FolderOutput} = ({string.Join(", ", merged.Select(m => StringLiteral(m.FolderName)))},)[_stream]\n"
+                    : string.Empty;
 
                 // Values of a loop are assigned in a function (the one called for each file) or a loop: globals, by name.
                 string assign = inStream ? $"global {variable}" : variable;
                 // An Only when node's condition, which says whether its value passes.
                 string? condition = node is WhenNode gate && inputs.FirstOrDefault(c => c.ParameterID == gate.Condition.ID) is Connection test
-                    ? variables[test.SourceID]
+                    ? ValueOf(variables, test)
                     : null;
 
                 if (!instrumented)
@@ -352,12 +377,16 @@ namespace JuliaSynth.Model
                     // JuliaSynth, so a plain script only says how to draw them in Julia. A node after an Only when
                     // node is worked out only when its condition held.
                     string line = problem is not null ? $"# {variable}: {problem}"
-                        : node is SaveFile { SavesPerFile: true } rows ? rows.PerFileStatement(variables[inputs[0].SourceID], named: inStream)
-                        : node is OutputNode output ? output.Statement(variables[inputs[0].SourceID])
+                        : node is SaveFile { SavesPerFile: true } rows ? rows.PerFileStatement(ValueOf(variables, inputs[0]), named: inStream)
+                        : node is OutputNode output ? output.Statement(ValueOf(variables, inputs[0]))
                         : node is PlotNode plot ? PlotHint(plot, inputs, variables)
                         : node is WhenNode ? $"{(inStream ? "global " : string.Empty)}{variable}_ok = {condition}\nif {variable}_ok\n{Indent}{assign} = {expression}\nend"
-                        : $"{assign} = {expression}";
-                    return problem is not null ? line + "\n" : Gated(GateOf(node.ID, self: false), line);
+                        : $"{folderOf}{assign} = {expression}";
+
+                    // A folder merged reads the file when it is in it, and keeps its latest otherwise.
+                    return problem is not null ? line + "\n"
+                        : stream > 0 ? $"if _stream == {stream}\n{Indented(line)}end\n"
+                        : Gated(GateOf(node.ID, self: false), line);
                 }
 
                 StringBuilder code = new($"# {variable}\n");
@@ -370,6 +399,18 @@ namespace JuliaSynth.Model
                 string[] blockers = inputs.Select(c => StringLiteral(c.SourceID)).Distinct().ToArray();
                 string[] needed = NeededPackages(node).Select(StringLiteral).ToArray();
                 List<(string Condition, string Then)> conditions = [];
+
+                // Merged: a folder reads the file when it is in it, and otherwise keeps its latest, the nodes after it
+                // waiting until its first. The merge gives the file of the folder it is in, failing when that did.
+                if (stream > 0)
+                {
+                    conditions.Add(($"_stream != {stream}", $"@isdefined({variable}) || _jsynth_hold({id})"));
+                }
+                else if (node == streams && merged.Count > 0)
+                {
+                    conditions.Add(($"_jsynth_blocked(({string.Join(", ", merged.Select(m => StringLiteral(m.ID)))},)[_stream])", $"_jsynth_skip({id}, \"The file failed to read.\")"));
+                    blockers = [];
+                }
 
                 // A plot of a loop is drawn for the files whose values are shown, not for every one.
                 if (inStream && node is PlotNode)
@@ -388,7 +429,7 @@ namespace JuliaSynth.Model
                 string kept = node is PlotNode ? "nothing" : $"@isdefined({variable}) && _jsynth_ok({id}, {variable})";
 
                 // Held back by a false condition before it: going through files, it keeps the value it had.
-                string[] holders = inputs.Where(c => byID[c.SourceID] is WhenNode || gates.ContainsKey(c.SourceID))
+                string[] holders = inputs.Where(c => node != streams && (byID[c.SourceID] is WhenNode || merged.Any(m => m.ID == c.SourceID) || gates.ContainsKey(c.SourceID)))
                     .Select(c => StringLiteral(c.SourceID))
                     .Distinct()
                     .ToArray();
@@ -411,13 +452,13 @@ namespace JuliaSynth.Model
 
                 // The files say which file the loop is at, rather than showing the file.
                 // An Only when node passes its value, or holds back the nodes after it.
-                string compute = node == root || twins.Contains(node)
+                string compute = node == root || twins.Contains(node) || stream > 0
                     ?$"try\n{Indent}global {variable} = {expression}\n{Indent}_jsynth_frame({id}, _n, _path, {variable})\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
                     : node is WhenNode
                         ? $"try\n{Indent}if {condition}\n{Indent}{Indent}global {variable} = {expression}\n{Indent}{Indent}_jsynth_ok({id}, {variable})\n{Indent}else\n{Indent}{Indent}_jsynth_hold({id})\n"
                             + (inStream ? $"{Indent}{Indent}{kept}\n" :$"{Indent}{Indent}_jsynth_report({id}, \"skipped\", \"\", \"The condition is false: nothing passes.\")\n")
                             + $"{Indent}end\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
-                    : Guarded(node.ID, $"global {variable} = {expression}", report: true, variable);
+                    : Guarded(node.ID, $"{folderOf}global {variable} = {expression}", report: true, variable);
 
                 if (conditions.Count == 0)
                 {
@@ -442,24 +483,32 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
-        /// A loop through files being generated: the node giving them, the folders zipped with it (their files of
-        /// the same names go with its), the Zip node, and the nodes computed again for each.
+        /// The variable holding what <paramref name="wire"/> carries: its source's value, or another of its outputs
+        /// (<c>merged1_folder</c>).
         /// </summary>
-        private sealed record LoopContext(FilesNode Root, List<FilesNode> Twins, ZipNode? Zip, HashSet<string> Nodes);
+        private static string ValueOf(Dictionary<string, string> variables, Connection wire) =>
+            wire.Output is null ? variables[wire.SourceID] : $"{variables[wire.SourceID]}_{wire.Output}";
 
         /// <summary>
-        /// The folders wired into <paramref name="zip"/>, in the order of its ports, or why they can't go in step.
+        /// A loop through files being generated: the node leading it, the folders zipped with it (their files of the
+        /// same names go with its), the folders merged (it among them), the Zip or Merge node, and the nodes computed
+        /// again for each file.
         /// </summary>
-        private static (List<FilesNode> Streams, string? Problem) ZipStreams(ZipNode zip, List<Connection> connections, Dictionary<string, Node> byID)
+        private sealed record LoopContext(FilesNode Root, List<FilesNode> Twins, List<FilesNode> Merged, Node? Streams, HashSet<string> Nodes);
+
+        /// <summary>
+        /// The folders wired into <paramref name="node"/> (a Zip node's in the order of its ports, a Merge node's top to
+        /// bottom on the canvas), or why they can't be gone through together.
+        /// </summary>
+        private static (List<FilesNode> Streams, string? Problem) FolderStreams(Node node, List<Connection> connections, Dictionary<string, Node> byID)
         {
-            List<Node> wired = zip.Streams
-                .Select(p => connections.FirstOrDefault(c => c.ParameterID == p.ID))
-                .OfType<Connection>()
-                .Select(c => byID[c.SourceID])
-                .ToList();
+            List<Node> wired = node is ZipNode zip
+                ? [.. zip.Streams.Select(p => connections.FirstOrDefault(c => c.ParameterID == p.ID)).OfType<Connection>().Select(c => byID[c.SourceID])]
+                : [.. connections.Where(c => c.TargetID == node.ID).Select(c => byID[c.SourceID]).OrderBy(n => n.Row).ThenBy(n => n.Column)];
             List<FilesNode> streams = wired.OfType<FilesNode>().ToList();
-            string? problem = wired.Count < 2 ? "Wire in two folders or more, to go through their files in step."
-                : streams.Count < wired.Count ? "Only folders go in step: wire in Files nodes or Watch folders."
+            string how = node is ZipNode ? "in step" : "together";
+            string? problem = wired.Count < 2 ? $"Wire in two folders or more, to go through their files {how}."
+                : streams.Count < wired.Count ? $"Only folders go {how}: wire in Files nodes or Watch folders."
                 : streams.FirstOrDefault(f => !f.EachFile) is FilesNode all ? $"Set {all.FolderName} to go through its files one at a time."
                 : streams.Any(f => f.Error is not null) ? "A folder wired in has a problem: see its node."
                 : streams.Distinct().Count() < streams.Count ? "A folder is wired in twice."
@@ -469,9 +518,9 @@ namespace JuliaSynth.Model
 
         /// <summary>
         /// The ids of <paramref name="root"/> and every node its value reaches, through value wires (a
-        /// function wired into a function port is applied, not given a value).
+        /// function wired into a function port is applied, not given a value), not past <paramref name="stop"/>.
         /// </summary>
-        private static HashSet<string> Downstream(Node root, List<Connection> connections, Dictionary<string, Node> byID)
+        private static HashSet<string> Downstream(Node root, List<Connection> connections, Dictionary<string, Node> byID, string? stop = null)
         {
             HashSet<string> reached = [root.ID];
             Queue<string> pending = new([root.ID]);
@@ -480,7 +529,7 @@ namespace JuliaSynth.Model
                 foreach (Connection wire in connections.Where(c => c.SourceID == id))
                 {
                     bool value = byID[wire.TargetID].Inputs.Any(p => p.ID == wire.ParameterID && !p.IsFunctionPort);
-                    if (value && reached.Add(wire.TargetID))
+                    if (value && wire.TargetID != stop && reached.Add(wire.TargetID))
                     {
                         pending.Enqueue(wire.TargetID);
                     }
@@ -495,7 +544,7 @@ namespace JuliaSynth.Model
         /// </summary>
         private static (string? Expression, string? Problem) Expression(Node node, List<Connection> inputs, Dictionary<string, string> variables, Dictionary<string, Node> byID, bool instrumented, string plotFolder, LoopContext? loop)
         {
-            string? Input(Parameter parameter) => inputs.FirstOrDefault(c => c.ParameterID == parameter.ID) is Connection c ? variables[c.SourceID] : null;
+            string? Input(Parameter parameter) => inputs.FirstOrDefault(c => c.ParameterID == parameter.ID) is Connection c ? ValueOf(variables, c) : null;
 
             switch (node)
             {
@@ -511,18 +560,21 @@ namespace JuliaSynth.Model
                     return sparse.Error is null ? (sparse.Julia, null) : (null, sparse.Error);
                 case ArrayFile file:
                     return file.Error is null ? (file.Julia, null) : (null, file.Error);
-                case FilesNode files when loop?.Root == files:
+                case FilesNode files when loop?.Root == files || loop?.Merged.Contains(files) == true:
                     // The file the loop is at, read as each of the folder's files is.
                     return (files.FrameJulia("_path"), null);
                 case FilesNode files when loop?.Twins.Contains(files) == true:
                     // Zipped: its file of the name the loop is at.
                     return (files.FrameJulia($"joinpath({ArrayFile.PathLiteral(files.Folder)}, basename(_path))"), null);
-                case ZipNode zip:
+                case Node together when together is ZipNode or MergeNode:
                 {
-                    (List<FilesNode> streams, string? problem) = ZipStreams(zip, inputs, byID);
+                    (List<FilesNode> streams, string? problem) = FolderStreams(together, inputs, byID);
                     return problem is not null ? (null, problem)
-                        : loop?.Zip != zip ? (null, "Only one set of folders goes in step in a design: this one doesn't.")
-                        : ($"collect(({string.Join(", ", streams.Select(s => variables[s.ID]))},))", null);
+                        : loop?.Streams != together ? (null, $"Only one set of folders is gone through {(together is ZipNode ? "in step" : "together")} in a design: this one isn't.")
+                        : together is ZipNode ? ($"collect(({string.Join(", ", streams.Select(s => variables[s.ID]))},))", null)
+
+                        // Merged: the file of the folder the loop is at.
+                        : (string.Concat(streams.Take(streams.Count - 1).Select((s, i) => $"_stream == {i + 1} ? {variables[s.ID]} : ")) + variables[streams[^1].ID], null);
                 }
                 case FilesNode files when files.EachFile:
                     return (null, files.Error ?? (files is WatchNode
@@ -617,7 +669,7 @@ namespace JuliaSynth.Model
         /// </summary>
         private static string PlotHint(PlotNode plot, List<Connection> inputs, Dictionary<string, string> variables)
         {
-            string Wired(Parameter parameter) => variables[inputs.First(c => c.ParameterID == parameter.ID).SourceID];
+            string Wired(Parameter parameter) => ValueOf(variables, inputs.First(c => c.ParameterID == parameter.ID));
 
             string y = Wired(plot.Y);
             string call = plot.X.IsWired ? $"plot({Wired(plot.X)}, {y})" : $"plot({y})";
@@ -758,6 +810,7 @@ namespace JuliaSynth.Model
                     WhenNode => "passed",
                     FileNameNode => "name",
                     ZipNode => "zipped",
+                    MergeNode => "merged",
                     FilesNode { EachFile: true } => "frame",
                     FilesNode => "files",
                     MapNode => "mapped",

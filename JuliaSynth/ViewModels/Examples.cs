@@ -47,7 +47,7 @@ namespace JuliaSynth.ViewModels
     /// its standard libraries, except that reading .mtx files needs MatrixMarket (offered for installing).
     /// Data they read is bundled in ExampleData, next to the app.
     /// </summary>
-    public static class Examples
+    public static partial class Examples
     {
         // Columns of the node centres: inputs, then stages of functions and displays (nodes are 9 cells wide).
         private const int Inputs = 8;
@@ -434,6 +434,18 @@ namespace JuliaSynth.ViewModels
                 + "an hour and 40 minutes. OpenSky's data is for research and other non-commercial use "
                 + "(https://opensky-network.org); reading JSON needs the JSON package.",
                 LiveAirTraffic),
+            new("Storm surge",
+                "Oceanography: Hurricane Helene's storm surge along Florida's Gulf coast in September 2024, from six tide gauges "
+                + "and the storm's track, merged into one stream: a Merge node goes through every gauge's hourly files and the "
+                + "storm's positions together, in time order, and its folder output says where each came from; only "
+                + "when it is a gauge's hour, surge is its highest water level over the tide predicted for that minute. Each "
+                + "folder's own value is its latest file, so row takes the storm's latest position for every gauge hour: how far "
+                + "the storm was, and on which side. highest keeps each gauge's highest surge, saved a row an hour to surge.csv "
+                + "next to the data, and the heatmap shows the surge moving up the coast. The gauges with the storm passing to "
+                + "their west, its winds blowing onshore, rose most: Cedar Key 3.15 m, a record, St. Petersburg 2.06 m with the "
+                + "storm 270 km away; Apalachicola, to its west, 1.31 m though it passed closer. The files are downloaded when "
+                + "the example opens.",
+                HeleneSurgeMerged) { Data = HeleneSurge },
         ];
 
 
@@ -1326,22 +1338,24 @@ namespace JuliaSynth.ViewModels
         }
 
         /// <summary>
-        /// The nodes with their wires, each to an input given by position or by name; a wire the wiring
-        /// rules refuse is a mistake in the example.
+        /// The nodes with their wires, each from a node's value (or another of its outputs, given as the node and the
+        /// output's name) to an input given by position or by name; a wire the wiring rules refuse is a mistake in the
+        /// example.
         /// </summary>
-        private static MainViewModel.DesignDocument Design(Node[] nodes, params (Node Source, Node Target, object Input)[] wires)
+        private static MainViewModel.DesignDocument Design(Node[] nodes, params (object Source, Node Target, object Input)[] wires)
         {
             MainViewModel.DesignDocument design = new();
             design.Nodes.AddRange(nodes);
-            foreach ((Node source, Node target, object input) in wires)
+            foreach ((object from, Node target, object input) in wires)
             {
+                (Node source, string? output) = from is (Node node, string name) ? (node, name) : ((Node)from, null);
                 Parameter parameter = input is int index ? target.Inputs[index] : input is "next" ? target.Next! : target.Inputs.Single(p => p.Name == (string)input);
-                if (Wiring.Validate(design.Nodes, design.Connections, source, target, parameter) is string error)
+                if (Wiring.Validate(design.Nodes, design.Connections, source, target, parameter, output) is string error)
                 {
                     throw new InvalidOperationException($"Example wire to {parameter.Name}: {error}");
                 }
 
-                design.Connections.Add(new Connection(source.ID, target.ID, parameter.ID));
+                design.Connections.Add(new Connection(source.ID, target.ID, parameter.ID, output));
                 target.Wired(design.Connections);
             }
 

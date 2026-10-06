@@ -36,6 +36,11 @@ namespace JuliaSynth.Model
             # Streams in step (a Zip node): the files of a folder that each of the others has too, by name.
             _jsynth_in_step(files::JuliaSynthFiles, others) =
                 JuliaSynthFiles(files.folder, filter(p -> all(f -> isfile(joinpath(f, basename(p))), others), files.paths), files.read)
+            # Streams merged (a Merge node): the files of several folders in name order (the same name: by folder), and
+            # the number of the folder a file is in.
+            _jsynth_merged(all) = JuliaSynthFiles("", last.(sort([(basename(p), k, p) for (k, f) in enumerate(all) for p in f.paths])), identity)
+            _jsynth_folder(f) = rstrip(normpath(abspath(f)), ('/', '\\'))
+            _jsynth_stream(path, folders) = findfirst(f -> _jsynth_folder(f) == _jsynth_folder(dirname(path)), folders)
             function Base.show(io::IO, files::JuliaSynthFiles)
                 names = basename.(files.paths)
                 print(io, length(names), length(names) == 1 ? " file" : " files", " in ", files.folder)

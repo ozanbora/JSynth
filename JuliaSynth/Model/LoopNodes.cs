@@ -132,11 +132,10 @@ namespace JuliaSynth.Model
     }
 
     /// <summary>
-    /// Several streams at once, in step: folders going through their files one at a time (Files nodes so set, or
-    /// Watch folders) wired in, their files matched by name, e.g. the same minute of several stations. For each
-    /// name every folder has, it gives their files' contents as a vector, in the order of its ports; a name not in
-    /// every folder is passed over, and a watched file waits until every folder has it. Wiring its last port adds
-    /// a free one.
+    /// Several streams at once, in step: folders going through their files one at a time (Files nodes so set, or Watch
+    /// folders) wired in, a port each, their files matched by name, e.g. the same minute of several stations. For each
+    /// name every folder has, it gives their files' contents as a vector, in the order of its ports; a name not in every
+    /// folder is passed over, and a watched file waits until every folder has it. Wiring its last port adds a free one.
     /// </summary>
     public class ZipNode : Node
     {
@@ -178,5 +177,35 @@ namespace JuliaSynth.Model
         }
 
         private static Parameter NewStream(int number) => new($"stream {number.ToString(CultureInfo.InvariantCulture)}", Function.AnyType);
+    }
+
+    /// <summary>
+    /// Several streams merged into one: the files of the folders wired in (all to its one port), one at a time as they
+    /// come (in name order, so by time when named by it; for the same name, the folder higher on the canvas first),
+    /// whichever folder each is in. It gives the file just come, and on its second output the name of the folder it is
+    /// in. Each folder's own value is its latest file, so a node wired from a folder works with the latest it has, e.g.
+    /// a storm's latest position for each tide gauge reading. Before a folder's first file, the nodes after it wait.
+    /// </summary>
+    public class MergeNode : Node
+    {
+        /// <summary>
+        /// The port all the folders are wired to.
+        /// </summary>
+        [JsonProperty]
+        public Parameter Folders { get; private set; } = new("folders", Function.AnyType) { TakesMany = true };
+
+        public override IReadOnlyList<Parameter> Inputs => [Folders];
+
+        /// <summary>
+        /// Its second output: the name of the folder the file just come is in, e.g. a tide gauge's.
+        /// </summary>
+        public const string FolderOutput = "folder";
+
+        public override string OutputTypeOf(string? output) => output == FolderOutput ? "String" : OutputType;
+
+        public MergeNode()
+        {
+            Color = NodePalette.Merge;
+        }
     }
 }

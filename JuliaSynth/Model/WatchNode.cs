@@ -32,24 +32,37 @@ namespace JuliaSynth.Model
             # four times a second and for the last of those waiting. ready() once it watches. Ends when the stop file appears.
             # latest: when several files are waiting, only the newest is gone through.
             # also: folders in step; a file waits until each has a file of its name, written too.
-            function _jsynth_watch(body, folder, pattern, existing, bytime; stop = nothing, ready = () -> nothing, latest = false, also = String[])
-                isdir(folder) || throw(ArgumentError("The folder $(repr(folder)) doesn't exist."))
-                files() = filter(p -> isfile(p) && occursin(pattern, basename(p)), readdir(folder; join = true))
+            # more: folders merged with this one, (folder, pattern) each: their files are gone through too, as they come.
+            function _jsynth_watch(body, folder, pattern, existing, bytime; stop = nothing, ready = () -> nothing, latest = false, also = String[], more = [])
+                watched = [(folder, pattern); more]
+                for (f, _) in watched
+                    isdir(f) || throw(ArgumentError("The folder $(repr(f)) doesn't exist."))
+                end
+                # The files to go through, with the number of the folder each is in.
+                function files()
+                    found = Tuple{String, Int}[]
+                    for (k, (f, r)) in enumerate(watched), p in readdir(f; join = true)
+                        isfile(p) && occursin(r, basename(p)) && push!(found, (p, k))
+                    end
+                    found
+                end
                 stopped() = stop !== nothing && isfile(stop)
-                seen = existing ? Set{String}() : Set(files())
+                seen = existing ? Set{String}() : Set(first.(files()))
                 ready()
                 sizes = Dict{String, Vector{Int}}()
                 # A file and its twins in the folders in step, each written: its size and theirs the same at two looks.
                 looks(p) = [filesize(p); [filesize(joinpath(f, basename(p))) for f in also]]
                 n, shown = 0, 0.0
                 while !stopped()
-                    due = String[]
-                    for p in files()
+                    due = Tuple{String, Int}[]
+                    for (p, k) in files()
                         p in seen && continue
                         s = looks(p)
-                        all(>(0), s) && get(sizes, p, Int[]) == s ? push!(due, p) : (sizes[p] = s)
+                        all(>(0), s) && get(sizes, p, Int[]) == s ? push!(due, (p, k)) : (sizes[p] = s)
                     end
-                    sort!(due; by = p -> bytime ? (mtime(p), p) : (0.0, p))
+                    # By name (the same name: by folder), or by the time written.
+                    sort!(due; by = ((p, k),) -> (bytime ? mtime(p) : 0.0, basename(p), k))
+                    due = first.(due)
                     # Latest only: the files waiting before the newest are passed over.
                     if latest && length(due) > 1
                         foreach(p -> (push!(seen, p); delete!(sizes, p)), due[1:end - 1])
@@ -249,7 +262,8 @@ namespace JuliaSynth.Model
         /// </summary>
         /// <param name="stopFile">For a run: the file whose appearing ends the stream; the run is told when it watches.</param>
         /// <param name="inStep">The folders in step with this one (a Zip node's others): a file waits until each has its twin.</param>
-        public string Watch(string? stopFile, IReadOnlyList<string>? inStep = null)
+        /// <param name="merged">The folders merged with this one (a Merge node's others): their files are gone through too.</param>
+        public string Watch(string? stopFile, IReadOnlyList<string>? inStep = null, IReadOnlyList<FilesNode>? merged = null)
         {
             List<string> options = [];
             if (LatestOnly)
@@ -260,6 +274,11 @@ namespace JuliaSynth.Model
             if (inStep is { Count: > 0 })
             {
                 options.Add($"also = {FoldersJulia(inStep)}");
+            }
+
+            if (merged is { Count: > 0 })
+            {
+                options.Add($"more = [{string.Join(", ", merged.Select(m => $"({ArrayFile.PathLiteral(m.Folder)}, r\"{PatternRegex(m.Pattern)}\"i)"))}]");
             }
 
             if (stopFile is not null)

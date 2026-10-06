@@ -28,6 +28,11 @@ public partial class Connector : UserControl
     public bool IsInput => Parameter is not null;
 
     /// <summary>
+    /// For an output port other than the node's value, the name of that output (a Merge node's "folder"); else null.
+    /// </summary>
+    public string? Output { get; set; }
+
+    /// <summary>
     /// The node the port belongs to.
     /// </summary>
     public Model.Node? Owner => this.FindAncestorOfType<Node>()?.DataContext as Model.Node;

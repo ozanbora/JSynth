@@ -175,6 +175,8 @@ namespace JuliaSynth.ViewModels
                 return;
             }
 
+            // Converted files of the same address (pieces of one answer, cut by Convert) are downloaded once.
+            Dictionary<string, byte[]> fetched = [];
             foreach (string name in set.Files)
             {
                 string path = Path.Combine(files, name);
@@ -182,21 +184,25 @@ namespace JuliaSynth.ViewModels
                 if (!new FileInfo(path).Exists)
                 {
                     string partial = path + ".part";
-                    using (HttpResponseMessage response = await client.GetAsync(FileUrl is null ? BaseUrl + name : FileUrl(name), HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                    string url = FileUrl is null ? BaseUrl + name : FileUrl(name);
+                    if (Convert is null)
                     {
+                        using HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                         _ = response.EnsureSuccessStatusCode();
                         await using FileStream file = File.Create(partial);
-                        if (Convert is null)
+                        await response.Content.CopyToAsync(file, cancellationToken);
+                    }
+                    else
+                    {
+                        if (!fetched.TryGetValue(url, out byte[]? contents))
                         {
-                            await response.Content.CopyToAsync(file, cancellationToken);
+                            using HttpResponseMessage response = await client.GetAsync(url, cancellationToken);
+                            _ = response.EnsureSuccessStatusCode();
+                            fetched[url] = contents = await response.Content.ReadAsByteArrayAsync(cancellationToken);
                         }
-                        else
-                        {
-                            using MemoryStream contents = new();
-                            await response.Content.CopyToAsync(contents, cancellationToken);
-                            contents.Position = 0;
-                            Convert(name, contents, file);
-                        }
+
+                        await using FileStream file = File.Create(partial);
+                        Convert(name, new MemoryStream(contents, writable: false), file);
                     }
 
                     File.Move(partial, path, overwrite: true);

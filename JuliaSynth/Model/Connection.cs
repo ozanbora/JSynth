@@ -26,12 +26,20 @@ namespace JuliaSynth.Model
         [JsonProperty]
         public string ParameterID { get; private set; }
 
+        /// <summary>
+        /// Which of the source's outputs feeds the wire, for a node with more than its value (a Merge node's folder);
+        /// null for its value.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string? Output { get; private set; }
+
         [JsonConstructor]
-        public Connection(string sourceID, string targetID, string parameterID)
+        public Connection(string sourceID, string targetID, string parameterID, string? output = null)
         {
             SourceID = sourceID;
             TargetID = targetID;
             ParameterID = parameterID;
+            Output = output;
         }
     }
 }

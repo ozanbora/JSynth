@@ -93,7 +93,7 @@ namespace JuliaSynth.Controls
             if (port.Parameter is Parameter parameter && MainViewModel.ConnectionTo(parameter) is Connection connection)
             {
                 MainViewModel.Disconnect(connection);
-                port = FindOutput(connection.SourceID) ?? port;
+                port = FindOutput(connection.SourceID, connection.Output) ?? port;
             }
 
             _dragPort = port;
@@ -126,9 +126,9 @@ namespace JuliaSynth.Controls
 
             UpdateWire(point);
 
-            if (_dragTarget != null && _dragError == null && ResolveEnds(_dragPort, _dragTarget) is var (source, target, parameter))
+            if (_dragTarget != null && _dragError == null && ResolveEnds(_dragPort, _dragTarget) is var (source, target, parameter, output))
             {
-                _ = MainViewModel.Connect(source, target, parameter);
+                _ = MainViewModel.Connect(source, target, parameter, output);
             }
 
             CancelWire();
@@ -156,8 +156,8 @@ namespace JuliaSynth.Controls
 
             if (target != null && _dragPort != null)
             {
-                _dragError = ResolveEnds(_dragPort, target) is var (source, function, parameter)
-                    ? Wiring.Validate(MainViewModel.Nodes, MainViewModel.Connections.Where(c => c.ParameterID != parameter.ID), source, function, parameter)
+                _dragError = ResolveEnds(_dragPort, target) is var (source, function, parameter, output)
+                    ? Wiring.Validate(MainViewModel.Nodes, MainViewModel.Connections.Where(c => c.ParameterID != parameter.ID), source, function, parameter, output)
                     : "Only an output can be wired to an input.";
 
                 target.Classes.Add(_dragError == null ? "accept" : "reject");
@@ -184,19 +184,20 @@ namespace JuliaSynth.Controls
         }
 
         /// <summary>
-        /// The output node, the receiving node and its parameter a wire between two ports would connect.
+        /// The output node, the receiving node, its parameter and the output (null: the node's value) a wire between two
+        /// ports would connect.
         /// </summary>
-        private static (Model.Node Source, Model.Node Target, Parameter Parameter)? ResolveEnds(Connector a, Connector b)
+        private static (Model.Node Source, Model.Node Target, Parameter Parameter, string? Output)? ResolveEnds(Connector a, Connector b)
         {
             (Connector output, Connector input) = a.IsInput ? (b, a) : (a, b);
             return output.Owner is Model.Node source && input.Owner is Model.Node target && input.Parameter is Parameter parameter
-                ? (source, target, parameter)
+                ? (source, target, parameter, output.Output)
                 : null;
         }
 
-        private Connector? FindOutput(string nodeID)
+        private Connector? FindOutput(string nodeID, string? output)
         {
-            return _connectors.FirstOrDefault(c => !c.IsInput && c.Owner?.ID == nodeID);
+            return _connectors.FirstOrDefault(c => !c.IsInput && c.Owner?.ID == nodeID && c.Output == output);
         }
 
         private static double Distance(Point a, Point b)
@@ -235,13 +236,13 @@ namespace JuliaSynth.Controls
                     }
                     else if (connector.Owner is Model.Node node)
                     {
-                        outputs[node.ID] = connector;
+                        outputs[$"{node.ID}/{connector.Output}"] = connector;
                     }
                 }
 
                 foreach (Connection connection in MainViewModel.Connections)
                 {
-                    if (outputs.TryGetValue(connection.SourceID, out Connector? output)
+                    if (outputs.TryGetValue($"{connection.SourceID}/{connection.Output}", out Connector? output)
                         && inputs.TryGetValue(connection.ParameterID, out Connector? input)
                         && output.Owner is Model.Node source
                         && input.Parameter is Parameter parameter
@@ -249,7 +250,7 @@ namespace JuliaSynth.Controls
                     {
                         // A type changed after wiring (or a mapped function's parameters): keep the wire but flag it.
                         // A wire into a next port carries the value on to the next file: dashed, as it goes back.
-                        Pen pen = Wiring.Fits(source, target, parameter)
+                        Pen pen = Wiring.Fits(source, target, parameter, connection.Output)
                             ? new Pen(WireBrush(source.Color), Thickness, parameter == target.Next ? new DashStyle([3, 1.5], 0) : null)
                             : new Pen(InvalidWireBrush, Thickness, new DashStyle([2, 2], 0));
                         if (parameter == target.Next)

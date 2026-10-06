@@ -111,6 +111,12 @@ namespace JuliaSynth.Model
             set => this.RaiseAndSetIfChanged(ref _isWired, value);
         }
 
+        /// <summary>
+        /// Whether any number of wires can end here, each from another node (a Merge node's folders), rather than one.
+        /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool TakesMany { get; init; }
+
         public static IReadOnlyList<string> Shapes => JuliaTypes.Shapes;
 
         public static IReadOnlyList<string> ElementTypes => JuliaTypes.ElementTypes;

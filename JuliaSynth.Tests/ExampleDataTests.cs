@@ -364,6 +364,51 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void Real_julia_merges_the_gauges_and_the_storm_and_finds_each_gauges_highest_surge()
+        {
+            Ui.Run(async () =>
+            {
+                // Runs only where the gauges' readings were downloaded (by opening the example).
+                AppSettings.SettingsPath = _originalSettingsPath;
+                string folder = Examples.HeleneSurge.Folder;
+                string? readings = Examples.HeleneSurge.DownloadedFolder;
+                AppSettings.SettingsPath = Path.Combine(_folder, "settings.json");
+                if (readings is null || await JuliaLocator.FindAsync(null) is not JuliaInstallation julia)
+                {
+                    return;
+                }
+
+                AppSettings settings = AppSettings.Load();
+                settings.DataFolders[Examples.HeleneSurge.Name] = folder;
+                settings.Save();
+                MainViewModel.DesignDocument design = Examples.All.Single(e => e.Name == "Storm surge").Build();
+                design.Nodes.OfType<SaveFile>().Single().Path = Path.Combine(_folder, "surge.csv");
+                JuliaScript script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: true, _folder);
+
+                using JuliaSession session = new(julia.Path);
+                ConcurrentQueue<Report> reports = new();
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+
+                Assert.True(result.Succeeded);
+                Assert.DoesNotContain(reports, r => r.Status == ReportStatus.Error);
+
+                // A row a gauge hour; each gauge's highest surge, when, and where the storm was as last known when the hour's
+                // file came: Fort Myers' 03:06 with the 03:10 landfall position.
+                Assert.Equal(6 * 72, File.ReadAllLines(Path.Combine(_folder, "surge.csv")).Length);
+                string[] peaks = reports.Last(r => r.Id == design.Nodes.OfType<DisplayNode>().Single().ID).Text.Split('\n');
+                Assert.Equal<string[]>(
+                [
+                    "Key West: 0.52 m on 26 Sep 19:54 UTC, the storm 393 km away to the west",
+                    "Fort Myers: 1.7 m on 27 Sep 03:06 UTC, the storm 413 km away to the west",
+                    "St. Petersburg: 2.06 m on 27 Sep 04:24 UTC, the storm 270 km away to the west",
+                    "Clearwater Beach: 2.2 m on 27 Sep 03:00 UTC, the storm 240 km away to the west",
+                    "Cedar Key: 3.15 m on 27 Sep 04:54 UTC, the storm 116 km away to the west",
+                    "Apalachicola: 1.31 m on 27 Sep 08:36 UTC, the storm 238 km away to the east",
+                ], peaks);
+            });
+        }
+
+        [Fact]
         public void Real_julia_finds_the_interference_in_the_real_scans()
         {
             Ui.Run(async () =>

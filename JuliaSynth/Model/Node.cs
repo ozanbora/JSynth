@@ -130,6 +130,12 @@ namespace JuliaSynth.Model
         public virtual string OutputType => Function.AnyType;
 
         /// <summary>
+        /// The Julia type of <paramref name="output"/>: <see cref="OutputType"/> for the node's value (null), or that of
+        /// another of its outputs, e.g. a Merge node's folder.
+        /// </summary>
+        public virtual string OutputTypeOf(string? output) => OutputType;
+
+        /// <summary>
         /// False for the nodes at the end of a design (showing or saving a value), which nothing can be wired from.
         /// </summary>
         public virtual bool HasOutput => true;
