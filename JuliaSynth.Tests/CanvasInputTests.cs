@@ -2,8 +2,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using JuliaSynth.ViewModels;
 using JuliaSynth.Views;
+using System.Linq;
 using Xunit;
 
 namespace JuliaSynth.Tests
@@ -33,6 +35,27 @@ namespace JuliaSynth.Tests
                 // Without Ctrl the wheel scrolls; the zoom stays.
                 window.MouseWheel(new Point(500, 300), new Vector(0, -1), RawInputModifiers.None);
                 Assert.Equal(1.1, viewModel.SelectedZoomLevel);
+                window.Close();
+            });
+        }
+
+        [Fact]
+        public void At_100_percent_the_nodes_are_drawn_at_three_quarters_of_their_size()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new();
+                Window window = new() { Content = new MainView(), DataContext = viewModel, Width = 1000, Height = 700 };
+                window.Show();
+
+                Assert.Equal((1.0, 0.75), (viewModel.SelectedZoomLevel, viewModel.Scale));
+                Avalonia.Media.ScaleTransform scale = (Avalonia.Media.ScaleTransform)window.GetVisualDescendants().OfType<LayoutTransformControl>().First().LayoutTransform!;
+                Assert.Equal(0.75, scale.ScaleX);
+
+                // 400% at the most: three times their size.
+                viewModel.SelectedZoomLevel = viewModel.MaxZoom;
+                Assert.Equal((4.0, 3.0), (viewModel.SelectedZoomLevel, scale.ScaleX));
                 window.Close();
             });
         }

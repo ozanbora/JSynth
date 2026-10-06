@@ -26,9 +26,10 @@ public partial class MainViewModel : ReactiveObject
 
     public ReactiveCommand<RxVoid, RxVoid> ResetZoom { get; }
 
-    // Capped at 3x: a node is 180x120, so beyond that a single node no longer fits on screen.
+    // The zoom shown, 100% being nodes at three quarters of their size (see <see cref="Scale"/>). Capped at 400% (3x their
+    // size): a node is 180x120, so beyond that a single node no longer fits on screen.
     public AvaloniaList<double> ZoomLevels { get; } = new([
-        0.25, 0.33, 0.50, 0.67, 0.75, 0.90, 1.00, 1.10, 1.25, 1.50, 1.75, 2.00, 2.50, 3.00
+        0.25, 0.33, 0.50, 0.67, 0.75, 0.90, 1.00, 1.10, 1.25, 1.50, 1.75, 2.00, 2.50, 3.00, 4.00
         ]);
 
     /// <summary>
@@ -525,7 +526,7 @@ public partial class MainViewModel : ReactiveObject
 
     public double MinZoom { get; } = 0.25;
 
-    public double MaxZoom { get; } = 3.00;
+    public double MaxZoom { get; } = 4.00;
 
     public double SelectedZoomLevel
     {
@@ -533,14 +534,25 @@ public partial class MainViewModel : ReactiveObject
         set
         {
             _ = this.RaiseAndSetIfChanged(ref _selectedZoomLevel, value);
+            this.RaisePropertyChanged(nameof(Scale));
             this.RaisePropertyChanged(nameof(ShowShadows));
         }
     }
 
     /// <summary>
+    /// How much 100% shrinks the nodes: at their full size they looked too big.
+    /// </summary>
+    public const double BaseScale = 0.75;
+
+    /// <summary>
+    /// The scale the canvas is drawn at: the zoom shown, of <see cref="BaseScale"/>.
+    /// </summary>
+    public double Scale => SelectedZoomLevel * BaseScale;
+
+    /// <summary>
     /// Shadows are scaled with the zoom, and blurring them gets very expensive when zoomed in.
     /// </summary>
-    public bool ShowShadows => SelectedZoomLevel <= MaxShadowZoom;
+    public bool ShowShadows => Scale <= MaxShadowZoom;
 
     private const double MaxShadowZoom = 2.0;
 

@@ -145,7 +145,7 @@ public partial class MainView : UserControl
     /// </summary>
     private Point ViewCenter()
     {
-        double zoom = DataContext is MainViewModel viewModel ? viewModel.SelectedZoomLevel : 1.0;
+        double zoom = DataContext is MainViewModel viewModel ? viewModel.Scale : MainViewModel.BaseScale;
         Vector center = CanvasScroll.Offset + new Vector(CanvasScroll.Viewport.Width / 2, CanvasScroll.Viewport.Height / 2);
         return new Point(center.X / zoom, center.Y / zoom);
     }

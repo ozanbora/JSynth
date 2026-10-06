@@ -42,8 +42,8 @@
         <!-- Ctrl + drag pans and Ctrl + wheel zooms: see MainView.axaml.cs. -->
         <LayoutTransformControl>
           <LayoutTransformControl.LayoutTransform>
-            <ScaleTransform ScaleX="{Binding Path=SelectedZoomLevel, Mode=OneWay}"
-                            ScaleY="{Binding Path=SelectedZoomLevel, Mode=OneWay}"/>
+            <ScaleTransform ScaleX="{Binding Path=Scale, Mode=OneWay}"
+                            ScaleY="{Binding Path=Scale, Mode=OneWay}"/>
           </LayoutTransformControl.LayoutTransform>
 
           <ItemsControl x:Name="NodesItems"
