@@ -77,6 +77,7 @@ namespace JuliaSynth.ViewModels
                 }
 
                 string path = Path.Combine(folder, name);
+                _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 if (new FileInfo(path) is not { Exists: true, Length: > 0 })
                 {
                     string partial = path + ".part";

@@ -129,34 +129,40 @@
 
           <StackPanel Spacing="8">
             <TextBlock Classes="heading" Text="Start with an example"/>
-            <ItemsControl x:Name="ExampleCards" ItemsSource="{Binding Path=StartExamples}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <!-- Cards all the same size, in rows: five to a row on a wide window, so three rows hold the examples. -->
-                  <WrapPanel ItemWidth="232" ItemHeight="92"/>
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="jsViewModels:Example">
-                  <Button Classes="example"
-                          Click="Example_Click"
-                          ToolTip.Tip="{Binding Path=Description}">
-                    <StackPanel Spacing="1">
-                      <TextBlock Text="{Binding Path=Category}"
-                                 FontSize="11"
-                                 Opacity="0.6"/>
-                      <TextBlock Text="{Binding Path=Name}" FontWeight="SemiBold"/>
-                      <TextBlock Text="{Binding Path=Summary}"
-                                 FontSize="12"
-                                 Opacity="0.8"
-                                 TextWrapping="Wrap"
-                                 MaxLines="2"
-                                 TextTrimming="CharacterEllipsis"/>
-                    </StackPanel>
-                  </Button>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <!-- Three rows of cards, and a glimpse of the next: the rest scroll, so the page fits the window. -->
+            <ScrollViewer x:Name="ExampleScroller"
+                          MaxHeight="284"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+              <ItemsControl x:Name="ExampleCards" ItemsSource="{Binding Path=StartExamples}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <!-- Cards all the same size, in rows: five to a row on a wide window. -->
+                    <WrapPanel ItemWidth="232" ItemHeight="92"/>
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="jsViewModels:Example">
+                    <Button Classes="example"
+                            Click="Example_Click"
+                            ToolTip.Tip="{Binding Path=Description}">
+                      <StackPanel Spacing="1">
+                        <TextBlock Text="{Binding Path=Category}"
+                                   FontSize="11"
+                                   Opacity="0.6"/>
+                        <TextBlock Text="{Binding Path=Name}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Path=Summary}"
+                                   FontSize="12"
+                                   Opacity="0.8"
+                                   TextWrapping="Wrap"
+                                   MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"/>
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
           </StackPanel>
 
           <!-- The other ways in, with how to go on beside them. -->

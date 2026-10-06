@@ -20,6 +20,11 @@ namespace JuliaSynth.Model
         public bool Streams { get; init; }
 
         /// <summary>
+        /// The watched folder a stream goes through, when it <see cref="Streams"/>.
+        /// </summary>
+        public WatchNode? Watched { get; init; }
+
+        /// <summary>
         /// The ids of the nodes whose values change from file to file, when the design goes through files one
         /// at a time (watched, or a Files node so set): worked out again for each, or taking a next value. Empty otherwise.
         /// </summary>
@@ -146,11 +151,22 @@ namespace JuliaSynth.Model
 
             // A design going through files one at a time, as they are written to a watched folder (a stream,
             // until stopped) or those of a folder: the nodes after the files again for each, and after the inputs
-            // taking a next value; the others once, before. A watched folder comes first; one loop a design.
-            FilesNode? root = order.OfType<WatchNode>().FirstOrDefault(w => w.Error is null)
+            // taking a next value; the others once, before. Folders zipped come first, then a watched folder; one
+            // loop a design. Zipped, the loop goes through a watched one's files (else the first one's), and the
+            // others' files of the same names go with them.
+            ZipNode? zip = order.OfType<ZipNode>().FirstOrDefault(z => ZipStreams(z, connections, byID).Problem is null);
+            List<FilesNode> zipped = zip is null ? [] : ZipStreams(zip, connections, byID).Streams;
+            FilesNode? root = zipped.OfType<WatchNode>().FirstOrDefault() ?? zipped.FirstOrDefault()
+                ?? order.OfType<WatchNode>().FirstOrDefault(w => w.Error is null)
                 ?? order.OfType<FilesNode>().FirstOrDefault(f => f.EachFile && f.Error is null);
+            List<FilesNode> twins = zipped.Where(f => f != root).Distinct().ToList();
             List<Node> carried = root is null ? [] : nextWires.Select(c => byID[c.TargetID]).Distinct().ToList();
             HashSet<string> looped = root is null ? [] : Downstream(root, connections, byID);
+            foreach (FilesNode twin in twins)
+            {
+                looped.UnionWith(Downstream(twin, connections, byID));
+            }
+
             foreach (Node input in carried)
             {
                 looped.UnionWith(Downstream(input, connections, byID));
@@ -175,7 +191,7 @@ namespace JuliaSynth.Model
                 }
             }
 
-            LoopContext? loop = root is null ? null : new(root, looped);
+            LoopContext? loop = root is null ? null : new(root, twins, zip, looped);
 
             if (order.Count > 0)
             {
@@ -204,14 +220,20 @@ namespace JuliaSynth.Model
             {
                 string body = string.Concat(order.Where(n => looped.Contains(n.ID)).Select(NodeCode)) + Reassignments();
                 string frame = variables[root.ID];
+                List<string> inStep = twins.Select(t => t.Folder).ToList();
+                string files = inStep.Count > 0 ? $"_jsynth_in_step({root.Julia}, {FilesNode.FoldersJulia(inStep)})" : root.Julia;
                 string start = root is WatchNode watched
-                    ? $"{watched.Watch(instrumented ? stopFile : null)} do _path, _n, _show"
+                    ? $"{watched.Watch(instrumented ? stopFile : null, inStep)} do _path, _n, _show"
                     : instrumented
-                        ? $"_jsynth_each({StringLiteral(root.ID)}, () -> {root.Julia}) do _path, _n, _show"
-                        : $"for _path in {root.Julia}.paths";
+                        ? $"_jsynth_each({StringLiteral(root.ID)}, () -> {files}) do _path, _n, _show"
+                        : $"for _path in {files}.paths";
                 string what = root is WatchNode
                     ? $"again for every file written to the folder, {(instrumented ? "until stopped" : "until stopped (Ctrl+C)")}"
                     : "again for each file of the folder, in name order";
+                if (inStep.Count > 0)
+                {
+                    what += $", with the files of the same name in {string.Join(", ", twins.Select(t => variables[t.ID]))}";
+                }
                 _ = script.AppendLine().AppendLine($"# The loop: the values from {frame} on, {what}");
                 if (instrumented)
                 {
@@ -380,8 +402,8 @@ namespace JuliaSynth.Model
 
                 // The files say which file the loop is at, rather than showing the file.
                 // An Only when node passes its value, or holds back the nodes after it.
-                string compute = node == root
-                    ? $"try\n{Indent}global {variable} = {expression}\n{Indent}_jsynth_frame({id}, _n, _path, {variable})\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
+                string compute = node == root || twins.Contains(node)
+                    ?$"try\n{Indent}global {variable} = {expression}\n{Indent}_jsynth_frame({id}, _n, _path, {variable})\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
                     : node is WhenNode
                         ? $"try\n{Indent}if {condition}\n{Indent}{Indent}global {variable} = {expression}\n{Indent}{Indent}_jsynth_ok({id}, {variable})\n{Indent}else\n{Indent}{Indent}_jsynth_hold({id})\n"
                             + (inStream ? $"{Indent}{Indent}{kept}\n" :$"{Indent}{Indent}_jsynth_report({id}, \"skipped\", \"\", \"The condition is false: nothing passes.\")\n")
@@ -402,13 +424,39 @@ namespace JuliaSynth.Model
             }
 
             // Plain newlines, whatever the platform or the line endings of this source file.
-            return new JuliaScript(script.ToString().ReplaceLineEndings("\n"), variables, packages) { Streams = root is WatchNode, Looped = looped.Concat(carried.Select(c => c.ID)).ToHashSet() };
+            return new JuliaScript(script.ToString().ReplaceLineEndings("\n"), variables, packages)
+            {
+                Streams = root is WatchNode,
+                Watched = root as WatchNode,
+                Looped = looped.Concat(carried.Select(c => c.ID)).ToHashSet(),
+            };
         }
 
         /// <summary>
-        /// A loop through files being generated: the node giving them, and the nodes computed again for each.
+        /// A loop through files being generated: the node giving them, the folders zipped with it (their files of
+        /// the same names go with its), the Zip node, and the nodes computed again for each.
         /// </summary>
-        private sealed record LoopContext(FilesNode Root, HashSet<string> Nodes);
+        private sealed record LoopContext(FilesNode Root, List<FilesNode> Twins, ZipNode? Zip, HashSet<string> Nodes);
+
+        /// <summary>
+        /// The folders wired into <paramref name="zip"/>, in the order of its ports, or why they can't go in step.
+        /// </summary>
+        private static (List<FilesNode> Streams, string? Problem) ZipStreams(ZipNode zip, List<Connection> connections, Dictionary<string, Node> byID)
+        {
+            List<Node> wired = zip.Streams
+                .Select(p => connections.FirstOrDefault(c => c.ParameterID == p.ID))
+                .OfType<Connection>()
+                .Select(c => byID[c.SourceID])
+                .ToList();
+            List<FilesNode> streams = wired.OfType<FilesNode>().ToList();
+            string? problem = wired.Count < 2 ? "Wire in two folders or more, to go through their files in step."
+                : streams.Count < wired.Count ? "Only folders go in step: wire in Files nodes or Watch folders."
+                : streams.FirstOrDefault(f => !f.EachFile) is FilesNode all ? $"Set {all.FolderName} to go through its files one at a time."
+                : streams.Any(f => f.Error is not null) ? "A folder wired in has a problem: see its node."
+                : streams.Distinct().Count() < streams.Count ? "A folder is wired in twice."
+                : null;
+            return (streams, problem);
+        }
 
         /// <summary>
         /// The ids of <paramref name="root"/> and every node its value reaches, through value wires (a
@@ -456,7 +504,17 @@ namespace JuliaSynth.Model
                     return file.Error is null ? (file.Julia, null) : (null, file.Error);
                 case FilesNode files when loop?.Root == files:
                     // The file the loop is at, read as each of the folder's files is.
-                    return ($"({files.ReadFunction})(_path)", null);
+                    return (files.FrameJulia("_path"), null);
+                case FilesNode files when loop?.Twins.Contains(files) == true:
+                    // Zipped: its file of the name the loop is at.
+                    return (files.FrameJulia($"joinpath({ArrayFile.PathLiteral(files.Folder)}, basename(_path))"), null);
+                case ZipNode zip:
+                {
+                    (List<FilesNode> streams, string? problem) = ZipStreams(zip, inputs, byID);
+                    return problem is not null ? (null, problem)
+                        : loop?.Zip != zip ? (null, "Only one set of folders goes in step in a design: this one doesn't.")
+                        : ($"collect(({string.Join(", ", streams.Select(s => variables[s.ID]))},))", null);
+                }
                 case FilesNode files when files.EachFile:
                     return (null, files.Error ?? (files is WatchNode
                         ? "Only one folder is gone through file by file in a design: this one isn't."
@@ -689,6 +747,7 @@ namespace JuliaSynth.Model
                     WindowNode => "window",
                     WhenNode => "passed",
                     FileNameNode => "name",
+                    ZipNode => "zipped",
                     FilesNode { EachFile: true } => "frame",
                     FilesNode => "files",
                     MapNode => "mapped",

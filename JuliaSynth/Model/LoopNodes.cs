@@ -2,7 +2,10 @@ using Newtonsoft.Json;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
+using System.Runtime.Serialization;
 
 namespace JuliaSynth.Model
 {
@@ -126,5 +129,54 @@ namespace JuliaSynth.Model
         {
             Color = NodePalette.FileName;
         }
+    }
+
+    /// <summary>
+    /// Several streams at once, in step: folders going through their files one at a time (Files nodes so set, or
+    /// Watch folders) wired in, their files matched by name, e.g. the same minute of several stations. For each
+    /// name every folder has, it gives their files' contents as a vector, in the order of its ports; a name not in
+    /// every folder is passed over, and a watched file waits until every folder has it. Wiring its last port adds
+    /// a free one.
+    /// </summary>
+    public class ZipNode : Node
+    {
+        /// <summary>
+        /// The ports the folders are wired to, in the order of the vector.
+        /// </summary>
+        [JsonProperty]
+        public ObservableCollection<Parameter> Streams { get; } = [];
+
+        public override IReadOnlyList<Parameter> Inputs => Streams;
+
+        public override string OutputType => JuliaTypes.Vector;
+
+        public ZipNode()
+        {
+            Color = NodePalette.Zip;
+            Streams.Add(NewStream(1));
+            Streams.Add(NewStream(2));
+        }
+
+        /// <summary>
+        /// A saved node's ports replace those it starts with.
+        /// </summary>
+        [OnDeserializing]
+        private void Deserializing(StreamingContext context)
+        {
+            Streams.Clear();
+        }
+
+        /// <summary>
+        /// A wire was made into it: once its last port is wired, there is a free one after it for the next folder.
+        /// </summary>
+        public override void Wired(IEnumerable<Connection> connections)
+        {
+            if (connections.Any(c => c.ParameterID == Streams[^1].ID))
+            {
+                Streams.Add(NewStream(Streams.Count + 1));
+            }
+        }
+
+        private static Parameter NewStream(int number) => new($"stream {number.ToString(CultureInfo.InvariantCulture)}", Function.AnyType);
     }
 }

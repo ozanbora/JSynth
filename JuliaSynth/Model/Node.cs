@@ -160,6 +160,15 @@ namespace JuliaSynth.Model
         public IEnumerable<Parameter> Ports => Next is null ? Inputs : Inputs.Append(Next);
 
         #endregion
+
+        /// <summary>
+        /// A wire into it was made, <paramref name="connections"/> being the design's wires now: lets a node with
+        /// a port for each of a kind of value add another.
+        /// </summary>
+        public virtual void Wired(IEnumerable<Connection> connections)
+        {
+        }
+
         public Node()
         {
             ID = Guid.NewGuid().ToString("N");

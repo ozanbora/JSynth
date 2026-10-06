@@ -37,13 +37,14 @@ namespace JuliaSynth.Tests
                     _ = Directory.CreateDirectory(files);
                     foreach (string file in data.Sets[0].Files)
                     {
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(files, file))!);
                         if (file.EndsWith(".png", StringComparison.Ordinal))
                         {
                             PngTests.WriteGreyPng(Path.Combine(files, file), new int[1, 1], 8);
                         }
                         else
                         {
-                            // A bearing snapshot: a reading a row, a column a bearing.
+                            // A table of readings: a bearing snapshot, or a seismometer minute.
                             File.WriteAllText(Path.Combine(files, file), "0.1\t0.2\t-0.1\t0.3\n-0.2\t0.1\t0.2\t-0.3\n");
                         }
                     }

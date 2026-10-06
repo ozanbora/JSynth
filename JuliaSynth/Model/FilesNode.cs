@@ -33,6 +33,9 @@ namespace JuliaSynth.Model
             Base.iterate(files::JuliaSynthFiles, i = 1) = i > length(files.paths) ? nothing : (files.read(files.paths[i]), i + 1)
             Base.length(files::JuliaSynthFiles) = length(files.paths)
             Base.IteratorEltype(::Type{JuliaSynthFiles}) = Base.EltypeUnknown()
+            # Streams in step (a Zip node): the files of a folder that each of the others has too, by name.
+            _jsynth_in_step(files::JuliaSynthFiles, others) =
+                JuliaSynthFiles(files.folder, filter(p -> all(f -> isfile(joinpath(f, basename(p))), others), files.paths), files.read)
             function Base.show(io::IO, files::JuliaSynthFiles)
                 names = basename.(files.paths)
                 print(io, length(names), length(names) == 1 ? " file" : " files", " in ", files.folder)
@@ -197,6 +200,16 @@ namespace JuliaSynth.Model
                 this.RaisePropertyChanged(nameof(EachText));
             }
         }
+
+        /// <summary>
+        /// The Julia vector of <paramref name="folders"/>: [raw"…", raw"…"].
+        /// </summary>
+        public static string FoldersJulia(IEnumerable<string> folders) => $"[{string.Join(", ", folders.Select(ArrayFile.PathLiteral))}]";
+
+        /// <summary>
+        /// The Julia expression reading the file at <paramref name="path"/>, as each of the folder's files is.
+        /// </summary>
+        public string FrameJulia(string path) => $"({ReadFunction})({path})";
 
         public override string OutputType => EachFile ? EachType : Function.AnyType;
 

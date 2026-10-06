@@ -48,6 +48,54 @@ namespace JuliaSynth.ViewModels
         /// Where each file is, by its name, when that isn't <see cref="BaseUrl"/> + name: a query of a web service, say.
         /// </summary>
         public Func<string, string>? FileUrl { get; init; }
+
+        /// <summary>
+        /// Writes a downloaded file (its name, its contents, where to) as it is to be kept, e.g. its pieces joined;
+        /// written as downloaded unless given.
+        /// </summary>
+        public Action<string, Stream, Stream>? Convert { get; init; }
+
+        /// <summary>
+        /// Writes the GeoCSV file in <paramref name="from"/> (a seismometer's readings, as FDSN web services give them,
+        /// maybe in pieces, each with its own lines describing it) to <paramref name="to"/> as one piece: the first
+        /// piece's description, its header line, then every reading in order.
+        /// </summary>
+        public static void JoinGeoCsv(Stream from, Stream to)
+        {
+            using StreamReader reader = new(from);
+            List<string> description = [];
+            List<string> readings = [];
+            bool described = false;
+            while (reader.ReadLine() is string line)
+            {
+                bool comment = line.StartsWith('#');
+                bool number = line.Length > 0 && (char.IsAsciiDigit(line[0]) || line[0] is '-' or '+' or '.');
+                if (number)
+                {
+                    readings.Add(line);
+                }
+                else if (!described)
+                {
+                    description.Add(line);
+                }
+
+                // The first piece's header line ends its description; later pieces' are left out.
+                described |= !comment && !number && line.Length > 0;
+            }
+
+            // The description counts the readings of them all.
+            using StreamWriter writer = new(to, new System.Text.UTF8Encoding(false), leaveOpen: true) { NewLine = "\n" };
+            foreach (string line in description)
+            {
+                writer.WriteLine(line.StartsWith("# sample_count:", StringComparison.Ordinal) ? $"# sample_count: {readings.Count}" : line);
+            }
+
+            foreach (string line in readings)
+            {
+                writer.WriteLine(line);
+            }
+        }
+
         /// <summary>
         /// The file next to the data that says where it comes from.
         /// </summary>
@@ -130,6 +178,7 @@ namespace JuliaSynth.ViewModels
             foreach (string name in set.Files)
             {
                 string path = Path.Combine(files, name);
+                _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 if (!new FileInfo(path).Exists)
                 {
                     string partial = path + ".part";
@@ -137,7 +186,17 @@ namespace JuliaSynth.ViewModels
                     {
                         _ = response.EnsureSuccessStatusCode();
                         await using FileStream file = File.Create(partial);
-                        await response.Content.CopyToAsync(file, cancellationToken);
+                        if (Convert is null)
+                        {
+                            await response.Content.CopyToAsync(file, cancellationToken);
+                        }
+                        else
+                        {
+                            using MemoryStream contents = new();
+                            await response.Content.CopyToAsync(contents, cancellationToken);
+                            contents.Position = 0;
+                            Convert(name, contents, file);
+                        }
                     }
 
                     File.Move(partial, path, overwrite: true);

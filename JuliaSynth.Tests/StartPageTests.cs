@@ -215,6 +215,11 @@ namespace JuliaSynth.Tests
                 ScrollViewer scroller = page.GetLogicalDescendants().OfType<ScrollViewer>().First();
                 Assert.True(scroller.Extent.Height <= scroller.Viewport.Height, $"{scroller.Extent.Height} tall, in {scroller.Viewport.Height}");
 
+                // More examples than three rows hold: their list scrolls, the cards keeping their size.
+                ScrollViewer examples = page.FindControl<ScrollViewer>("ExampleScroller")!;
+                Assert.True(examples.Extent.Height > examples.Viewport.Height, $"{examples.Extent.Height} of examples, {examples.Viewport.Height} shown");
+                Assert.All(page.GetLogicalDescendants().OfType<Button>().Where(b => b.Classes.Contains("example")), card => Assert.Equal(222, card.Bounds.Width));
+
                 viewModel.EndJulia();
                 window.Close();
             });

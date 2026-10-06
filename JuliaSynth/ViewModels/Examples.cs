@@ -258,6 +258,59 @@ namespace JuliaSynth.ViewModels
             },
         };
 
+        /// <summary>
+        /// The stations of the seismic network example: code, network, location code. PFO first, as in the Earthquake
+        /// detector; GSC (Goldstone), ISA (Isabella) and TIN (Tinemaha) of the Southern California network.
+        /// </summary>
+        private static readonly (string Code, string Network, string Location)[] NetworkStations =
+            [("PFO", "II", "00"), ("GSC", "CI", "--"), ("ISA", "CI", "--"), ("TIN", "CI", "--")];
+
+        /// <summary>
+        /// The network's minute files: each station's in a folder of its own, of the same names: PFO/2019-07-04T17-03.csv.
+        /// </summary>
+        private static string[] NetworkMinutes(int from, int count) => [.. NetworkStations.SelectMany(s => Enumerable.Range(from, count)
+            .Select(i => $"{s.Code}/{new DateTime(2019, 7, 4, 15, 40, 0).AddMinutes(i).ToString("yyyy-MM-dd'T'HH-mm", System.Globalization.CultureInfo.InvariantCulture)}.csv"))];
+
+        /// <summary>
+        /// Four stations' seismograms around the Ridgecrest earthquakes, a file a minute each, from EarthScope's FDSN web
+        /// service: the hour with the foreshock and the M6.4, or 3 hours.
+        /// </summary>
+        internal static ExampleData RidgecrestNetwork { get; } = new(
+            "Ridgecrest network",
+            "The vertical seismometers of four stations in southern California on 4 July 2019, as the M6.4 Ridgecrest "
+                + "earthquake struck at 17:33:49 UTC, 31 minutes after an M4.0 foreshock: PFO at Piñon Flat (200 km away, "
+                + "20 readings a second), GSC at Goldstone (80 km), ISA at Isabella (90 km) and TIN at Tinemaha (190 km), 40 "
+                + "readings a second. A file a minute for each, in a folder each, of the same names, GeoCSV: lines starting "
+                + "with # describe the station, then a line \"Sample\" and the readings, in counts. The web service gives some "
+                + "minutes in pieces; they are joined into one.",
+            "Station PFO of the Global Seismograph Network (IRIS/IDA, network II), operated by the Scripps Institution of "
+                + "Oceanography: https://doi.org/10.7914/SN/II. Stations GSC, ISA and TIN of the Southern California Seismic "
+                + "Network (network CI), operated by Caltech and the USGS: California Institute of Technology and United States "
+                + "Geological Survey Pasadena (1926), Southern California Seismic Network, https://doi.org/10.7914/SN/CI. Openly "
+                + "available from the EarthScope Consortium's FDSN web services (https://service.earthscope.org/fdsnws/dataselect/1/); "
+                + "the readings are unchanged, a minute's pieces joined.",
+            "https://service.earthscope.org/fdsnws/dataselect/1/query",
+            [
+                new("Short",
+                    "The hour from 16:40 UTC: the foreshock, then the M6.4. 240 files, 60 a station: about a minute to download.",
+                    NetworkMinutes(60, 60),
+                    2_400_000),
+                new("Full",
+                    "3 hours from 15:40 UTC: a quiet hour before, and the hour of aftershocks after. 720 files, 180 a station: about 4 minutes to download.",
+                    NetworkMinutes(0, 180),
+                    7_200_000),
+            ])
+        {
+            FileUrl = name =>
+            {
+                (string code, string network, string location) = NetworkStations.Single(s => name.StartsWith(s.Code + "/", StringComparison.Ordinal));
+                DateTime minute = DateTime.ParseExact(name[(code.Length + 1)..^".csv".Length], "yyyy-MM-dd'T'HH-mm", System.Globalization.CultureInfo.InvariantCulture);
+                return $"https://service.earthscope.org/fdsnws/dataselect/1/query?net={network}&sta={code}&loc={location}&cha=BHZ"
+                    + $"&start={Stamp(minute)}&end={Stamp(minute.AddMinutes(1))}&format=geocsv.slist";
+            },
+            Convert = (_, from, to) => ExampleData.JoinGeoCsv(from, to),
+        };
+
         public static IReadOnlyList<Example> All { get; } = [
             new("Loan payment",
                 "Finance: the monthly payment on a 250,000 loan at 4.5% a year over 30 years, and the interest paid in total. "
@@ -340,6 +393,17 @@ namespace JuliaSynth.ViewModels
                 + "them, a 4 times at 17:32 it doesn't, and the M6.4 (17:34); the 3 hours add 4 of its aftershocks. The plots show each minute's seismogram and the "
                 + "loudest second of every minute. The files are downloaded when the example opens, the hour or 3 hours.",
                 EarthquakeDetector) { Data = RidgecrestSeismograms },
+            new("Earthquake network",
+                "Seismology: four seismometers in southern California as the M6.4 Ridgecrest earthquake struck, their minutes "
+                + "gone through in step: a Zip node takes each station's minute of the same name together. "
+                + "One station gets fooled by traffic or wind; a network only believes a quake two stations or more hear within "
+                + "a minute of each other. Each station's seconds are compared with its background over the 5 minutes before; "
+                + "heard gives when each heard a new quake, and confirmed the quakes the network believes, noted with when and "
+                + "where, and saved a row each to quakes.csv next to the data. In the hour from 16:40 UTC it notes the M4.0 "
+                + "foreshock (17:03), an M2.5 (17:09), an M2.1 (17:12), an M1.5 (17:27) and the M6.4 (17:33), as the USGS "
+                + "catalogue lists them, and nothing else: what only one station felt is left out. The 3 hours add 13 of its aftershocks, and nothing in the quiet hour before. The files "
+                + "are downloaded when the example opens, the hour or 3 hours of each station.",
+                EarthquakeNetwork) { Data = RidgecrestNetwork },
             new("Motion in video",
                 "Video: what moves in the frames of a fixed camera over a highway, from the CDnet 2014 change detection "
                 + "dataset, gone through one at a time. As with the radar's clutter map, the background is the scene as it "
@@ -1038,6 +1102,121 @@ namespace JuliaSynth.ViewModels
                 (watch, steep, 0), (steep, shown, 0));
         }
 
+        private static MainViewModel.DesignDocument EarthquakeNetwork()
+        {
+            // The full set when it was downloaded, else the short one: each station's minutes, zipped by name.
+            string folder = RidgecrestNetwork.DownloadedFolder ?? ExampleData.SetFolder(RidgecrestNetwork.Folder, RidgecrestNetwork.Sets[0]);
+            FilesNode[] stations = [.. NetworkStations.Select((s, i) => new FilesNode
+            {
+                Format = FileFormats.Csv, Pattern = "*.csv", Shape = JuliaTypes.Vector, HasHeader = true, HasComments = true, EachFile = true,
+                Folder = System.IO.Path.Combine(folder, s.Code),
+                Row = 6 + (12 * i), Column = Inputs,
+            })];
+            ZipNode minutes = new() { Row = 6, Column = Stage1 };
+
+            // Each station's background: the typical energy of a second over the last 5 minutes, those before this one.
+            Function energies = Define("energies", "Vector", 6, Stage1,
+                """
+                # Each station's energy of each second: the mean square of the changes from reading to reading, which
+                # leaves out the slow swell of the ocean. A station's readings a second: its minute's over 60.
+                map(F) do x
+                    fs = length(x) ÷ 60
+                    d = diff(x)
+                    [sum(abs2, d[(s - 1) * fs + 1:s * fs]) / fs for s in 1:length(d) ÷ fs]
+                end
+                """,
+                ("F", "Vector"));
+            Function levels = Define("levels", "Vector{Float64}", 6, Stage2,
+                "[sort(e)[cld(length(e), 2)] for e in E]  # each station's typical second: the median, which a short quake hardly moves",
+                ("E", "Vector"));
+            WindowNode last = new() { Size = 5, Row = 6, Column = Stage3 };
+            Function background = Define("background", "Vector{Float64}", 6, Stage3 + 14, "sum(W) / length(W)  # each station's, over the last 5 minutes", ("W", "Vector"));
+            ArrayBuilder before = Empty(JuliaTypes.Vector, "Float64", 18);
+
+            // How much each second shook at each station, against the background of the minutes before.
+            Function ratios = Define("ratios", "Vector", 18, Stage2,
+                "isempty(B) ? [zeros(length(e)) for e in E] : [sqrt.(e ./ b) for (e, b) in zip(E, B)]  # as amplitudes; nothing the first minute",
+                ("E", "Vector"), ("B", "Vector{Float64}"));
+            Function loudest = Define("loudest", "Vector{Int64}", 18, Stage3, "[round(Int, maximum(r)) for r in R]  # each station's loudest second, × the background", ("R", "Vector"));
+            DisplayNode loud = Shown(19, Stage3 + 16);
+
+            // A station hears a new quake: a second 4 times the background, the minute before it having none.
+            ArrayBuilder shookBefore = Zeros(4, 30);
+            Function shook = Define("shook", "Vector{Float64}", 30, Stage3, "Float64[maximum(r) > 4 for r in R]  # whether each station shook this minute, for the next", ("R", "Vector"));
+            FileNameNode name = new() { Row = 42, Column = Inputs };
+            Function heard = Define("heard", "Vector{Float64}", 30, Stage2,
+                """
+                # When each station heard a new quake, in seconds of the day; 0: none. The minute is the file's name's.
+                m = parse(Int, name[12:13]) * 3600 + parse(Int, name[15:16]) * 60
+                [maximum(r) > 4 && b == 0 ? m + argmax(r) - 1.0 : 0.0 for (r, b) in zip(R, B)]
+                """,
+                ("R", "Vector"), ("B", "Vector{Float64}"), ("name", Function.AnyType));
+
+            // A quake the network confirms: heard by 2 stations or more within 60 s, this minute or the one before.
+            ArrayBuilder heardBefore = Zeros(4, 54);
+            Integer noted = new() { SelectedType = "64-bit", Value = 0, Row = 66, Column = Inputs };
+            Function confirmed = Define("confirmed", "Float64", 42, Stage3,
+                """
+                # The time of a quake 2 stations or more heard within 60 s, this minute (D) or the one before (P), not noted
+                # yet (the last at L): its earliest station's, in seconds of the day; 0: none. A wave's arrivals at stations
+                # far apart can be a minute apart; one station alone may be heavy traffic or wind.
+                for (i, t) in enumerate(D)
+                    t > 0 && t > L + 60 || continue
+                    near = [(j, u) for (j, u) in [collect(enumerate(D)); collect(enumerate(P))] if u > 0 && abs(u - t) <= 60]
+                    length(unique(first.(near))) >= 2 && return minimum(last.(near))
+                end
+                0.0
+                """,
+                ("D", "Vector{Float64}"), ("P", "Vector{Float64}"), ("L", "Int64"));
+            Function kept = Define("kept", "Int64", 66, Stage3 + 14, "c > 0 ? round(Int, c) : L  # the last quake noted", ("c", "Float64"), ("L", "Int64"));
+            Function quake = Define("quake", "Bool", 54, Stage3 + 14, "c > 0", ("c", "Float64"));
+            Function note = Define("note", Function.AnyType, 42, Stage3 + 14,
+                """
+                # When, and the stations that heard it (in the order of the zip's ports: PFO, GSC, ISA, TIN).
+                stations = ["PFO", "GSC", "ISA", "TIN"]
+                h, m, s = round(Int, c) ÷ 3600, round(Int, c) % 3600 ÷ 60, round(Int, c) % 60
+                heard_by = [stations[i] for i in eachindex(stations) if any(u -> u > 0 && abs(u - c) <= 60, (D[i], P[i]))]
+                string(lpad(h, 2, '0'), ":", lpad(m, 2, '0'), ":", lpad(s, 2, '0'), " UTC, heard at ", join(heard_by, ", "))
+                """,
+                ("c", "Float64"), ("D", "Vector{Float64}"), ("P", "Vector{Float64}"));
+            WhenNode onlyQuakes = new() { Row = 54, Column = Stage3 + 28 };
+            DisplayNode shown = Shown(54, Stage3 + 44);
+            SaveFile saved = new() { Path = System.IO.Path.Combine(RidgecrestNetwork.Folder, "quakes.csv"), PerFile = true, Row = 66, Column = Stage3 + 30 };
+
+            // The stations and their zip come first, the rest a column further on.
+            Node[] rest = [energies, levels, last, background, before, ratios, loudest, loud, shookBefore, shook, name, heard,
+                heardBefore, noted, confirmed, kept, quake, note, onlyQuakes, shown, saved];
+            foreach (Node node in rest)
+            {
+                node.Column += Stage2 - Stage1;
+            }
+
+            return Design(
+                [.. stations, minutes, .. rest],
+                [.. stations.Select((s, i) => ((Node)s, (Node)minutes, (object)i)),
+                (minutes, energies, 0), (energies, levels, 0), (levels, last, 0), (last, background, 0), (background, before, "next"),
+                (energies, ratios, 0), (before, ratios, 1), (ratios, loudest, 0), (loudest, loud, 0),
+                (ratios, shook, 0), (shook, shookBefore, "next"), (ratios, heard, 0), (shookBefore, heard, 1), (name, heard, 2),
+                (heard, confirmed, 0), (heardBefore, confirmed, 1), (noted, confirmed, 2), (heard, heardBefore, "next"),
+                (confirmed, kept, 0), (noted, kept, 1), (kept, noted, "next"), (confirmed, quake, 0),
+                (confirmed, note, 0), (heard, note, 1), (heardBefore, note, 2), (note, onlyQuakes, "value"), (quake, onlyQuakes, "condition"),
+                (onlyQuakes, shown, 0), (onlyQuakes, saved, 0)]);
+        }
+
+        /// <summary>
+        /// A vector of <paramref name="n"/> zeros: an input starting at nothing for each of a network's stations.
+        /// </summary>
+        private static ArrayBuilder Zeros(int n, int row)
+        {
+            ArrayBuilder zeros = Empty(JuliaTypes.Vector, "Float64", row);
+            foreach (Argument size in zeros.Parameters.OfType<Argument>().Where(a => a.Key == "n"))
+            {
+                size.Value = n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            return zeros;
+        }
+
         private static string DataFolder(string name)
         {
             return System.IO.Path.Combine(AppContext.BaseDirectory, "ExampleData", name);
@@ -1090,6 +1269,7 @@ namespace JuliaSynth.ViewModels
                 }
 
                 design.Connections.Add(new Connection(source.ID, target.ID, parameter.ID));
+                target.Wired(design.Connections);
             }
 
             return design;

@@ -74,6 +74,7 @@
                   <MenuItem Header="Window: the last values (⧗)" Tag="WindowNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="File name: of the file a loop is at (“”)" Tag="FileNameNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Zip: folders in step, by file name (⋈)" Tag="ZipNode" Click="AddAtPointer_Click"/>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
@@ -174,6 +175,9 @@
               </DataTemplate>
               <DataTemplate DataType="jsModel:FileNameNode">
                 <jsViews:FileNameNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:ZipNode">
+                <jsViews:ZipNode DataContext="{Binding}"/>
               </DataTemplate>
               <DataTemplate DataType="jsModel:Function">
                 <jsViews:Function DataContext="{Binding}"/>
@@ -436,6 +440,7 @@
                 <MenuItem Header="Window: the last values (⧗)" Tag="WindowNode" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtCenter_Click"/>
                 <MenuItem Header="File name: of the file a loop is at (“”)" Tag="FileNameNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Zip: folders in step, by file name (⋈)" Tag="ZipNode" Click="AddAtCenter_Click"/>
               </MenuFlyout>
             </DropDownButton.Flyout>
           </DropDownButton>

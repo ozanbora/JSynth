@@ -129,6 +129,14 @@ public partial class MainViewModel : ReactiveObject
 
         Connections.RemoveAll(replaced);
         Connections.Add(new Connection(source.ID, target.ID, parameter.ID));
+        target.Wired(Connections);
+
+        // Folders go in step file by file.
+        if (target is ZipNode && source is FilesNode files)
+        {
+            files.EachFile = true;
+        }
+
         return null;
     }
 
@@ -323,6 +331,7 @@ public partial class MainViewModel : ReactiveObject
             nameof(WindowNode) => new WindowNode(),
             nameof(WhenNode) => new WhenNode(),
             nameof(FileNameNode) => new FileNameNode(),
+            nameof(ZipNode) => new ZipNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
 

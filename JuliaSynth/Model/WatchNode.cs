@@ -31,20 +31,23 @@ namespace JuliaSynth.Model
             # before the start go first, or are passed over. show: whether to show values for this one, at most
             # four times a second and for the last of those waiting. ready() once it watches. Ends when the stop file appears.
             # latest: when several files are waiting, only the newest is gone through.
-            function _jsynth_watch(body, folder, pattern, existing, bytime; stop = nothing, ready = () -> nothing, latest = false)
+            # also: folders in step; a file waits until each has a file of its name, written too.
+            function _jsynth_watch(body, folder, pattern, existing, bytime; stop = nothing, ready = () -> nothing, latest = false, also = String[])
                 isdir(folder) || throw(ArgumentError("The folder $(repr(folder)) doesn't exist."))
                 files() = filter(p -> isfile(p) && occursin(pattern, basename(p)), readdir(folder; join = true))
                 stopped() = stop !== nothing && isfile(stop)
                 seen = existing ? Set{String}() : Set(files())
                 ready()
-                sizes = Dict{String, Int}()
+                sizes = Dict{String, Vector{Int}}()
+                # A file and its twins in the folders in step, each written: its size and theirs the same at two looks.
+                looks(p) = [filesize(p); [filesize(joinpath(f, basename(p))) for f in also]]
                 n, shown = 0, 0.0
                 while !stopped()
                     due = String[]
                     for p in files()
                         p in seen && continue
-                        s = filesize(p)
-                        s > 0 && get(sizes, p, -1) == s ? push!(due, p) : (sizes[p] = s)
+                        s = looks(p)
+                        all(>(0), s) && get(sizes, p, Int[]) == s ? push!(due, p) : (sizes[p] = s)
                     end
                     sort!(due; by = p -> bytime ? (mtime(p), p) : (0.0, p))
                     # Latest only: the files waiting before the newest are passed over.
@@ -245,12 +248,18 @@ namespace JuliaSynth.Model
         /// The call watching the folder, <paramref name="body"/> being <c>(path, n, show)</c> handling one file.
         /// </summary>
         /// <param name="stopFile">For a run: the file whose appearing ends the stream; the run is told when it watches.</param>
-        public string Watch(string? stopFile)
+        /// <param name="inStep">The folders in step with this one (a Zip node's others): a file waits until each has its twin.</param>
+        public string Watch(string? stopFile, IReadOnlyList<string>? inStep = null)
         {
             List<string> options = [];
             if (LatestOnly)
             {
                 options.Add("latest = true");
+            }
+
+            if (inStep is { Count: > 0 })
+            {
+                options.Add($"also = {FoldersJulia(inStep)}");
             }
 
             if (stopFile is not null)

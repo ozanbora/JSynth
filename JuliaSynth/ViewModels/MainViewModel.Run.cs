@@ -415,7 +415,7 @@ public partial class MainViewModel
             }
 
             Log($"Running with Julia {julia.Version} in {folder}…", OutputKind.Info);
-            if (streaming && Nodes.OfType<WatchNode>().FirstOrDefault(w => w.Error is null) is WatchNode watched)
+            if (streaming && script.Watched is WatchNode watched)
             {
                 Log($"Watching {watched.Folder} for {(watched.Pattern.Length == 0 ? "*" : watched.Pattern)} files: the values from {script.Variables[watched.ID]} on are worked out again for each, until you stop.", OutputKind.Info);
                 BeginStream(watched, stopFile);
