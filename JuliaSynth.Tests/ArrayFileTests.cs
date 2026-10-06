@@ -32,7 +32,7 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
-        public void A_csv_file_is_read_with_readdlm_and_its_size_shown()
+        public void A_csv_file_is_read_with_parsers_and_its_size_shown()
         {
             ArrayFile file = new() { Path = Write("a.csv", "1.0,2.0,3.0\n4.0,5.0,6.0\n") };
 
@@ -40,7 +40,7 @@ namespace JuliaSynth.Tests
             Assert.Equal(ArrayFile.Csv, file.Format);
             Assert.Equal("2×3", file.Summary);
             Assert.Equal("Matrix{Float64}", file.OutputType);
-            Assert.Equal($"using DelimitedFiles\nreaddlm(raw\"{file.Path}\", ',', Float64)", file.Code);
+            Assert.Equal($"using Parsers\n_jsynth_read_numbers(raw\"{file.Path}\", ',', Float64)", file.Code);
         }
 
         [Fact]
@@ -53,7 +53,7 @@ namespace JuliaSynth.Tests
 
             Assert.Null(file.Error);
             Assert.Equal("2×2", file.Summary);
-            Assert.EndsWith("readdlm(raw\"" + file.Path + "\", ',', Float64; skipstart = 1)", file.Julia);
+            Assert.EndsWith("_jsynth_read_numbers(raw\"" + file.Path + "\", ',', Float64; header = true)", file.Julia);
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace JuliaSynth.Tests
 
             Assert.Equal(ArrayFile.Tsv, file.Format);
             Assert.Equal("4-element", file.Summary);
-            Assert.Equal($"vec(readdlm(raw\"{file.Path}\", '\\t', Int64))", file.Julia);
+            Assert.Equal($"vec(_jsynth_read_numbers(raw\"{file.Path}\", '\\t', Int64))", file.Julia);
             Assert.Equal("Vector{Int64}", file.OutputType);
         }
 

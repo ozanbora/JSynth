@@ -37,6 +37,12 @@
 
         <jsControls:ResultBadge/>
 
+        <Button Classes="nodeAction"
+                Content="∥"
+                Click="Parallel_Click"
+                ToolTip.Tip="map: the values one after the other. map ∥: in parallel, shared out among all of Julia's threads (a thread a core), for many files or slow work on each, when the work on one doesn't depend on another's. Click to switch."
+                />
+
         <TextBlock Classes="nodeInfo"
                    Text="𝑖"
                    >
@@ -71,7 +77,7 @@
                  >
         <TextBlock DockPanel.Dock="Left"
                    FontSize="18"
-                   Text="map"
+                   Text="{Binding Path=Label}"
                    />
         <TextBlock Classes="caption"
                    VerticalAlignment="Bottom"

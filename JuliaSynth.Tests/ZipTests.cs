@@ -94,8 +94,8 @@ namespace JuliaSynth.Tests
             Assert.Null(MainViewModel.Connect(b, zip, zip.Streams[1]));
             Assert.Equal(["stream 1", "stream 2", "stream 3"], zip.Streams.Select(p => p.Name));
             script = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: false).Text;
-            Assert.Contains($"for _path in _jsynth_in_step(JuliaSynthFiles(raw\"{A}\", r\"^.*\\.csv$\"i, path -> readdlm(path, ',', Float64)), [raw\"{B}\"]).paths", script);
-            Assert.Contains($"global frame2 = (path -> readdlm(path, ',', Float64))(joinpath(raw\"{B}\", basename(_path)))", script);
+            Assert.Contains($"for _path in _jsynth_in_step(JuliaSynthFiles(raw\"{A}\", r\"^.*\\.csv$\"i, path -> _jsynth_read_numbers(path, ',', Float64)), [raw\"{B}\"]).paths", script);
+            Assert.Contains($"global frame2 = (path -> _jsynth_read_numbers(path, ',', Float64))(joinpath(raw\"{B}\", basename(_path)))", script);
             Assert.Contains("global zipped1 = collect((frame1, frame2,))", script);
 
             // Only folders go in step.

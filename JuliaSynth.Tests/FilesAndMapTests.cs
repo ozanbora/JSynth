@@ -101,11 +101,11 @@ namespace JuliaSynth.Tests
         public void Each_file_is_read_like_a_single_file_of_its_format()
         {
             FilesNode files = new() { Folder = "data", ElementType = "Float32", HasHeader = true };
-            Assert.Equal("JuliaSynthFiles(raw\"data\", r\"^.*\\.csv$\"i, path -> readdlm(path, ',', Float32; skipstart = 1))", files.Julia);
+            Assert.Equal("JuliaSynthFiles(raw\"data\", r\"^.*\\.csv$\"i, path -> _jsynth_read_numbers(path, ',', Float32; header = true))", files.Julia);
             Assert.Equal("Matrix{Float32}", files.EachType);
 
             ArrayFile file = new() { Path = "data/a.csv", ElementType = "Float32", HasHeader = true };
-            Assert.Equal("readdlm(raw\"data/a.csv\", ',', Float32; skipstart = 1)", file.Julia);
+            Assert.Equal("_jsynth_read_numbers(raw\"data/a.csv\", ',', Float32; header = true)", file.Julia);
 
             files.Format = FileFormats.MatrixMarket;
             Assert.EndsWith("path -> SparseMatrixCSC{Float32, Int64}(MatrixMarket.mmread(path)))", files.Julia);
@@ -125,7 +125,7 @@ namespace JuliaSynth.Tests
             string read = FileFormats.Read(FileFormats.Csv, ArrayFile.PathLiteral(geo), JuliaTypes.Vector, "Float64", true, "A", hasComments: true);
             using JuliaSession session = new(julia.Path);
             System.Collections.Concurrent.ConcurrentQueue<OutputLine> output = new();
-            RunResult result = await session.RunAsync($"using DelimitedFiles\nprintln({read})", _folder, output.Enqueue);
+            RunResult result = await session.RunAsync($"using Parsers\n{FileFormats.Prelude}\nprintln({read})", _folder, output.Enqueue);
             Assert.True(result.Succeeded, string.Join("\n", output.Select(l => l.Text)));
             Assert.Contains(output, l => l.Text == "[3.0, -4.0, 5.0]");
         }
@@ -137,9 +137,9 @@ namespace JuliaSynth.Tests
             string geo = Path.Combine(_folder, "minute.geo");
             File.WriteAllText(geo, "# dataset: GeoCSV 2.0\n# sample_rate_hz: 20\nSample\n3\n-4\n5\n");
 
-            Assert.Equal("readdlm(path, ',', Float64)", FileFormats.Read(FileFormats.Csv, "path", JuliaTypes.Matrix, "Float64", false, "A"));
-            Assert.Equal("readdlm(path, ',', Float64; comments = true)", FileFormats.Read(FileFormats.Csv, "path", JuliaTypes.Matrix, "Float64", false, "A", hasComments: true));
-            Assert.Equal("vec(readdlm(path, '\\t', Int64; header = true, comments = true)[1])", FileFormats.Read(FileFormats.Tsv, "path", JuliaTypes.Vector, "Int64", true, "A", hasComments: true));
+            Assert.Equal("_jsynth_read_numbers(path, ',', Float64)", FileFormats.Read(FileFormats.Csv, "path", JuliaTypes.Matrix, "Float64", false, "A"));
+            Assert.Equal("_jsynth_read_numbers(path, ',', Float64; comments = true)", FileFormats.Read(FileFormats.Csv, "path", JuliaTypes.Matrix, "Float64", false, "A", hasComments: true));
+            Assert.Equal("vec(_jsynth_read_numbers(path, '\\t', Int64; header = true, comments = true))", FileFormats.Read(FileFormats.Tsv, "path", JuliaTypes.Vector, "Int64", true, "A", hasComments: true));
 
             // Load from file checks the first values, past the comments and the header.
             ArrayFile file = new() { Path = geo, Format = FileFormats.Csv, Shape = JuliaTypes.Vector, HasHeader = true };
@@ -149,7 +149,7 @@ namespace JuliaSynth.Tests
             Assert.Equal("3-element", file.Summary);
 
             FilesNode files = new() { Folder = _folder, Pattern = "*.geo", Shape = JuliaTypes.Vector, HasHeader = true, HasComments = true };
-            Assert.Equal("path -> vec(readdlm(path, ',', Float64; header = true, comments = true)[1])", files.ReadFunction);
+            Assert.Equal("path -> vec(_jsynth_read_numbers(path, ',', Float64; header = true, comments = true))", files.ReadFunction);
         }
 
         [Fact]
@@ -205,7 +205,7 @@ namespace JuliaSynth.Tests
                 Assert.Contains(FilesNode.Prelude.TrimEnd(), run.Text);
                 Assert.Contains(MapNode.Prelude.TrimEnd(), run.Text);
                 Assert.Contains("global mapped1 = _jsynth_map(total, files1)", run.Text);
-                Assert.Contains("DelimitedFiles", run.Packages);
+                Assert.Contains("Parsers", run.Packages);
 
                 // A plain script defines the files too, and maps without the error naming.
                 Assert.Contains(FilesNode.Prelude.TrimEnd(), plain.Text);

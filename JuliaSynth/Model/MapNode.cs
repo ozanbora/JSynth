@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using ReactiveUI;
 using System.Collections.Generic;
 
 namespace JuliaSynth.Model
@@ -10,28 +11,62 @@ namespace JuliaSynth.Model
     public class MapNode : Node
     {
         /// <summary>
-        /// Julia code for a run: map, but an error says which value (or file) it came from.
+        /// Julia code for a run: map, but an error says which value (or file) it came from. In parallel, the values are
+        /// shared out among Julia's threads; the first failure, in order, is the one said.
         /// </summary>
         public static string Prelude { get; } = """
-            function _jsynth_map(f, items)
-                if items isa JuliaSynthFiles
-                    return map(items.paths) do path
-                        try
-                            f(items.read(path))
-                        catch e
-                            error(basename(path), ": ", sprint(showerror, e))
-                        end
-                    end
+            function _jsynth_map(f, items; parallel = false)
+                jobs = items isa JuliaSynthFiles ? [(basename(path), () -> f(items.read(path))) for path in items.paths] :
+                    [(string("value ", i), () -> f(x)) for (i, x) in enumerate(items)]
+                work((label, job)) = try
+                    job()
+                catch e
+                    error(label, ": ", sprint(showerror, e))
                 end
-                map(enumerate(items)) do (i, x)
-                    try
-                        f(x)
-                    catch e
-                        error("value ", i, ": ", sprint(showerror, e))
-                    end
+                parallel || return map(work, jobs)
+                tasks = [Threads.@spawn work(j) for j in jobs]
+                try
+                    fetch.(tasks)
+                catch e
+                    e isa TaskFailedException ? throw(e.task.exception) : rethrow()
                 end
             end
             """.ReplaceLineEndings("\n");
+
+        /// <summary>
+        /// Julia code for a Map in parallel, for runs and exported scripts alike: f applied to each value on as many
+        /// threads as Julia has (started with <c>--threads=auto</c>), the results in order; files are each read on
+        /// the thread working on them.
+        /// </summary>
+        public static string ParallelPrelude { get; } = """
+            # f applied to each value on Julia's threads (julia --threads=auto), the results in order; made by a JuliaSynth Map node.
+            function _jsynth_tmap(f, items)
+                jobs = items isa JuliaSynthFiles ? [() -> f(items.read(path)) for path in items.paths] : [() -> f(x) for x in items]
+                fetch.([Threads.@spawn job() for job in jobs])
+            end
+            """.ReplaceLineEndings("\n");
+
+        private bool _inParallel;
+
+        /// <summary>
+        /// Whether the values are worked through on all of Julia's threads at once, rather than one after the
+        /// other: for many files, or slow work on each value, when the work on one doesn't depend on another's.
+        /// </summary>
+        [JsonProperty]
+        public bool InParallel
+        {
+            get => _inParallel;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _inParallel, value);
+                this.RaisePropertyChanged(nameof(Label));
+            }
+        }
+
+        /// <summary>
+        /// On the node: "map", or "map ∥" in parallel.
+        /// </summary>
+        public string Label => InParallel ? "map ∥" : "map";
 
         /// <summary>
         /// The values to go through.

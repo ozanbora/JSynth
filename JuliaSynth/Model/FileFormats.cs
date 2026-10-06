@@ -74,7 +74,7 @@ namespace JuliaSynth.Model
         /// </summary>
         public static string Package(string format) => format switch
         {
-            Csv or Tsv => "DelimitedFiles",
+            Csv or Tsv => "Parsers",
             MatrixMarket => "MatrixMarket, SparseArrays",
             Png => "PNGFiles",
             Json => "JSON",
@@ -98,6 +98,36 @@ namespace JuliaSynth.Model
         public static string ExampleFile { get; } = OperatingSystem.IsWindows() ? @"C:\data\signal.csv" : "/home/me/data/signal.csv";
 
         /// <summary>
+        /// Julia code reading a CSV or TSV file of numbers, for runs and exported scripts alike: with Parsers rather
+        /// than readdlm, which is many times faster, and keeps being so on several threads (on Windows readdlm's
+        /// numbers take a lock, and get slower the more threads read at once).
+        /// </summary>
+        public static string Prelude { get; } = """
+            # Numbers separated by delim, a row a line, as a matrix of T; made by JuliaSynth. header: the first line (not a
+            # comment) names the columns. comments: what follows a # on a line is left out.
+            function _jsynth_read_numbers(path, delim::Char, ::Type{T}; header = false, comments = false) where {T}
+                values = T[]
+                columns, rows = 0, 0
+                for (k, line) in enumerate(eachsplit(read(path, String), '\n'))
+                    text = strip(comments ? first(split(line, '#'; limit = 2)) : line)
+                    isempty(text) && continue
+                    header && (header = false; continue)
+                    n = 0
+                    for field in eachsplit(text, delim)
+                        x = Parsers.tryparse(T, strip(field))
+                        x === nothing && throw(ArgumentError("line $k of $(basename(path)): $(repr(strip(field))) can't be read as $T"))
+                        push!(values, x)
+                        n += 1
+                    end
+                    rows > 0 && n != columns && throw(ArgumentError(string("line $k of $(basename(path)) has ", n, n == 1 ? " value" : " values", "; the lines before it have $columns")))
+                    columns = n
+                    rows += 1
+                end
+                permutedims(reshape(values, columns, rows))
+            end
+            """.ReplaceLineEndings("\n");
+
+        /// <summary>
         /// The Julia character between the values of a CSV or TSV file.
         /// </summary>
         private static string Delimiter(string format) => format == Csv ? "','" : "'\\t'";
@@ -114,14 +144,13 @@ namespace JuliaSynth.Model
             string type = JuliaTypes.Compose(shape, elementType);
             return format switch
             {
-                // readdlm always makes a matrix; vec makes a vector of it, column by column.
-                // With comments, the header is the first line that isn't one: readdlm then gives the values and it.
+                // Always a matrix; vec makes a vector of it, column by column.
                 Csv or Tsv => Dense(shape, (hasHeader, hasComments) switch
                 {
-                    (true, true) => $"readdlm({path}, {Delimiter(format)}, {elementType}; header = true, comments = true)[1]",
-                    (true, false) => $"readdlm({path}, {Delimiter(format)}, {elementType}; skipstart = 1)",
-                    (false, true) => $"readdlm({path}, {Delimiter(format)}, {elementType}; comments = true)",
-                    _ => $"readdlm({path}, {Delimiter(format)}, {elementType})",
+                    (true, true) => $"_jsynth_read_numbers({path}, {Delimiter(format)}, {elementType}; header = true, comments = true)",
+                    (true, false) => $"_jsynth_read_numbers({path}, {Delimiter(format)}, {elementType}; header = true)",
+                    (false, true) => $"_jsynth_read_numbers({path}, {Delimiter(format)}, {elementType}; comments = true)",
+                    _ => $"_jsynth_read_numbers({path}, {Delimiter(format)}, {elementType})",
                 }),
                 MatrixMarket => $"{type}(MatrixMarket.mmread({path}))",
 

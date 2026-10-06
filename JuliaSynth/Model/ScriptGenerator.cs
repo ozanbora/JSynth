@@ -87,6 +87,10 @@ namespace JuliaSynth.Model
             {
                 _ = script.AppendLine(MapNode.Prelude.TrimEnd());
             }
+            else if (nodes.OfType<MapNode>().Any(m => m.InParallel))
+            {
+                _ = script.AppendLine(MapNode.ParallelPrelude.TrimEnd());
+            }
 
             // Watching a folder is plain Julia too; showing how far a loop through files got is for runs.
             if (nodes.OfType<WatchNode>().Any())
@@ -102,6 +106,11 @@ namespace JuliaSynth.Model
             if (nodes.OfType<WindowNode>().Any())
             {
                 _ = script.AppendLine().AppendLine(WindowNode.Prelude.TrimEnd());
+            }
+
+            if (nodes.Any(n => n is ArrayFile file ? FileFormats.IsDelimited(file.Format) : n is FilesNode files && FileFormats.IsDelimited(files.Format)))
+            {
+                _ = script.AppendLine().AppendLine(FileFormats.Prelude.TrimEnd());
             }
 
             // Functions wired into a Map are applied by it: one whose parameter isn't wired has no value of its own.
@@ -548,7 +557,8 @@ namespace JuliaSynth.Model
 
                     return MapNode.Problem(function) is string problem
                         ? (null, problem)
-                        : ($"{(instrumented ? "_jsynth_map" : "map")}({function.Name}, {items})", null);
+                        : (instrumented ? $"_jsynth_map({function.Name}, {items}{(map.InParallel ? "; parallel = true" : string.Empty)})"
+                            : $"{(map.InParallel ? "_jsynth_tmap" : "map")}({function.Name}, {items})", null);
                 }
                 case ArrayBuilder builder:
                 {

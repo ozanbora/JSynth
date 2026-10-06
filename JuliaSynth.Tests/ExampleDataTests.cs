@@ -325,6 +325,45 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void Real_julia_works_through_the_bearing_week_in_parallel_and_finds_when_bearing_1_wore_for_good()
+        {
+            Ui.Run(async () =>
+            {
+                // Runs only where the snapshots were downloaded (by opening a bearing example).
+                AppSettings.SettingsPath = _originalSettingsPath;
+                string folder = Examples.ImsBearings.Folder;
+                string? snapshots = Examples.ImsBearings.DownloadedFolder;
+                AppSettings.SettingsPath = Path.Combine(_folder, "settings.json");
+                if (snapshots is null || await JuliaLocator.FindAsync(null) is not JuliaInstallation julia)
+                {
+                    return;
+                }
+
+                AppSettings settings = AppSettings.Load();
+                settings.DataFolders[Examples.ImsBearings.Name] = folder;
+                settings.Save();
+                MainViewModel.DesignDocument design = Examples.All.Single(e => e.Name == "Bearing week in parallel").Build();
+                Assert.True(design.Nodes.OfType<MapNode>().Single().InParallel);
+                design.Nodes.OfType<SaveFile>().Single().Path = Path.Combine(_folder, "bearing-features.csv");
+                JuliaScript script = ScriptGenerator.Generate(design.Nodes, design.Connections, instrumented: true, _folder);
+
+                using JuliaSession session = new(julia.Path);
+                ConcurrentQueue<Report> reports = new();
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+
+                Assert.True(result.Succeeded);
+                Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
+
+                // A row a snapshot; bearing 1 worn for good from early on 16 February, the others only at the end.
+                bool full = Path.GetFileName(snapshots) == "full";
+                Assert.Equal(full ? 984 : 124, File.ReadAllLines(Path.Combine(_folder, "bearing-features.csv")).Length);
+                string onset = reports.Last(r => r.Id == design.Nodes.OfType<DisplayNode>().Single().ID).Text;
+                Assert.Contains(full ? "bearing 1: worn from 2004.02.16.05.52.39, 434 snapshots before the end" : "bearing 1: worn from 2004.02.16", onset);
+                Assert.Contains("bearing 2: worn from 2004.02.18", onset);
+            });
+        }
+
+        [Fact]
         public void Real_julia_finds_the_interference_in_the_real_scans()
         {
             Ui.Run(async () =>

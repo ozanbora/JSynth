@@ -102,8 +102,8 @@ namespace JuliaSynth.Runtime
                 start.ArgumentList.Add(argument);
             }
 
-            // No startup.jl or REPL history, and no colour codes in the output.
-            foreach (string argument in new[] { "--startup-file=no", "--history-file=no", "--color=no", file })
+            // No startup.jl or REPL history, and no colour codes in the output; a thread a core, for work in parallel.
+            foreach (string argument in new[] { "--startup-file=no", "--history-file=no", "--color=no", "--threads=auto", file })
             {
                 start.ArgumentList.Add(argument);
             }

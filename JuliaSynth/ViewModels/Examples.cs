@@ -383,6 +383,17 @@ namespace JuliaSynth.ViewModels
                 + "than when new, the alarm notes when and which: bearing 1 on 16 February, 2.5 days before its outer race failed. "
                 + "The snapshots are downloaded when the example opens, every 8th or all 984.",
                 BearingWear) { Data = ImsBearings },
+            new("Bearing week in parallel",
+                "Machines: the same week of the four bearings' vibration, every snapshot at once, worked through on all of Julia's "
+                + "threads: features gives each bearing's strength (RMS) and spikiness (kurtosis) in a snapshot, and the Map applies it "
+                + "to every snapshot in parallel (∥ on the Map switches it to one at a time, to compare the time it takes). table "
+                + "holds them a row a snapshot, saved to bearing-features.csv next to the data. wear is each bearing's strength over "
+                + "when new, smoothed over the last 6 snapshots, drawn as a heatmap of the four and a line of the most worn. With "
+                + "the whole week at hand, onset says when each bearing got 10% stronger for good, which a stream can't know: "
+                + "bearing 1 from early on 16 February, 3 days before its outer race failed, bearings 2 to 4 only in the last day, "
+                + "shaken by it. The snapshots are downloaded when the example opens, every 8th or all 984; all 984 take seconds "
+                + "on a few cores.",
+                BearingWeekInParallel) { Data = ImsBearings },
             new("Earthquake detector",
                 "Seismology: a seismometer's recording, a file a minute, gone through as a station's data logger writes them: "
                 + "station PFO in California on 4 July 2019, as the M6.4 Ridgecrest earthquake struck 200 km away. energy gives "
@@ -908,6 +919,68 @@ namespace JuliaSynth.ViewModels
             string folder = ImsBearings.DownloadedFolder ?? ExampleData.SetFolder(ImsBearings.Folder, ImsBearings.Sets[0]);
             FilesNode files = new() { Format = FileFormats.Tsv, Pattern = "2004.*", Folder = folder, EachFile = true };
             return BearingSnapshotsGoneThrough(files, System.IO.Path.Combine(ImsBearings.Folder, "bearing-wear.csv"));
+        }
+
+        private static MainViewModel.DesignDocument BearingWeekInParallel()
+        {
+            // The full set when it was downloaded, else the short one: all the snapshots at once, in parallel.
+            string folder = ImsBearings.DownloadedFolder ?? ExampleData.SetFolder(ImsBearings.Folder, ImsBearings.Sets[0]);
+            FilesNode files = new() { Format = FileFormats.Tsv, Pattern = "2004.*", Folder = folder, Row = 6, Column = Inputs };
+
+            // Each snapshot's features, worked out on every core at once: the snapshots don't depend on each other.
+            Function features = Define("features", "Vector{Float64}", 20, Inputs,
+                """
+                # Each bearing's strength (RMS vibration), then its spikiness (kurtosis: 3 for smooth vibration, more as
+                # impacts, a defect rolled over, come).
+                strength = vec(sqrt.(sum(abs2, X; dims = 1) ./ size(X, 1)))
+                spikiness = map(eachcol(X)) do x
+                    d = x .- sum(x) / length(x)
+                    length(x) * sum(d .^ 4) / sum(d .^ 2)^2
+                end
+                [strength; spikiness]
+                """,
+                ("X", "Matrix{Float64}"));
+            MapNode each = new() { InParallel = true, Row = 8, Column = Stage1 };
+            Function table = Define("table", "Matrix{Float64}", 6, Stage2,
+                "permutedims(reduce(hcat, F))  # a row a snapshot: bearings 1 to 4's strength, then their spikiness",
+                ("F", "Vector"));
+            SaveFile saved = new() { Path = System.IO.Path.Combine(ImsBearings.Folder, "bearing-features.csv"), Row = 20, Column = Stage2 };
+
+            // Wear: each bearing's strength over when new, smoothed over the last 6 snapshots.
+            Function wear = Define("wear", "Matrix{Float64}", 6, Stage3,
+                """
+                # Each bearing's strength over when new (the mean of the first 12 snapshots), a row a snapshot, smoothed over
+                # the last 6 (an hour of the full set). The snapshots of the rig stopped (close to 0) are left out.
+                S = T[vec(maximum(T[:, 1:4]; dims = 2)) .> 0.01, 1:4]
+                smooth = reduce(vcat, [sum(S[max(1, i - 5):i, :]; dims = 1) ./ length(max(1, i - 5):i) for i in axes(S, 1)])
+                smooth ./ (sum(S[1:12, :]; dims = 1) ./ 12)
+                """,
+                ("T", "Matrix{Float64}"));
+            Function byBearing = Define("by_bearing", "Matrix{Float64}", 6, Stage3 + 14, "permutedims(W)  # a row a bearing, a column a snapshot", ("W", "Matrix{Float64}"));
+            PlotNode heat = new() { Title = "Each bearing's wear over the week (rows: bearings 1 to 4)", Kind = "Heatmap", Row = 6, Column = Stage3 + 30 };
+            Function worst = Define("worst", "Vector{Float64}", 20, Stage3 + 14, "vec(maximum(W; dims = 2))  # the most worn bearing's, snapshot by snapshot", ("W", "Matrix{Float64}"));
+            PlotNode line = new() { Title = "Wear: the most worn bearing's strength over when new", Kind = "Line", Row = 22, Column = Stage3 + 30 };
+
+            // With every snapshot at hand, when each bearing wore for good: hindsight a stream doesn't have.
+            Function onset = Define("onset", Function.AnyType, 34, Stage3,
+                """
+                # When each bearing got 10% stronger than when new for good: after its last snapshot not above that. A stream
+                # can only say it got stronger, not that it never calmed down again.
+                names = basename.(files.paths)[vec(maximum(T[:, 1:4]; dims = 2)) .> 0.01]
+                join(map(1:4) do b
+                    i = something(findlast(<=(1.1), W[:, b]), 0)
+                    i == size(W, 1) ? "bearing $b: not worn" :
+                        "bearing $b: worn from $(names[i + 1]), $(size(W, 1) - i) snapshots before the end, at most $(round(maximum(W[:, b]); digits = 1))×"
+                end, "\n")
+                """,
+                ("files", Function.AnyType), ("T", "Matrix{Float64}"), ("W", "Matrix{Float64}"));
+            DisplayNode shown = Shown(34, Stage3 + 16);
+
+            return Design(
+                [files, features, each, table, saved, wear, byBearing, heat, worst, line, onset, shown],
+                (files, each, "items"), (features, each, "f"), (each, table, 0), (table, saved, 0),
+                (table, wear, 0), (wear, byBearing, 0), (byBearing, heat, "y"), (wear, worst, 0), (worst, line, "y"),
+                (files, onset, 0), (table, onset, 1), (wear, onset, 2), (onset, shown, 0));
         }
 
         private static MainViewModel.DesignDocument EarthquakeDetector()

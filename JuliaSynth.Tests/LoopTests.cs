@@ -104,8 +104,8 @@ namespace JuliaSynth.Tests
                 string[] parts = plain.Split("# The loop:");
                 Assert.Equal(2, parts.Length);
                 Assert.Contains("B1 = zeros(", parts[0]);
-                Assert.Contains($"for _path in JuliaSynthFiles(raw\"{Frames}\", r\"^.*\\.csv$\"i, path -> readdlm(path, ',', Float64)).paths", parts[1]);
-                Assert.Contains("    global frame1 = (path -> readdlm(path, ',', Float64))(_path)", parts[1]);
+                Assert.Contains($"for _path in JuliaSynthFiles(raw\"{Frames}\", r\"^.*\\.csv$\"i, path -> _jsynth_read_numbers(path, ',', Float64)).paths", parts[1]);
+                Assert.Contains("    global frame1 = (path -> _jsynth_read_numbers(path, ',', Float64))(_path)", parts[1]);
                 Assert.Contains("    global add_out = add(B1, frame1)", parts[1]);
                 Assert.EndsWith("    global B1 = add_out\nend\n", parts[1]);
 
