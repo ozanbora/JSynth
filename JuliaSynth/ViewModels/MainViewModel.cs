@@ -636,7 +636,7 @@ public partial class MainViewModel : ReactiveObject
     public ReactiveCommand<RxVoid, RxVoid> Duplicate { get; }
 
     /// <summary>
-    /// Moves the view with the pointer: dragging the canvas by <paramref name="offset"/> (Ctrl + drag).
+    /// Moves the view with the pointer: dragging the canvas by <paramref name="offset"/> (a drag on the empty canvas).
     /// </summary>
     public void PanBy(Vector offset)
     {

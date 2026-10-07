@@ -71,18 +71,49 @@ namespace JuliaSynth.Tests
                 window.Show();
 
                 // Far from the starting design's nodes.
-                window.MouseDown(new Point(900, 500), MouseButton.Left, RawInputModifiers.Control);
-                window.MouseMove(new Point(850, 440), RawInputModifiers.Control | RawInputModifiers.LeftMouseButton);
-                window.MouseUp(new Point(850, 440), MouseButton.Left, RawInputModifiers.Control);
+                window.MouseDown(new Point(900, 500), MouseButton.Left);
+                window.MouseMove(new Point(850, 440), RawInputModifiers.LeftMouseButton);
+                window.MouseUp(new Point(850, 440), MouseButton.Left);
 
                 // Dragging left and up shows more of the right and the bottom.
                 Assert.Equal(new Vector(350, 360), viewModel.ScrollViewerOffset);
 
-                // Without Ctrl, a drag on the empty canvas selects (a box) and doesn't pan.
-                window.MouseDown(new Point(900, 500), MouseButton.Left, RawInputModifiers.None);
-                window.MouseMove(new Point(850, 440), RawInputModifiers.LeftMouseButton);
-                window.MouseUp(new Point(850, 440), MouseButton.Left, RawInputModifiers.None);
+                // With Ctrl, a drag on the empty canvas selects (a box) and doesn't pan.
+                window.MouseDown(new Point(900, 500), MouseButton.Left, RawInputModifiers.Control);
+                window.MouseMove(new Point(850, 440), RawInputModifiers.Control | RawInputModifiers.LeftMouseButton);
+                window.MouseUp(new Point(850, 440), MouseButton.Left, RawInputModifiers.Control);
                 Assert.Equal(new Vector(350, 360), viewModel.ScrollViewerOffset);
+                window.Close();
+            });
+        }
+
+        [Fact]
+        public void Ctrl_and_dragging_a_box_selects_the_nodes_in_it_and_a_click_on_the_empty_canvas_clears_them()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new();
+                Window window = new() { Content = new MainView(), DataContext = viewModel, Width = 1000, Height = 700 };
+                window.Show();
+                MainViewModel.SelectOnly(null);
+
+                // A box around the first node.
+                Controls.Node node = window.GetVisualDescendants().OfType<Controls.Node>().First(n => n.IsVisible && n.Bounds.Width > 0);
+                Point topLeft = node.TranslatePoint(new Point(-10, -10), window)!.Value;
+                Point bottomRight = node.TranslatePoint(new Point(node.Bounds.Width + 10, node.Bounds.Height + 10), window)!.Value;
+                Vector offset = viewModel.ScrollViewerOffset;
+                window.MouseDown(topLeft, MouseButton.Left, RawInputModifiers.Control);
+                window.MouseMove(bottomRight, RawInputModifiers.Control | RawInputModifiers.LeftMouseButton);
+                window.MouseUp(bottomRight, MouseButton.Left, RawInputModifiers.Control);
+                Assert.True(((Model.Node)node.DataContext!).IsSelected);
+                Assert.Equal(offset, viewModel.ScrollViewerOffset);
+
+                // A plain click there, without a drag: nothing selected, nothing moved.
+                window.MouseDown(topLeft, MouseButton.Left);
+                window.MouseUp(topLeft, MouseButton.Left);
+                Assert.DoesNotContain(MainViewModel.Nodes, n => n.IsSelected);
+                Assert.Equal(offset, viewModel.ScrollViewerOffset);
                 window.Close();
             });
         }

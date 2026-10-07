@@ -11,8 +11,9 @@ using System.Linq;
 namespace JuliaSynth.Controls
 {
     /// <summary>
-    /// Selecting nodes with a box dragged on the empty canvas; a click on the empty canvas clears
-    /// the selection. Clicks on nodes are handled by the nodes themselves.
+    /// Selecting nodes with a box Ctrl+dragged on the empty canvas (Ctrl+Shift: added to the selection). A plain drag
+    /// there pans the canvas, and a plain click clears the selection: see MainView. Clicks on nodes are handled by the
+    /// nodes themselves.
     /// </summary>
     public partial class DesignerGrid
     {
@@ -36,14 +37,19 @@ namespace JuliaSynth.Controls
         {
             base.OnPointerPressed(e);
 
-            // Ctrl+drag pans the canvas (handled by the scroll viewer); leave it alone.
-            if (e.Handled || e.KeyModifiers.HasFlag(KeyModifiers.Control) || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            if (e.Handled || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             {
                 return;
             }
 
             // Keyboard shortcuts (Delete, Ctrl+A) need the focus somewhere in the window.
             _ = Focus();
+
+            // A plain drag pans the canvas (the scroll viewer's, and a click there clears the selection); Ctrl selects.
+            if (!e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                return;
+            }
 
             _isSelecting = true;
             _addToSelection = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
@@ -81,7 +87,7 @@ namespace JuliaSynth.Controls
 
             if (!isBox)
             {
-                // A plain click on the empty canvas.
+                // A Ctrl+click on the empty canvas.
                 if (!_addToSelection)
                 {
                     MainViewModel.SelectOnly(null);

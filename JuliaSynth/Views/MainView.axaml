@@ -39,7 +39,7 @@
                     Offset="{ Binding Path=ScrollViewerOffset, Mode=TwoWay}"
                     AllowAutoHide="True"
                     >
-        <!-- Ctrl + drag pans and Ctrl + wheel zooms: see MainView.axaml.cs. -->
+        <!-- A drag pans, Ctrl + drag selects with a box, and Ctrl + wheel zooms: see MainView.axaml.cs. -->
         <LayoutTransformControl>
           <LayoutTransformControl.LayoutTransform>
             <ScaleTransform ScaleX="{Binding Path=Scale, Mode=OneWay}"

@@ -16,8 +16,11 @@ public partial class MainView : UserControl
 
     private MainViewModel? _viewModel;
 
-    // Where a Ctrl + drag pan was last, relative to the scroll viewer; null when not panning.
+    // Where a pan (a drag on the empty canvas) was last, relative to the scroll viewer; null when not panning.
     private Point? _panPoint;
+
+    // Whether the pan went anywhere: if not, it was a click, which clears the selection.
+    private bool _panMoved;
 
     public MainView()
     {
@@ -26,7 +29,8 @@ public partial class MainView : UserControl
         // Ctrl + wheel zooms. Seen on the way down (tunnel), before the scroll viewer scrolls with it.
         CanvasScroll.AddHandler(PointerWheelChangedEvent, Canvas_PointerWheelChanged, RoutingStrategies.Tunnel);
 
-        // Ctrl + drag pans; presses on nodes and ports are theirs (handled), so only the empty canvas pans.
+        // A drag pans; presses on nodes and ports are theirs (handled), and Ctrl + drag selects, so only a plain drag
+        // on the empty canvas pans.
         CanvasScroll.PointerPressed += Canvas_PointerPressed;
         CanvasScroll.PointerMoved += Canvas_PointerMoved;
         CanvasScroll.PointerReleased += Canvas_PointerReleased;
@@ -91,17 +95,29 @@ public partial class MainView : UserControl
 
     private void Canvas_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (e.KeyModifiers == KeyModifiers.Control && e.GetCurrentPoint(CanvasScroll).Properties.IsLeftButtonPressed)
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.GetCurrentPoint(CanvasScroll).Properties.IsLeftButtonPressed)
         {
             _panPoint = e.GetPosition(CanvasScroll);
+            _panMoved = false;
+            e.Pointer.Capture(CanvasScroll);
+            e.Handled = true;
         }
     }
 
     private void Canvas_PointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_panPoint is Point last && e.KeyModifiers == KeyModifiers.Control)
+        if (_panPoint is Point last)
         {
             Point point = e.GetPosition(CanvasScroll);
+
+            // A few pixels of a click's wobble aren't a drag.
+            if (!_panMoved && Math.Abs(point.X - last.X) + Math.Abs(point.Y - last.Y) < 4)
+            {
+                return;
+            }
+
+            _panMoved = true;
+            CanvasScroll.Cursor = new Cursor(StandardCursorType.SizeAll);
             _viewModel?.PanBy(point - last);
             _panPoint = point;
         }
@@ -109,8 +125,20 @@ public partial class MainView : UserControl
 
     private void Canvas_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        // Always end the pan, even when Ctrl was let go first.
+        if (_panPoint is null)
+        {
+            return;
+        }
+
+        // A click without a drag clears the selection, unless Shift keeps it.
+        if (!_panMoved && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            MainViewModel.SelectOnly(null);
+        }
+
         _panPoint = null;
+        CanvasScroll.Cursor = null;
+        e.Pointer.Capture(null);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
