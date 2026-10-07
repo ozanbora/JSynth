@@ -247,6 +247,12 @@ public partial class MainViewModel : ReactiveObject
     {
         if (e.PropertyName == nameof(Node.IsSelected))
         {
+            // A node selected: the wire no longer is.
+            if (sender is Node { IsSelected: true })
+            {
+                _selectedConnection = null;
+            }
+
             SelectionChanged?.Invoke();
         }
 
@@ -366,8 +372,35 @@ public partial class MainViewModel : ReactiveObject
             ?? Enumerable.Range(1, int.MaxValue).Select(i => $"f{i}").First(n => !used.Contains(n));
     }
 
+    private static Connection? _selectedConnection;
+
+    /// <summary>
+    /// The wire selected, drawn standing out from the others; selecting it unselects the nodes, and selecting a node
+    /// unselects it.
+    /// </summary>
+    public static Connection? SelectedConnection
+    {
+        get => _selectedConnection is Connection selected && Connections.Contains(selected) ? selected : null;
+        set
+        {
+            if (value is not null)
+            {
+                SelectOnly(null);
+            }
+
+            _selectedConnection = value;
+            SelectionChanged?.Invoke();
+        }
+    }
+
     public static void SelectOnly(Node? node)
     {
+        if (_selectedConnection is not null)
+        {
+            _selectedConnection = null;
+            SelectionChanged?.Invoke();
+        }
+
         foreach (Node other in Nodes)
         {
             other.IsSelected = other == node;
@@ -379,8 +412,17 @@ public partial class MainViewModel : ReactiveObject
         }
     }
 
+    /// <summary>
+    /// Deletes the selected nodes, or the selected wire.
+    /// </summary>
     public static void DeleteSelectedNodes()
     {
+        if (SelectedConnection is Connection wire)
+        {
+            SelectedConnection = null;
+            Disconnect(wire);
+        }
+
         Nodes.RemoveAll(Nodes.Where(n => n.IsSelected).ToList());
     }
     #endregion

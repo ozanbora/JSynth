@@ -19,6 +19,9 @@ namespace JuliaSynth.Controls
     {
         private const double SnapDistance = 16;
 
+        // How wide a wire is to a click: a few pixels either side of it.
+        private const double WireReach = 10;
+
         private static readonly IBrush InvalidWireBrush = new ImmutableSolidColorBrush(Color.Parse("#E07A7A"));
 
         private readonly HashSet<Connector> _connectors = [];
@@ -54,6 +57,7 @@ namespace JuliaSynth.Controls
         {
             base.OnAttachedToVisualTree(e);
             MainViewModel.Connections.CollectionChanged += ConnectionsChanged;
+            MainViewModel.SelectionChanged += InvalidateWires;
             LayoutUpdated += OnLayoutUpdated;
         }
 
@@ -61,6 +65,7 @@ namespace JuliaSynth.Controls
         {
             base.OnDetachedFromVisualTree(e);
             MainViewModel.Connections.CollectionChanged -= ConnectionsChanged;
+            MainViewModel.SelectionChanged -= InvalidateWires;
             LayoutUpdated -= OnLayoutUpdated;
         }
 
@@ -213,6 +218,10 @@ namespace JuliaSynth.Controls
         private sealed class WiresRenderer(DesignerGrid grid) : Control
         {
             private const double Thickness = 2.5;
+            private const double HighlightThickness = 4;
+            private const double FadedOpacity = 0.3;
+
+            private static readonly IPen Glow = new ImmutablePen(new ImmutableSolidColorBrush(SelectionColor, 0.6), 10);
 
             /// <summary>
             /// The node's color, adjusted to stand out from the canvas (a dark blue wire on the dark
@@ -226,40 +235,25 @@ namespace JuliaSynth.Controls
 
             public override void Render(DrawingContext context)
             {
-                Dictionary<string, Connector> outputs = [];
-                Dictionary<string, Connector> inputs = [];
-                foreach (Connector connector in grid._connectors)
+                // The selected wire and those of the selected nodes stand out: drawn last, bolder, with a glow of the
+                // blue of a selected node's border. With a wire selected, the others fade.
+                bool wireSelected = MainViewModel.SelectedConnection is not null;
+                foreach (Wire wire in grid.Wires().OrderBy(w => w.Highlighted))
                 {
-                    if (connector.Parameter is Parameter parameter)
+                    // A type changed after wiring (or a mapped function's parameters): keep the wire but flag it.
+                    // A wire into a next port carries the value on to the next file: dashed, as it goes back.
+                    IBrush brush = wire.Fits ? WireBrush(wire.Source.Color) : InvalidWireBrush;
+                    DashStyle? dashes = !wire.Fits ? new DashStyle([2, 2], 0) : wire.Back ? new DashStyle([3, 1.5], 0) : null;
+                    if (wire.Highlighted)
                     {
-                        inputs[parameter.ID] = connector;
+                        context.DrawGeometry(null, Glow, wire.Geometry);
+                        context.DrawGeometry(null, new Pen(brush, HighlightThickness, dashes), wire.Geometry);
                     }
-                    else if (connector.Owner is Model.Node node)
+                    else
                     {
-                        outputs[$"{node.ID}/{connector.Output}"] = connector;
-                    }
-                }
-
-                foreach (Connection connection in MainViewModel.Connections)
-                {
-                    if (outputs.TryGetValue($"{connection.SourceID}/{connection.Output}", out Connector? output)
-                        && inputs.TryGetValue(connection.ParameterID, out Connector? input)
-                        && output.Owner is Model.Node source
-                        && input.Parameter is Parameter parameter
-                        && input.Owner is Model.Node target)
-                    {
-                        // A type changed after wiring (or a mapped function's parameters): keep the wire but flag it.
-                        // A wire into a next port carries the value on to the next file: dashed, as it goes back.
-                        Pen pen = Wiring.Fits(source, target, parameter, connection.Output)
-                            ? new Pen(WireBrush(source.Color), Thickness, parameter == target.Next ? new DashStyle([3, 1.5], 0) : null)
-                            : new Pen(InvalidWireBrush, Thickness, new DashStyle([2, 2], 0));
-                        if (parameter == target.Next)
+                        using (context.PushOpacity(wireSelected ? FadedOpacity : 1))
                         {
-                            DrawBackWire(context, pen, output.CenterIn(grid), input.CenterIn(grid));
-                        }
-                        else
-                        {
-                            DrawWire(context, pen, output.CenterIn(grid), input.CenterIn(grid));
+                            context.DrawGeometry(null, new Pen(brush, Thickness, dashes), wire.Geometry);
                         }
                     }
                 }
@@ -276,57 +270,107 @@ namespace JuliaSynth.Controls
                     Pen pen = new(brush, Thickness, new DashStyle([2, 2], 0));
 
                     // Always draw from the output side so the curve leaves and enters horizontally.
-                    if (port.IsInput)
-                    {
-                        DrawWire(context, pen, looseEnd, fixedEnd);
-                    }
-                    else
-                    {
-                        DrawWire(context, pen, fixedEnd, looseEnd);
-                    }
+                    context.DrawGeometry(null, pen, port.IsInput ? WireGeometry(looseEnd, fixedEnd) : WireGeometry(fixedEnd, looseEnd));
                 }
             }
+        }
 
-            /// <summary>
-            /// A wire carrying a value back to an input for the next file: out to the right of
-            /// <paramref name="from"/>, along under both nodes, and into <paramref name="to"/> from the left.
-            /// </summary>
-            private static void DrawBackWire(DrawingContext context, Pen pen, Point from, Point to)
+        /// <summary>
+        /// A wire as drawn: its connection and nodes, whether its types fit, whether it goes back to a next port, whether
+        /// it stands out (selected, or a selected node's), and its path.
+        /// </summary>
+        private sealed record Wire(Connection Connection, Model.Node Source, bool Fits, bool Back, bool Highlighted, Geometry Geometry);
+
+        /// <summary>
+        /// The wires between the connectors on the canvas.
+        /// </summary>
+        private IEnumerable<Wire> Wires()
+        {
+            Dictionary<string, Connector> outputs = [];
+            Dictionary<string, Connector> inputs = [];
+            foreach (Connector connector in _connectors)
             {
-                // Below the ports by more than a node's height, so the wire passes under them.
-                double below = Math.Max(from.Y, to.Y) + 110;
-                const double Turn = 30;
-
-                StreamGeometry geometry = new();
-                using (StreamGeometryContext g = geometry.Open())
+                if (connector.Parameter is Parameter parameter)
                 {
-                    g.BeginFigure(from, false);
-                    g.CubicBezierTo(new Point(from.X + (2 * Turn), from.Y), new Point(from.X + (2 * Turn), below), new Point(from.X, below));
-                    g.LineTo(new Point(to.X, below));
-                    g.CubicBezierTo(new Point(to.X - (2 * Turn), below), new Point(to.X - (2 * Turn), to.Y), to);
-                    g.EndFigure(false);
+                    inputs[parameter.ID] = connector;
                 }
-
-                context.DrawGeometry(null, pen, geometry);
+                else if (connector.Owner is Model.Node node)
+                {
+                    outputs[$"{node.ID}/{connector.Output}"] = connector;
+                }
             }
 
-            /// <summary>
-            /// Bezier curve leaving <paramref name="from"/> to the right and entering <paramref name="to"/> from the left.
-            /// </summary>
-            private static void DrawWire(DrawingContext context, Pen pen, Point from, Point to)
+            Connection? selected = MainViewModel.SelectedConnection;
+            foreach (Connection connection in MainViewModel.Connections)
             {
-                double handle = Math.Max(40, Math.Abs(to.X - from.X) / 2);
-
-                StreamGeometry geometry = new();
-                using (StreamGeometryContext g = geometry.Open())
+                if (outputs.TryGetValue($"{connection.SourceID}/{connection.Output}", out Connector? output)
+                    && inputs.TryGetValue(connection.ParameterID, out Connector? input)
+                    && output.Owner is Model.Node source
+                    && input.Parameter is Parameter parameter
+                    && input.Owner is Model.Node target)
                 {
-                    g.BeginFigure(from, false);
-                    g.CubicBezierTo(new Point(from.X + handle, from.Y), new Point(to.X - handle, to.Y), to);
-                    g.EndFigure(false);
+                    bool back = parameter == target.Next;
+                    Point from = output.CenterIn(this);
+                    Point to = input.CenterIn(this);
+                    yield return new Wire(
+                        connection,
+                        source,
+                        Wiring.Fits(source, target, parameter, connection.Output),
+                        back,
+                        connection == selected || source.IsSelected || target.IsSelected,
+                        back ? BackWireGeometry(from, to) : WireGeometry(from, to));
                 }
-
-                context.DrawGeometry(null, pen, geometry);
             }
+        }
+
+        /// <summary>
+        /// The wire passing within reach of <paramref name="point"/>, the nearest drawn on top; null when none does.
+        /// </summary>
+        internal Connection? WireAt(Point point)
+        {
+            Pen reach = new(Brushes.Black, WireReach);
+            return Wires().OrderBy(w => w.Highlighted).LastOrDefault(w => w.Geometry.StrokeContains(reach, point))?.Connection;
+        }
+
+        /// <summary>
+        /// A wire carrying a value back to an input for the next file: out to the right of
+        /// <paramref name="from"/>, along under both nodes, and into <paramref name="to"/> from the left.
+        /// </summary>
+        private static StreamGeometry BackWireGeometry(Point from, Point to)
+        {
+            // Below the ports by more than a node's height, so the wire passes under them.
+            double below = Math.Max(from.Y, to.Y) + 110;
+            const double Turn = 30;
+
+            StreamGeometry geometry = new();
+            using (StreamGeometryContext g = geometry.Open())
+            {
+                g.BeginFigure(from, false);
+                g.CubicBezierTo(new Point(from.X + (2 * Turn), from.Y), new Point(from.X + (2 * Turn), below), new Point(from.X, below));
+                g.LineTo(new Point(to.X, below));
+                g.CubicBezierTo(new Point(to.X - (2 * Turn), below), new Point(to.X - (2 * Turn), to.Y), to);
+                g.EndFigure(false);
+            }
+
+            return geometry;
+        }
+
+        /// <summary>
+        /// Bezier curve leaving <paramref name="from"/> to the right and entering <paramref name="to"/> from the left.
+        /// </summary>
+        private static StreamGeometry WireGeometry(Point from, Point to)
+        {
+            double handle = Math.Max(40, Math.Abs(to.X - from.X) / 2);
+
+            StreamGeometry geometry = new();
+            using (StreamGeometryContext g = geometry.Open())
+            {
+                g.BeginFigure(from, false);
+                g.CubicBezierTo(new Point(from.X + handle, from.Y), new Point(to.X - handle, to.Y), to);
+                g.EndFigure(false);
+            }
+
+            return geometry;
         }
     }
 }

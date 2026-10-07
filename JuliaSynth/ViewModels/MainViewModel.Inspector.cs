@@ -15,9 +15,9 @@ public partial class MainViewModel
     private Function? _inspected;
 
     /// <summary>
-    /// A node was selected or unselected.
+    /// A node or a wire was selected or unselected.
     /// </summary>
-    private static event Action? SelectionChanged;
+    internal static event Action? SelectionChanged;
 
     /// <summary>
     /// The nodes were replaced by a design's: opened, undone, redone or new.

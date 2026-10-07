@@ -119,6 +119,49 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void A_click_on_a_wire_selects_it_and_delete_removes_it()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new();
+                Window window = new() { Content = new MainView(), DataContext = viewModel, Width = 1000, Height = 700 };
+                window.Show();
+                MainViewModel.SelectOnly(MainViewModel.Nodes[0]);
+
+                // The wire from x into f: halfway along, the curve is halfway between its ends.
+                Model.Function f = MainViewModel.Nodes.OfType<Model.Function>().Single(n => n.Name == "f");
+                Model.Connection wire = MainViewModel.ConnectionTo(f.Parameters[0])!;
+                Controls.Connector[] ports = [.. window.GetVisualDescendants().OfType<Controls.Connector>()];
+                Point from = Center(ports.Single(c => !c.IsInput && c.Owner?.ID == wire.SourceID && c.Output is null));
+                Point to = Center(ports.Single(c => c.Parameter == f.Parameters[0]));
+                Point middle = new((from.X + to.X) / 2, (from.Y + to.Y) / 2);
+                Vector offset = viewModel.ScrollViewerOffset;
+
+                // Even a few pixels off it: the wire selected, the node no longer, and the canvas not panned.
+                window.MouseDown(middle + new Point(0, 3), MouseButton.Left);
+                window.MouseUp(middle + new Point(0, 3), MouseButton.Left);
+                Assert.Same(wire, MainViewModel.SelectedConnection);
+                Assert.DoesNotContain(MainViewModel.Nodes, n => n.IsSelected);
+                Assert.Equal(offset, viewModel.ScrollViewerOffset);
+
+                // Selecting a node unselects the wire; selecting the wire again and deleting removes it, not its nodes.
+                MainViewModel.SelectOnly(f);
+                Assert.Null(MainViewModel.SelectedConnection);
+                window.MouseDown(middle, MouseButton.Left);
+                window.MouseUp(middle, MouseButton.Left);
+                int nodes = MainViewModel.Nodes.Count;
+                ((System.Windows.Input.ICommand)viewModel.DeleteSelected).Execute(null);
+                Assert.DoesNotContain(wire, MainViewModel.Connections);
+                Assert.Equal(nodes, MainViewModel.Nodes.Count);
+                Assert.Null(MainViewModel.SelectedConnection);
+                window.Close();
+
+                Point Center(Controls.Connector port) => port.CenterIn(window);
+            });
+        }
+
+        [Fact]
         public void Dragging_the_top_edge_of_the_output_resizes_it()
         {
             Ui.Run(() =>

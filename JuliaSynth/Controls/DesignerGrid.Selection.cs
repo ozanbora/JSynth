@@ -11,16 +11,19 @@ using System.Linq;
 namespace JuliaSynth.Controls
 {
     /// <summary>
-    /// Selecting nodes with a box Ctrl+dragged on the empty canvas (Ctrl+Shift: added to the selection). A plain drag
-    /// there pans the canvas, and a plain click clears the selection: see MainView. Clicks on nodes are handled by the
-    /// nodes themselves.
+    /// Selecting nodes with a box Ctrl+dragged on the empty canvas (Ctrl+Shift: added to the selection), and a wire
+    /// with a click on it. A plain drag there pans the canvas, and a plain click clears the selection: see MainView.
+    /// Clicks on nodes are handled by the nodes themselves.
     /// </summary>
     public partial class DesignerGrid
     {
         private const double BoxThreshold = 3;
 
-        private static readonly IBrush BoxFill = new ImmutableSolidColorBrush(Color.Parse("#6F9FD8"), 0.12);
-        private static readonly IPen BoxPen = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#6F9FD8")), 1);
+        // The blue of a selected node's border.
+        private static readonly Color SelectionColor = Color.Parse("#6F9FD8");
+
+        private static readonly IBrush BoxFill = new ImmutableSolidColorBrush(SelectionColor, 0.12);
+        private static readonly IPen BoxPen = new ImmutablePen(new ImmutableSolidColorBrush(SelectionColor), 1);
 
         private SelectionRenderer? _selectionRenderer;
         private bool _isSelecting;
@@ -45,9 +48,16 @@ namespace JuliaSynth.Controls
             // Keyboard shortcuts (Delete, Ctrl+A) need the focus somewhere in the window.
             _ = Focus();
 
-            // A plain drag pans the canvas (the scroll viewer's, and a click there clears the selection); Ctrl selects.
+            // A plain drag pans the canvas (the scroll viewer's, and a click there clears the selection), unless it
+            // starts on a wire, which selects the wire; Ctrl selects nodes.
             if (!e.KeyModifiers.HasFlag(KeyModifiers.Control))
             {
+                if (WireAt(e.GetPosition(this)) is Model.Connection wire)
+                {
+                    MainViewModel.SelectedConnection = wire;
+                    e.Handled = true;
+                }
+
                 return;
             }
 
