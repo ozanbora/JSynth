@@ -2,111 +2,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="JuliaSynth.Views.ZipNode"
 
-             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
              xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
 
              x:DataType="jsModel:ZipNode"
-             Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
              >
   <Design.DataContext>
     <jsModel:ZipNode />
   </Design.DataContext>
 
-  <UserControl.Resources>
-    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
-  </UserControl.Resources>
-
-  <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
-          Classes="node"
-          Classes.selected="{Binding Path=IsSelected}"
-          >
-    <Grid RowDefinitions="30,48,*"
-          ColumnDefinitions="40,*">
-
-      <TextBlock Grid.Column="0"
-                 Grid.Row="0"
-                 Grid.RowSpan="2"
-                 Classes="glyph"
-                 Text="⋈"
-                 />
-
-      <StackPanel Grid.Row="0"
-                  Grid.Column="1"
-                  Classes="nodeActions">
-
-        <jsControls:ResultBadge/>
-
-        <TextBlock Classes="nodeInfo"
-                   Text="𝑖"
-                   >
-          <ToolTip.Tip>
-            <TextBlock TextWrapping="Wrap"
-                       MaxWidth="360"
-                       Text="Zip: several streams at once, in step. Wire in folders going through their files one at a time (Files nodes or Watch folders); their files are matched by name, e.g. the same minute of several stations. For each name every folder has, it gives their contents as a vector, in the order of the ports. A name not in every folder is passed over, and a watched file waits until every folder has it. Wiring the last port adds another."/>
-          </ToolTip.Tip>
-        </TextBlock>
-
-        <Button Classes="nodeAction danger"
-                Content="✕"
-                ToolTip.Tip="Delete"
-                Click="Delete_Click"
-                />
-
-      </StackPanel>
-
-      <!-- Output -->
-      <jsControls:Connector Grid.Row="1"
-                            Grid.Column="1"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top"
-                            ZIndex="3"
-                            Margin="0 0 -8 0"/>
-
-      <DockPanel Grid.Row="1"
-                 Grid.Column="1"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Bottom"
-                 Margin="4 0 8 0"
-                 >
-        <TextBlock DockPanel.Dock="Left"
-                   FontSize="18"
-                   Text="zip"
-                   />
-        <TextBlock Classes="caption"
-                   VerticalAlignment="Bottom"
-                   Margin="4 0 0 2"
-                   Text="{Binding Path=OutputType}"
-                   />
-      </DockPanel>
-
-      <!-- Inputs: the folders, a port each; wiring the last adds another -->
-      <ItemsControl Grid.Row="2"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="2"
-                    ItemsSource="{Binding Path=Inputs}"
-                    ClipToBounds="False"
-                    >
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="jsModel:Parameter">
-            <Grid Height="20">
-              <jsControls:Connector HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    ZIndex="3"
-                                    Margin="-8 0 0 0"
-                                    />
-              <TextBlock HorizontalAlignment="Left"
-                         Margin="16 0 8 0"
-                         Classes="caption"
-                         TextTrimming="CharacterEllipsis"
-                         Text="{Binding Path=Signature}"
-                         />
-            </Grid>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-
-    </Grid>
-  </Border>
+  <!-- Inputs: the folders, a port each; wiring the last adds another -->
+  <jsControls:NodeBody Glyph="⋈"
+                       Title="zip"
+                       Info="Zip: several streams at once, in step. Wire in folders going through their files one at a time (Files nodes or Watch folders); their files are matched by name, e.g. the same minute of several stations. For each name every folder has, it gives their contents as a vector, in the order of the ports. A name not in every folder is passed over, and a watched file waits until every folder has it. Wiring the last port adds another."
+                       />
 
 </UserControl>

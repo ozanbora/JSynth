@@ -2,111 +2,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="JuliaSynth.Views.WhenNode"
 
-             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
              xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
              xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
 
              x:DataType="jsModel:WhenNode"
-             Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
              >
   <Design.DataContext>
     <jsModel:WhenNode />
   </Design.DataContext>
 
-  <UserControl.Resources>
-    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
-  </UserControl.Resources>
-
-  <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
-          Classes="node"
-          Classes.selected="{Binding Path=IsSelected}"
-          >
-    <Grid RowDefinitions="30,48,*"
-          ColumnDefinitions="40,*">
-
-      <TextBlock Grid.Column="0"
-                 Grid.Row="0"
-                 Grid.RowSpan="2"
-                 Classes="glyph"
-                 Text="if"
-                 />
-
-      <StackPanel Grid.Row="0"
-                  Grid.Column="1"
-                  Classes="nodeActions">
-
-        <jsControls:ResultBadge/>
-
-        <TextBlock Classes="nodeInfo"
-                   Text="𝑖"
-                   >
-          <ToolTip.Tip>
-            <TextBlock TextWrapping="Wrap"
-                       MaxWidth="360"
-                       Text="Only when: passes the value on when the condition is true. When it is false, the nodes after it are not worked out: going through files one at a time, they keep the values they had, so an alarm keeps the first time it went off."/>
-          </ToolTip.Tip>
-        </TextBlock>
-
-        <Button Classes="nodeAction danger"
-                Content="✕"
-                ToolTip.Tip="Delete"
-                Click="Delete_Click"
-                />
-
-      </StackPanel>
-
-      <!-- Output -->
-      <jsControls:Connector Grid.Row="1"
-                            Grid.Column="1"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top"
-                            ZIndex="3"
-                            Margin="0 0 -8 0"/>
-
-      <DockPanel Grid.Row="1"
-                 Grid.Column="1"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Bottom"
-                 Margin="4 0 8 0"
-                 >
-        <TextBlock DockPanel.Dock="Left"
-                   FontSize="18"
-                   Text="only when"
-                   />
-        <TextBlock Classes="caption"
-                   VerticalAlignment="Bottom"
-                   Margin="4 0 0 2"
-                   Text="{Binding Path=OutputType}"
-                   />
-      </DockPanel>
-
-      <!-- Inputs: the value, and the condition on which it passes -->
-      <ItemsControl Grid.Row="2"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="2"
-                    ItemsSource="{Binding Path=Inputs}"
-                    ClipToBounds="False"
-                    >
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="jsModel:Parameter">
-            <Grid Height="20">
-              <jsControls:Connector HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    ZIndex="3"
-                                    Margin="-8 0 0 0"
-                                    />
-              <TextBlock HorizontalAlignment="Left"
-                         Margin="16 0 8 0"
-                         Classes="caption"
-                         TextTrimming="CharacterEllipsis"
-                         Text="{Binding Path=Signature}"
-                         />
-            </Grid>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-
-    </Grid>
-  </Border>
+  <!-- Inputs: the value, and the condition on which it passes -->
+  <jsControls:NodeBody Glyph="if"
+                       Title="only when"
+                       Info="Only when: passes the value on when the condition is true. When it is false, the nodes after it are not worked out: going through files one at a time, they keep the values they had, so an alarm keeps the first time it went off."
+                       />
 
 </UserControl>
