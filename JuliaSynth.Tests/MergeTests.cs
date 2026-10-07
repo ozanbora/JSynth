@@ -3,7 +3,6 @@ using JuliaSynth.Runtime;
 using JuliaSynth.ViewModels;
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -271,21 +270,12 @@ namespace JuliaSynth.Tests
                 ConcurrentQueue<Report> reports = new();
                 Task<RunResult> running = session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
 
-                async Task Until(Func<bool> condition, double seconds)
-                {
-                    Stopwatch clock = Stopwatch.StartNew();
-                    while (!condition() && clock.Elapsed < TimeSpan.FromSeconds(seconds))
-                    {
-                        await Task.Delay(50);
-                    }
-                }
-
                 // b's file first, then a's: in the order they came, whatever their names.
-                await Until(() => reports.Any(r => r.Id == a.ID && r.Text == WatchNode.WatchingText), 60);
+                _ = await Wait.Until(() => reports.Any(r => r.Id == a.ID && r.Text == WatchNode.WatchingText), 60);
                 File.WriteAllText(Path.Combine(B, "9.csv"), "90\n");
-                await Until(() => reports.Any(r => r.Id == design.Seen.ID), 30);
+                _ = await Wait.Until(() => reports.Any(r => r.Id == design.Seen.ID), 30);
                 File.WriteAllText(Path.Combine(A, "1.csv"), "1\n");
-                await Until(() => reports.Any(r => r.Id == design.Sums.ID), 30);
+                _ = await Wait.Until(() => reports.Any(r => r.Id == design.Sums.ID), 30);
                 Assert.Contains("91.0", reports.Last(r => r.Id == design.Sums.ID).Text);
                 Assert.Contains("90.0", reports.Last(r => r.Id == design.Seen.ID).Text);
                 Assert.Equal("a", reports.Last(r => r.Id == design.Folder.ID).Text);

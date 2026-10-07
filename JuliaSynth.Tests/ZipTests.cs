@@ -3,7 +3,6 @@ using JuliaSynth.Runtime;
 using JuliaSynth.ViewModels;
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -188,22 +187,13 @@ namespace JuliaSynth.Tests
                 ConcurrentQueue<Report> reports = new();
                 Task<RunResult> running = session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
 
-                async Task Until(Func<bool> condition, double seconds)
-                {
-                    Stopwatch clock = Stopwatch.StartNew();
-                    while (!condition() && clock.Elapsed < TimeSpan.FromSeconds(seconds))
-                    {
-                        await Task.Delay(50);
-                    }
-                }
-
                 // a's file alone: nothing yet, however long; its twin written: worked out.
-                await Until(() => reports.Any(r => r.Id == watch.ID && r.Text == WatchNode.WatchingText), 60);
+                _ = await Wait.Until(() => reports.Any(r => r.Id == watch.ID && r.Text == WatchNode.WatchingText), 60);
                 File.WriteAllText(Path.Combine(A, "1.csv"), "1\n");
-                await Until(() => reports.Any(r => r.Id == sum.ID), 1.5);
+                _ = await Wait.Until(() => reports.Any(r => r.Id == sum.ID), 1.5);
                 Assert.DoesNotContain(reports, r => r.Id == sum.ID);
                 File.WriteAllText(Path.Combine(B, "1.csv"), "10\n");
-                await Until(() => reports.Any(r => r.Id == sum.ID), 30);
+                _ = await Wait.Until(() => reports.Any(r => r.Id == sum.ID), 30);
                 Assert.Equal("11.0", reports.Last(r => r.Id == sum.ID).Text);
 
                 File.WriteAllText(stop, string.Empty);

@@ -183,16 +183,7 @@ namespace JuliaSynth.Tests
                 ConcurrentQueue<OutputLine> output = new();
                 Task<RunResult> running = session.RunAsync(script.Text, _folder, output.Enqueue, reports.Enqueue);
 
-                async Task Until(Func<bool> condition)
-                {
-                    Stopwatch clock = Stopwatch.StartNew();
-                    while (!condition() && clock.Elapsed < TimeSpan.FromSeconds(60))
-                    {
-                        await Task.Delay(50);
-                    }
-
-                    Assert.True(condition(), string.Join("\n", output.Select(l => l.Text)));
-                }
+                async Task Until(Func<bool> condition) => Assert.True(await Wait.Until(condition, 60), string.Join("\n", output.Select(l => l.Text)));
 
                 bool Total(string value) => reports.Any(r => r.Id == total.ID && r.Text.EndsWith(value));
 

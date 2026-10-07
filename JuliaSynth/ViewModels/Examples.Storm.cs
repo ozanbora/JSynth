@@ -17,7 +17,7 @@ namespace JuliaSynth.ViewModels
         /// The tide gauges along Florida's Gulf coast, south to north: their folders' names, NOAA station numbers and
         /// positions.
         /// </summary>
-        private static (string Name, int Station, double Latitude, double Longitude)[] HeleneGauges =>
+        private static readonly (string Name, int Station, double Latitude, double Longitude)[] HeleneGauges =
         [
             ("Key West", 8724580, 24.5557, -81.8079),
             ("Fort Myers", 8725520, 26.6478, -81.8711),
@@ -37,7 +37,7 @@ namespace JuliaSynth.ViewModels
         /// Helene's best-track positions from 25 to 28 September 2024 (UTC): every 6 hours, and at landfall (03:10 on the
         /// 27th, near Perry) and its other notable moments.
         /// </summary>
-        private static DateTime[] HeleneFixes => [.. new[]
+        private static readonly DateTime[] HeleneFixes = [.. new[]
         {
             "2024-09-25T00-00", "2024-09-25T06-00", "2024-09-25T12-00", "2024-09-25T18-00",
             "2024-09-26T00-00", "2024-09-26T06-00", "2024-09-26T12-00", "2024-09-26T18-00",
@@ -57,45 +57,39 @@ namespace JuliaSynth.ViewModels
 
         /// <summary>
         /// The six gauges' water levels during Hurricane Helene, a file an hour each, their tide tables, and the storm's
-        /// track, a file a position. Made on first use (in a class of its own): this part of <see cref="Examples"/> may be
-        /// set up after <see cref="All"/>, which takes it.
+        /// track, a file a position.
         /// </summary>
-        internal static ExampleData HeleneSurge => HeleneData.Value;
-
-        private static class HeleneData
+        internal static ExampleData HeleneSurge { get; } = new(
+            "Hurricane Helene surge",
+            "Hurricane Helene's storm surge along Florida's Gulf coast, 25 to 27 September 2024 (UTC): it came ashore near Perry "
+                + "at 03:10 on the 27th, a category 4. Six NOAA tide gauges, south to north: Key West, Fort Myers, St. Petersburg, "
+                + "Clearwater Beach, Cedar Key and Apalachicola, each in a folder of its own with a file an hour, named by the time "
+                + "it ends: the water level every 6 minutes (day of September, metres above mean lower low water). Their tide "
+                + "tables, in the folder Tides: the tide predicted for every 6 minutes of the 3 days. The storm's best track, in "
+                + "the folder Helene: a file a position (day of September, latitude, longitude, maximum wind in knots, pressure in "
+                + "hPa), named by its time.",
+            "Water levels and tide predictions from NOAA's Center for Operational Oceanographic Products and Services (CO-OPS), "
+                + "Tides and Currents, https://tidesandcurrents.noaa.gov, through its data API; verified data. The track from the "
+                + "National Hurricane Center's Atlantic hurricane database HURDAT2 (Landsea, C. W. and J. L. Franklin, 2013: "
+                + "Atlantic Hurricane Database Uncertainty and Presentation of a New Database Format. Mon. Wea. Rev., 141, "
+                + "3576-3592), https://www.nhc.noaa.gov/data/#hurdat. U.S. Government works (public domain). The readings are "
+                + "unchanged; times are written as days of September 2024, and the hours with no reading left empty.",
+            "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+            [
+                new("All",
+                    "The 3 days: 72 hours of each gauge, their tide tables and 16 of the storm's positions. 454 small files cut "
+                        + "from 13 downloads: a few seconds.",
+                    [
+                        .. HeleneGauges.SelectMany(g => HeleneHours.Select(h => $"{g.Name}/{h}.csv")),
+                        .. HeleneGauges.Select(g => $"{HeleneTides}/{g.Name}.csv"),
+                        .. HeleneFixes.Select(t => $"{HeleneTrack}/{NameOfTime(t)}.csv"),
+                    ],
+                    400_000),
+            ])
         {
-            internal static readonly ExampleData Value = new(
-                "Hurricane Helene surge",
-                "Hurricane Helene's storm surge along Florida's Gulf coast, 25 to 27 September 2024 (UTC): it came ashore near Perry "
-                    + "at 03:10 on the 27th, a category 4. Six NOAA tide gauges, south to north: Key West, Fort Myers, St. Petersburg, "
-                    + "Clearwater Beach, Cedar Key and Apalachicola, each in a folder of its own with a file an hour, named by the time "
-                    + "it ends: the water level every 6 minutes (day of September, metres above mean lower low water). Their tide "
-                    + "tables, in the folder Tides: the tide predicted for every 6 minutes of the 3 days. The storm's best track, in "
-                    + "the folder Helene: a file a position (day of September, latitude, longitude, maximum wind in knots, pressure in "
-                    + "hPa), named by its time.",
-                "Water levels and tide predictions from NOAA's Center for Operational Oceanographic Products and Services (CO-OPS), "
-                    + "Tides and Currents, https://tidesandcurrents.noaa.gov, through its data API; verified data. The track from the "
-                    + "National Hurricane Center's Atlantic hurricane database HURDAT2 (Landsea, C. W. and J. L. Franklin, 2013: "
-                    + "Atlantic Hurricane Database Uncertainty and Presentation of a New Database Format. Mon. Wea. Rev., 141, "
-                    + "3576-3592), https://www.nhc.noaa.gov/data/#hurdat. U.S. Government works (public domain). The readings are "
-                    + "unchanged; times are written as days of September 2024, and the hours with no reading left empty.",
-                "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
-                [
-                    new("All",
-                        "The 3 days: 72 hours of each gauge, their tide tables and 16 of the storm's positions. 454 small files cut "
-                            + "from 13 downloads: a few seconds.",
-                        [
-                            .. HeleneGauges.SelectMany(g => HeleneHours.Select(h => $"{g.Name}/{h}.csv")),
-                            .. HeleneGauges.Select(g => $"{HeleneTides}/{g.Name}.csv"),
-                            .. HeleneFixes.Select(t => $"{HeleneTrack}/{NameOfTime(t)}.csv"),
-                        ],
-                        400_000),
-                ])
-            {
-                FileUrl = HeleneUrl,
-                Convert = HeleneFile,
-            };
-        }
+            FileUrl = HeleneUrl,
+            Convert = HeleneFile,
+        };
 
         /// <summary>
         /// HURDAT2, the Atlantic hurricane database, as of September 2026: Helene's track is in it.

@@ -169,14 +169,6 @@ namespace JuliaSynth.Tests
             Assert.Equal(["NoSuchJuliaSynthPackage"], missing);
         }
 
-        private static async Task Until(Func<bool> condition)
-        {
-            for (int i = 0; i < 300 && !condition(); i++)
-            {
-                await Task.Delay(50);
-            }
-        }
-
         [Fact]
         public void Opening_a_design_says_which_packages_it_needs_before_it_runs()
         {
@@ -188,7 +180,7 @@ namespace JuliaSynth.Tests
                 Assert.False(viewModel.IsPackageBannerVisible);
 
                 viewModel.OpenExample(Examples.All.Single(e => e.Name == "Network spread"));
-                await Until(() => viewModel.IsPackageBannerVisible);
+                _ = await Wait.Until(() => viewModel.IsPackageBannerVisible, 15);
 
                 Assert.Equal(["MatrixMarket"], viewModel.MissingPackages);
                 Assert.Equal("This design needs MatrixMarket, which isn't installed. The nodes needing it are skipped until it is.", viewModel.PackageBannerText);
@@ -214,7 +206,7 @@ namespace JuliaSynth.Tests
                 MainViewModel viewModel = new();
                 Assert.True(await viewModel.ChooseJuliaAsync(StandInJulia.Create(_folder, ["julia version 1.11.2", $"{Missing}MatrixMarket", "!   Resolving package versions..."])));
                 viewModel.OpenExample(Examples.All.Single(e => e.Name == "Network spread"));
-                await Until(() => viewModel.IsPackageBannerVisible);
+                _ = await Wait.Until(() => viewModel.IsPackageBannerVisible, 15);
 
                 List<string> seen = [];
                 viewModel.PropertyChanged += (_, e) =>
@@ -256,7 +248,7 @@ namespace JuliaSynth.Tests
                 viewModel.SaveDesign(path);
 
                 viewModel.OpenDesign(path);
-                await Until(() => viewModel.IsPackageBannerVisible);
+                _ = await Wait.Until(() => viewModel.IsPackageBannerVisible, 15);
 
                 Assert.Equal(["NoSuchJuliaSynthPackage"], viewModel.MissingPackages);
                 viewModel.EndJulia();
