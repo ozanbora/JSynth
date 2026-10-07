@@ -26,6 +26,7 @@
           <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding Path=Redo}"/>
           <KeyBinding Gesture="Delete" Command="{Binding Path=DeleteSelected}"/>
           <KeyBinding Gesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
+          <KeyBinding Gesture="Ctrl+Shift+A" Command="{Binding Path=ArrangeNodes}"/>
           <KeyBinding Gesture="Escape" Command="{Binding Path=ClearSelection}"/>
           <KeyBinding Gesture="Ctrl+C" Command="{Binding Path=Copy}"/>
           <KeyBinding Gesture="Ctrl+X" Command="{Binding Path=Cut}"/>
@@ -66,6 +67,7 @@
               <Separator/>
               <MenuItem Header="_Delete" InputGesture="Delete" Command="{Binding Path=DeleteSelected}"/>
               <MenuItem Header="Select _all" InputGesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
+              <MenuItem Header="A_rrange nodes" InputGesture="Ctrl+Shift+A" Command="{Binding Path=ArrangeNodes}"/>
             </MenuItem>
             <MenuItem Header="_Run">
               <MenuItem Header="_Run" InputGesture="F5" Command="{Binding Path=Run}"/>

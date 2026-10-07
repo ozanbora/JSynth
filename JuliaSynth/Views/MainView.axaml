@@ -84,6 +84,7 @@
                 <Separator/>
                 <MenuItem Header="Delete selected" InputGesture="Delete" Command="{Binding Path=DeleteSelected}"/>
                 <MenuItem Header="Select all" InputGesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
+                <MenuItem Header="Arrange nodes" InputGesture="Ctrl+Shift+A" Command="{Binding Path=ArrangeNodes}"/>
                 <Separator/>
                 <MenuItem Header="Undo" InputGesture="Ctrl+Z" Command="{Binding Path=Undo}"/>
                 <MenuItem Header="Redo" InputGesture="Ctrl+Y" Command="{Binding Path=Redo}"/>

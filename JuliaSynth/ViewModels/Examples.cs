@@ -291,6 +291,7 @@ namespace JuliaSynth.ViewModels
                 target.Wired(design.Connections);
             }
 
+            Layout.Arrange(design.Nodes);
             return design;
         }
     }

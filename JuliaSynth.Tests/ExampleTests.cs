@@ -90,33 +90,12 @@ namespace JuliaSynth.Tests
             {
                 foreach (Node b in design.Nodes.Where(n => n != a))
                 {
-                    (double top, double left, double bottom, double right) = Cells(a);
-                    (double otherTop, double otherLeft, double otherBottom, double otherRight) = Cells(b);
+                    (double top, double left, double bottom, double right) = Layout.Footprint(a);
+                    (double otherTop, double otherLeft, double otherBottom, double otherRight) = Layout.Footprint(b);
                     bool overlap = top < otherBottom && otherTop < bottom && left < otherRight && otherLeft < right;
                     Assert.False(overlap, $"{Label(a)} overlaps {Label(b)}");
                 }
             }
-        }
-
-        /// <summary>
-        /// Where a node sits, in cells: centred on its cell, 9×6 cells (a Display 13×9, a Plot 16×13); nodes
-        /// with a row per input grow down a cell per input past the second.
-        /// </summary>
-        private static (double Top, double Left, double Bottom, double Right) Cells(Node node)
-        {
-            (double width, double height) = node switch
-            {
-                DisplayNode => (13, 9),
-                PlotNode => (16, 13),
-                _ => (9, 6),
-            };
-            double top = node.Row + 0.5 - (height / 2);
-            if (node is not (DisplayNode or PlotNode) && node.Inputs.Count > 2)
-            {
-                height += node.Inputs.Count - 2;
-            }
-
-            return (top, node.Column + 0.5 - (width / 2), top + height, node.Column + 0.5 + (width / 2));
         }
 
         private static string Label(Node node) => node is Function f ? f.Name : $"{node.GetType().Name} at {node.Row},{node.Column}";

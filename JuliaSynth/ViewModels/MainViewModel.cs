@@ -575,6 +575,7 @@ public partial class MainViewModel : ReactiveObject
         Redo = ReactiveCommand.Create(History.Redo, this.WhenAnyValue(x => x.CanRedo, x => x.IsTypingText, (can, typing) => can && !typing));
         DeleteSelected = ReactiveCommand.Create(DeleteSelectedNodes, notTyping);
         SelectAll = ReactiveCommand.Create(() => { foreach (Node node in Nodes) { node.IsSelected = true; } }, notTyping);
+        ArrangeNodes = ReactiveCommand.Create(() => Layout.Arrange(Nodes), notTyping);
         // Escape closes the start page first.
         ClearSelection = ReactiveCommand.Create(() => { if (IsStartPageOpen) { IsStartPageOpen = false; } else { SelectOnly(null); } }, notTyping);
         Copy = ReactiveCommand.Create(() => { _ = CopySelection(); }, notTyping);
@@ -624,6 +625,11 @@ public partial class MainViewModel : ReactiveObject
     public ReactiveCommand<RxVoid, RxVoid> DeleteSelected { get; }
 
     public ReactiveCommand<RxVoid, RxVoid> SelectAll { get; }
+
+    /// <summary>
+    /// Arranges the design's nodes: drawn together, apart from each other, in the order they are (see <see cref="Layout.Arrange"/>).
+    /// </summary>
+    public ReactiveCommand<RxVoid, RxVoid> ArrangeNodes { get; }
 
     public ReactiveCommand<RxVoid, RxVoid> ClearSelection { get; }
 
