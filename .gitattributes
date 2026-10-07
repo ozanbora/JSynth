@@ -1,2 +1,9 @@
+# Text files are stored with LF and checked out with the machine's own line endings: LF on Linux, CRLF on Windows.
+* text=auto
+
 # Example data is bundled byte for byte: no line-ending changes on checkout.
 JuliaSynth/ExampleData/** -text
+
+*.png binary
+*.ico binary
+*.ttf binary
