@@ -34,6 +34,30 @@ public partial class MainView : UserControl
         InspectorGrip.PointerPressed += Grip_PointerPressed;
         InspectorGrip.PointerMoved += Grip_PointerMoved;
         InspectorGrip.PointerReleased += (_, _) => _gripStart = null;
+
+        OutputGrip.PointerPressed += OutputGrip_PointerPressed;
+        OutputGrip.PointerMoved += OutputGrip_PointerMoved;
+        OutputGrip.PointerReleased += (_, _) => _outputGripStart = null;
+    }
+
+    // Where a resize of the output panel started (pointer y in this view, panel height); null when not resizing.
+    private (double Y, double Height)? _outputGripStart;
+
+    private void OutputGrip_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _outputGripStart = (e.GetPosition(this).Y, OutputPanel.Bounds.Height);
+        e.Pointer.Capture(OutputGrip);
+        e.Handled = true;
+    }
+
+    private void OutputGrip_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_outputGripStart is (double y, double height))
+        {
+            // Tall enough for its title and a few lines, and always leaving some canvas.
+            double wanted = height - (e.GetPosition(this).Y - y);
+            OutputPanel.Height = Math.Clamp(wanted, 80, Math.Max(80, Bounds.Height * 0.8));
+        }
     }
 
     // Where a resize of the function panel started (pointer x in this view, panel width); null when not resizing.

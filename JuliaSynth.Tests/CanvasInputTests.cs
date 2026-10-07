@@ -86,5 +86,37 @@ namespace JuliaSynth.Tests
                 window.Close();
             });
         }
+
+        [Fact]
+        public void Dragging_the_top_edge_of_the_output_resizes_it()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new() { IsOutputVisible = true };
+                Window window = new() { Content = new MainView(), DataContext = viewModel, Width = 1000, Height = 700 };
+                window.Show();
+                Border output = window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "OutputPanel");
+                Border grip = window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "OutputGrip");
+                double before = output.Bounds.Height;
+                Point edge = grip.TranslatePoint(new Point(grip.Bounds.Width / 2, 3), window)!.Value;
+
+                // Up 100: taller by 100.
+                window.MouseDown(edge, MouseButton.Left);
+                window.MouseMove(edge - new Point(0, 100), RawInputModifiers.LeftMouseButton);
+                window.MouseUp(edge - new Point(0, 100), MouseButton.Left);
+                window.UpdateLayout();
+                Assert.Equal(before + 100, output.Bounds.Height, 1);
+
+                // Never so short its title and lines can't show, nor so tall it hides the canvas.
+                Point top = grip.TranslatePoint(new Point(grip.Bounds.Width / 2, 3), window)!.Value;
+                window.MouseDown(top, MouseButton.Left);
+                window.MouseMove(top + new Point(0, 600), RawInputModifiers.LeftMouseButton);
+                window.MouseUp(top + new Point(0, 600), MouseButton.Left);
+                window.UpdateLayout();
+                Assert.Equal(80, output.Bounds.Height, 1);
+                window.Close();
+            });
+        }
     }
 }
