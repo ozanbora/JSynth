@@ -89,7 +89,7 @@ namespace JuliaSynth.ViewModels
             SaveFile saved = new() { Path = System.IO.Path.Combine(CdnetHighway.Folder, "masks", "mask.png"), PerFile = true, Row = 21, Column = Stage3 + 20 };
 
             // Scored against the frame's twin, marked by hand: pixels found moving that do, that don't, and those missed.
-            FileNameNode path = new() { WholePath = true, Row = 32, Column = Inputs };
+            (Node, string) path = (frames, FilesNode.PathOutput);
             Function twin = Define("twin", "Matrix{Float64}", 32, Stage1,
                 """
                 using PNGFiles
@@ -126,7 +126,7 @@ namespace JuliaSynth.ViewModels
             DisplayNode shown = Shown(44, Stage3 + 30);
 
             return Design(
-                [frames, background, moving, update, frame, mask, saved, path, twin, score, totals, add, fScore, shown],
+                [frames, background, moving, update, frame, mask, saved, twin, score, totals, add, fScore, shown],
                 (frames, moving, 0), (background, moving, 1), (background, update, 0), (frames, update, 1), (moving, update, 2), (update, background, "next"),
                 (frames, frame, "y"), (moving, mask, "y"), (moving, saved, 0),
                 (path, twin, 0), (moving, score, 0), (twin, score, 1), (path, score, 2), (totals, add, 0), (score, add, 1), (add, totals, "next"),

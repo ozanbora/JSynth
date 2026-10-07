@@ -147,7 +147,7 @@ namespace JuliaSynth.ViewModels
             Function tally = Define("tally", "Int64", 41, Stage3 + 70, "n + q  # the quakes so far", ("n", "Int64"), ("q", "Bool"));
 
             // Each new quake noted: when, from the file's name and the loudest second, and how strong; saved a row each.
-            FileNameNode name = new() { Row = 53, Column = Stage3 + 28 };
+            (Node, string) name = (files, FilesNode.NameOutput);
             Function note = Define("note", Function.AnyType, 53, Stage3 + 42,
                 """
                 # When, from the file's name (PFO.BHZ.2019-07-04T17-03.csv) and the loudest second, and how strong.
@@ -166,7 +166,7 @@ namespace JuliaSynth.ViewModels
 
             return Design(
                 [files, seismogram, energy, level, last, background, ratio, loudest, quake, before, shook, newQuake, quakes, tally,
-                    name, note, noted, shown, saved, trend, grow, loudness],
+                    note, noted, shown, saved, trend, grow, loudness],
                 (files, seismogram, "y"), (files, energy, 0), (energy, level, 0), (level, last, 0), (last, background, 0),
                 (energy, ratio, 0), (background, ratio, 1), (ratio, loudest, 0), (loudest, quake, 0),
                 (quake, shook, 0), (shook, before, "next"), (quake, newQuake, 0), (before, newQuake, 1),
@@ -216,7 +216,7 @@ namespace JuliaSynth.ViewModels
             // A station hears a new quake: a second 4 times the background, the minute before it having none.
             ArrayBuilder shookBefore = Zeros(4, 30);
             Function shook = Define("shook", "Vector{Float64}", 30, Stage3, "Float64[maximum(r) > 4 for r in R]  # whether each station shook this minute, for the next", ("R", "Vector"));
-            FileNameNode name = new() { Row = 42, Column = Inputs };
+            (Node, string) name = (stations[0], FilesNode.NameOutput);
             Function heard = Define("heard", "Vector{Float64}", 30, Stage2,
                 """
                 # When each station heard a new quake, in seconds of the day; 0: none. The minute is the file's name's.
@@ -257,7 +257,7 @@ namespace JuliaSynth.ViewModels
             SaveFile saved = new() { Path = System.IO.Path.Combine(RidgecrestNetwork.Folder, "quakes.csv"), PerFile = true, Row = 66, Column = Stage3 + 30 };
 
             // The stations and their zip come first, the rest a column further on.
-            Node[] rest = [energies, levels, last, background, before, ratios, loudest, loud, shookBefore, shook, name, heard,
+            Node[] rest = [energies, levels, last, background, before, ratios, loudest, loud, shookBefore, shook, heard,
                 heardBefore, noted, confirmed, kept, quake, note, onlyQuakes, shown, saved];
             foreach (Node node in rest)
             {

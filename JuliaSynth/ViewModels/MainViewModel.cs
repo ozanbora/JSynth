@@ -294,6 +294,7 @@ public partial class MainViewModel : ReactiveObject
         _loading = true;
         try
         {
+            document.ReplaceFileNameNodes();
             Nodes.Clear();
             Connections.Clear();
             Nodes.AddRange(document.Nodes);
@@ -335,7 +336,6 @@ public partial class MainViewModel : ReactiveObject
             nameof(WatchNode) => new WatchNode(),
             nameof(WindowNode) => new WindowNode(),
             nameof(WhenNode) => new WhenNode(),
-            nameof(FileNameNode) => new FileNameNode(),
             nameof(ZipNode) => new ZipNode(),
             nameof(MergeNode) => new MergeNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
@@ -695,6 +695,28 @@ public partial class MainViewModel : ReactiveObject
         public AvaloniaList<Node> Nodes { get; set; } = [];
 
         public AvaloniaList<Connection> Connections { get; set; } = [];
+
+        /// <summary>
+        /// A design saved before folders had a file name and path output had a File name node instead: its wires now
+        /// start at the folder going through its files one at a time (a watched one first), and the node goes.
+        /// </summary>
+        public void ReplaceFileNameNodes()
+        {
+            FilesNode? folder = Nodes.OfType<WatchNode>().FirstOrDefault() ?? Nodes.OfType<FilesNode>().FirstOrDefault(f => f.EachFile);
+            foreach (FileNameNode name in Nodes.OfType<FileNameNode>().ToList())
+            {
+                foreach (Connection wire in Connections.Where(c => c.SourceID == name.ID).ToList())
+                {
+                    _ = Connections.Remove(wire);
+                    if (folder is not null)
+                    {
+                        Connections.Add(new Connection(folder.ID, wire.TargetID, wire.ParameterID, name.WholePath ? FilesNode.PathOutput : FilesNode.NameOutput));
+                    }
+                }
+
+                _ = Nodes.Remove(name);
+            }
+        }
     }
 
     public const string FileExtension = ".jsynth";

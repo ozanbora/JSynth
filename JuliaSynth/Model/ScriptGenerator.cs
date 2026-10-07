@@ -105,6 +105,12 @@ namespace JuliaSynth.Model
         {
             string? Input(Parameter parameter) => inputs.FirstOrDefault(c => c.ParameterID == parameter.ID) is Connection c ? ValueOf(variables, c) : null;
 
+            // A folder has a file name and path only while it goes through its files one at a time.
+            if (inputs.Any(c => c.Output is FilesNode.NameOutput or FilesNode.PathOutput && loop?.ReadsFrame(byID[c.SourceID]) != true))
+            {
+                return (null, "There's a file name only while files are gone through one at a time.");
+            }
+
             switch (node)
             {
                 case Float x:
@@ -119,12 +125,9 @@ namespace JuliaSynth.Model
                     return sparse.Error is null ? (sparse.Julia, null) : (null, sparse.Error);
                 case ArrayFile file:
                     return file.Error is null ? (file.Julia, null) : (null, file.Error);
-                case FilesNode files when loop?.Root == files || loop?.Merged.Contains(files) == true:
-                    // The file the loop is at, read as each of the folder's files is.
-                    return (files.FrameJulia("_path"), null);
-                case FilesNode files when loop?.Twins.Contains(files) == true:
-                    // Zipped: its file of the name the loop is at.
-                    return (files.FrameJulia($"joinpath({ArrayFile.PathLiteral(files.Folder)}, basename(_path))"), null);
+                case FilesNode files when loop?.ReadsFrame(files) == true:
+                    // The file the loop is at (zipped, its own of that name), read as each of the folder's files is.
+                    return (files.FrameJulia(loop!.PathOf(files)), null);
                 case Node together when together is ZipNode or MergeNode:
                 {
                     (List<FilesNode> streams, string? problem) = FolderStreams(together, inputs, byID);
@@ -141,10 +144,6 @@ namespace JuliaSynth.Model
                         : "Only one folder is gone through file by file in a design, and a watched one comes first: this one isn't."));
                 case FilesNode files:
                     return files.Error is null ? (files.Julia, null) : (null, files.Error);
-                case FileNameNode name:
-                    return loop is not null
-                        ? (name.Julia, null)
-                        : (null, "There's a file name only while files are gone through one at a time.");
                 case WindowNode window:
                     return Input(window.Value) is string kept
                         ? (window.Julia($"{variables[window.ID]}_values", kept), null)
@@ -367,7 +366,6 @@ namespace JuliaSynth.Model
                     ArrayFile => "D",
                     WindowNode => "window",
                     WhenNode => "passed",
-                    FileNameNode => "name",
                     ZipNode => "zipped",
                     MergeNode => "merged",
                     FilesNode { EachFile: true } => "frame",

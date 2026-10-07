@@ -219,6 +219,20 @@ namespace JuliaSynth.Model
         public override string OutputType => EachFile ? EachType : Function.AnyType;
 
         /// <summary>
+        /// Its output giving the name of the file it is at, going through files one at a time: often when it was
+        /// written, as sensors name their files by the time.
+        /// </summary>
+        public const string NameOutput = "name";
+
+        /// <summary>
+        /// Its output giving the whole path of the file it is at: to open a file that goes with it, say a frame's marked
+        /// twin in the same folder.
+        /// </summary>
+        public const string PathOutput = "path";
+
+        public override string OutputTypeOf(string? output) => output is NameOutput or PathOutput ? "String" : OutputType;
+
+        /// <summary>
         /// On the node: what it gives, "each a Matrix{Float64}", one at a time or all together.
         /// </summary>
         public string EachText => EachFile ? $"one at a time, each a {EachType}" : $"each a {EachType}";

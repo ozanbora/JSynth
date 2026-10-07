@@ -326,9 +326,10 @@ namespace JuliaSynth.Model
 
             /// <summary>
             /// What a node's code is made of: its wired inputs, its variable, whether it is in the loop, its value's
-            /// expression or why it has none, and, for a merge, the line giving its folder.
+            /// expression or why it has none, and the lines giving its other outputs: a merge's folder, a folder's file name
+            /// and path.
             /// </summary>
-            private sealed record NodeParts(Node Node, List<Connection> Inputs, string Variable, bool InLoop, string? Expression, string? Problem, string FolderOf);
+            private sealed record NodeParts(Node Node, List<Connection> Inputs, string Variable, bool InLoop, string? Expression, string? Problem, string Outputs);
 
             /// <summary>
             /// One node's value: computed (and reported, in a run), or why it isn't.
@@ -345,13 +346,30 @@ namespace JuliaSynth.Model
                 bool inLoop = _loop.Looped.Contains(node.ID);
                 (string? expression, string? problem) = Expression(node, inputs, _variables, _byID, _instrumented, _plotFolder, inLoop ? _loop : null);
 
-                // The merge's second output: the name of the folder the file is in.
-                string folderOf = node == _loop.Streams && node is MergeNode && problem is null
-                    ? $"{(inLoop ? "global " : string.Empty)}{variable}_{MergeNode.FolderOutput} = ({string.Join(", ", _loop.Merged.Select(m => StringLiteral(m.FolderName)))},)[_stream]\n"
-                    : string.Empty;
-
-                NodeParts parts = new(node, inputs, variable, inLoop, expression, problem, folderOf);
+                NodeParts parts = new(node, inputs, variable, inLoop, expression, problem, problem is null ? OtherOutputs(node, variable, inLoop) : string.Empty);
                 return _instrumented ? RunCode(parts) : PlainCode(parts);
+            }
+
+            /// <summary>
+            /// The lines giving a node's outputs other than its value: a merge's folder (the name of the folder the file
+            /// is in), and a folder's file name and path, those wired (the file its value is read from).
+            /// </summary>
+            private string OtherOutputs(Node node, string variable, bool inLoop)
+            {
+                if (node == _loop.Streams && node is MergeNode)
+                {
+                    return $"{(inLoop ? "global " : string.Empty)}{variable}_{MergeNode.FolderOutput} = ({string.Join(", ", _loop.Merged.Select(m => StringLiteral(m.FolderName)))},)[_stream]\n";
+                }
+
+                if (node is not FilesNode folder || !_loop.ReadsFrame(node))
+                {
+                    return string.Empty;
+                }
+
+                bool Wired(string output) => _connections.Concat(_nextWires).Any(c => c.SourceID == node.ID && c.Output == output);
+                string path = _loop.PathOf(folder);
+                return (Wired(FilesNode.NameOutput) ? $"global {variable}_{FilesNode.NameOutput} = basename({path})\n" : string.Empty)
+                    + (Wired(FilesNode.PathOutput) ? $"global {variable}_{FilesNode.PathOutput} = abspath({path})\n" : string.Empty);
             }
 
             /// <summary>
@@ -368,7 +386,7 @@ namespace JuliaSynth.Model
             /// </summary>
             private string PlainCode(NodeParts parts)
             {
-                (Node node, List<Connection> inputs, string variable, bool inLoop, string? expression, string? problem, string folderOf) = parts;
+                (Node node, List<Connection> inputs, string variable, bool inLoop, string? expression, string? problem, string outputs) = parts;
 
                 // Values of a loop are assigned in a function (the one called for each file) or a loop: globals, by name.
                 string assign = inLoop ? $"global {variable}" : variable;
@@ -377,7 +395,7 @@ namespace JuliaSynth.Model
                     : node is OutputNode output ? output.Statement(ValueOf(_variables, inputs[0]))
                     : node is PlotNode plot ? PlotHint(plot, inputs, _variables)
                     : node is WhenNode ? $"{(inLoop ? "global " : string.Empty)}{variable}_ok = {ConditionOf(parts)}\nif {variable}_ok\n{Indent}{assign} = {expression}\nend"
-                    : $"{folderOf}{assign} = {expression}";
+                    : $"{outputs}{assign} = {expression}";
 
                 // A folder merged reads the file when it is in it, and keeps its latest otherwise.
                 int stream = _loop.StreamOf(node);
@@ -391,7 +409,7 @@ namespace JuliaSynth.Model
             /// </summary>
             private string RunCode(NodeParts parts)
             {
-                (Node node, List<Connection> inputs, string variable, bool inLoop, string? expression, string? problem, string folderOf) = parts;
+                (Node node, List<Connection> inputs, string variable, bool inLoop, string? expression, string? problem, string outputs) = parts;
                 StringBuilder code = new($"# {variable}\n");
                 if (problem is not null)
                 {
@@ -458,12 +476,12 @@ namespace JuliaSynth.Model
                 // The files say which file the loop is at, rather than showing the file.
                 // An Only when node passes its value, or holds back the nodes after it.
                 string compute = _loop.ReadsFrame(node)
-                    ? $"try\n{Indent}global {variable} = {expression}\n{Indent}_jsynth_frame({id}, _n, _path, {variable})\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
+                    ? $"try\n{(outputs.Length > 0 ? Indented(outputs) : string.Empty)}{Indent}global {variable} = {expression}\n{Indent}_jsynth_frame({id}, _n, _path, {variable})\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
                     : node is WhenNode
                         ? $"try\n{Indent}if {ConditionOf(parts)}\n{Indent}{Indent}global {variable} = {expression}\n{Indent}{Indent}_jsynth_ok({id}, {variable})\n{Indent}else\n{Indent}{Indent}_jsynth_hold({id})\n"
                             + (inLoop ? $"{Indent}{Indent}{kept}\n" : $"{Indent}{Indent}_jsynth_report({id}, \"skipped\", \"\", \"The condition is false: nothing passes.\")\n")
                             + $"{Indent}end\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
-                    : Guarded(node.ID, $"{folderOf}global {variable} = {expression}", report: true, variable);
+                    : Guarded(node.ID, $"{outputs}global {variable} = {expression}", report: true, variable);
 
                 if (conditions.Count == 0)
                 {

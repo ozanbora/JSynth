@@ -104,7 +104,7 @@ namespace JuliaSynth.ViewModels
             Integer alarms = Whole(0, 64);
             Function alarmCount = Define("alarm_count", "Int64", 64, Stage3 + 70, "c + a  # the alarms so far", ("c", "Int64"), ("a", "Bool"));
             Function firstAlarm = Define("first_alarm", "Bool", 29, Stage3 + 70, "a && c == 0  # the first alarm only", ("a", "Bool"), ("c", "Int64"));
-            FileNameNode name = new() { Row = 17, Column = Stage3 + 42 };
+            (Node, string) name = (files, FilesNode.NameOutput);
             Function note = Define("note", Function.AnyType, 17, Stage3 + 56,
                 """
                 b = argmax(S ./ B)
@@ -116,7 +116,7 @@ namespace JuliaSynth.ViewModels
 
             return Design(
                 [files, running, whileRunning, strength, spikiness, row, saved, last, smooth, seen, countUp, baseline, learn,
-                    wear, trend, grow, plot, alarm, alarms, alarmCount, firstAlarm, name, note, noted, shown],
+                    wear, trend, grow, plot, alarm, alarms, alarmCount, firstAlarm, note, noted, shown],
                 (files, running, 0), (files, whileRunning, "value"), (running, whileRunning, "condition"),
                 (whileRunning, strength, 0), (whileRunning, spikiness, 0), (strength, row, 0), (spikiness, row, 1), (row, saved, 0),
                 (strength, last, 0), (last, smooth, 0),

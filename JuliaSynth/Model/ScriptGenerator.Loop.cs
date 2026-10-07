@@ -48,12 +48,6 @@ namespace JuliaSynth.Model
                     looped.UnionWith(Downstream(from, connections, byID));
                 }
 
-                // The name of the file the loop is at changes from file to file too.
-                foreach (FileNameNode name in order.OfType<FileNameNode>().Where(_ => root is not null))
-                {
-                    looped.UnionWith(Downstream(name, connections, byID));
-                }
-
                 // An input with a next value starts with its own, worked out once, before the loop.
                 looped.ExceptWith(carried.Select(c => c.ID));
 
@@ -80,6 +74,12 @@ namespace JuliaSynth.Model
             /// leading it, one zipped or one merged.
             /// </summary>
             public bool ReadsFrame(Node node) => node == Root || Twins.Contains(node) || StreamOf(node) > 0;
+
+            /// <summary>
+            /// The Julia expression giving the path of the file <paramref name="folder"/> reads (see
+            /// <see cref="ReadsFrame"/>): the one the loop is at, or zipped, its own of that name.
+            /// </summary>
+            public string PathOf(FilesNode folder) => Twins.Contains(folder) ? $"joinpath({ArrayFile.PathLiteral(folder.Folder)}, basename(_path))" : "_path";
 
             /// <summary>
             /// Whether <paramref name="node"/> is the Merge node the folders are wired to.

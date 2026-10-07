@@ -64,7 +64,6 @@ namespace JuliaSynth.Tests
             Function level = Define("level", "Float64", "X[1]", ("X", "Matrix{Float64}"));
             WindowNode window = new() { Size = 2 };
             DisplayNode last2 = new();
-            FileNameNode name = new();
             Function high = Define("high", "Bool", "x > 1.5", ("x", "Float64"));
             Integer alarms = new() { SelectedType = "64-bit", Value = 0 };
             Function count = Define("count", "Int64", "c + h", ("c", "Int64"), ("h", "Bool"));
@@ -72,19 +71,22 @@ namespace JuliaSynth.Tests
             WhenNode first = new();
             DisplayNode firstHigh = new();
             SaveFile levels = new() { Path = Rows, PerFile = true };
-            MainViewModel.Nodes.AddRange([files, level, window, last2, name, high, alarms, count, firstTime, first, firstHigh, levels]);
+            MainViewModel.Nodes.AddRange([files, level, window, last2, high, alarms, count, firstTime, first, firstHigh, levels]);
 
             foreach ((Node source, Node target, Parameter parameter) in new (Node, Node, Parameter)[]
             {
                 (files, level, level.Parameters[0]), (level, window, window.Value), (window, last2, last2.Input),
                 (level, high, high.Parameters[0]), (alarms, count, count.Parameters[0]), (high, count, count.Parameters[1]), (count, alarms, alarms.Next!),
                 (high, firstTime, firstTime.Parameters[0]), (alarms, firstTime, firstTime.Parameters[1]),
-                (name, first, first.Value), (firstTime, first, first.Condition), (first, firstHigh, firstHigh.Input),
+                (firstTime, first, first.Condition), (first, firstHigh, firstHigh.Input),
                 (level, levels, levels.Input),
             })
             {
                 Assert.Null(MainViewModel.Connect(source, target, parameter));
             }
+
+            // The name of the file it is at.
+            Assert.Null(MainViewModel.Connect(files, first, first.Value, FilesNode.NameOutput));
 
             return new(files, window, first, last2, firstHigh, levels);
         }
@@ -105,15 +107,15 @@ namespace JuliaSynth.Tests
 
                 // In it: the last 2 levels, the file's name, a row after the name, and the first high level's name.
                 Assert.Contains("global window1 = _jsynth_window!(window1_values, level_out, 2)", parts[1]);
-                Assert.Contains("global name1 = basename(_path)", parts[1]);
+                Assert.Contains("    global frame1_name = basename(_path)\n    global frame1 = ", parts[1]);
                 Assert.Contains($"open(io -> writedlm(io, permutedims([basename(_path); (level_out isa AbstractString ? [level_out] : vec(collect(level_out)))]), ','), raw\"{Rows}\", \"a\")", parts[1]);
-                Assert.Contains("global passed1_ok = first_time_out\n    if passed1_ok\n        global passed1 = name1\n    end", parts[1]);
+                Assert.Contains("global passed1_ok = first_time_out\n    if passed1_ok\n        global passed1 = frame1_name\n    end", parts[1]);
                 Assert.Contains("    if passed1_ok\n        display(passed1)\n    end", parts[1]);
 
                 // Outside a loop there is no file name; a row has no name before it.
                 loop.Files.EachFile = false;
                 string once = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: false).Text;
-                Assert.Contains("# name1: There's a file name only while files are gone through one at a time.", once);
+                Assert.Contains("# passed1: There's a file name only while files are gone through one at a time.", once);
             });
         }
 
@@ -173,18 +175,17 @@ namespace JuliaSynth.Tests
                 Function picture = Define("picture", "Matrix{Float64}", "fill(X[1] / 4, 2, 2)", ("X", "Matrix{Float64}"));
                 string pictures = Path.Combine(_folder, "pictures");
                 SaveFile saved = new() { Path = Path.Combine(pictures, "p.png"), PerFile = true };
-                FileNameNode path = new() { WholePath = true };
                 DisplayNode shown = new();
-                MainViewModel.Nodes.AddRange([files, picture, saved, path, shown]);
+                MainViewModel.Nodes.AddRange([files, picture, saved, shown]);
                 Assert.Null(MainViewModel.Connect(files, picture, picture.Parameters[0]));
                 Assert.Null(MainViewModel.Connect(picture, saved, saved.Input));
-                Assert.Null(MainViewModel.Connect(path, shown, shown.Input));
+                Assert.Null(MainViewModel.Connect(files, shown, shown.Input, FilesNode.PathOutput));
                 Assert.Equal("A picture per file", saved.PerFileLabel);
 
                 string plain = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: false).Text;
                 Assert.Contains("import ColorTypes", plain);
                 Assert.Contains($"mkpath(dirname(abspath(raw\"{Path.Combine(pictures, "p.png")}\")))", plain);
-                Assert.Contains("global name1 = abspath(_path)", plain);
+                Assert.Contains("global frame1_path = abspath(_path)", plain);
 
                 MainViewModel viewModel = new() { Julia = julia };
                 await viewModel.RunDesignAsync();

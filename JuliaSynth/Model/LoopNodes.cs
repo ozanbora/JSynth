@@ -90,45 +90,19 @@ namespace JuliaSynth.Model
     }
 
     /// <summary>
-    /// The name of the file being gone through, in a loop through files one at a time: often when it was
-    /// written, as sensors name their files by the time.
+    /// The node giving the name, or the path, of the file a loop was at, in designs saved before folders had outputs
+    /// for them (see <see cref="FilesNode.NameOutput"/>): read only to be replaced by them, as a design is opened (see
+    /// MainViewModel.DesignDocument.ReplaceFileNameNodes).
     /// </summary>
     public class FileNameNode : Node
     {
-        private bool _wholePath;
-
         /// <summary>
-        /// Whether it gives the file's whole path rather than its name: to open a file that goes with it, say a
-        /// frame's marked twin in the same folder.
+        /// Whether it gave the file's whole path rather than its name.
         /// </summary>
         [JsonProperty]
-        public bool WholePath
-        {
-            get => _wholePath;
-            set
-            {
-                _ = this.RaiseAndSetIfChanged(ref _wholePath, value);
-                this.RaisePropertyChanged(nameof(Label));
-                this.RaisePropertyChanged(nameof(Julia));
-            }
-        }
-
-        /// <summary>
-        /// On the node: "file name" or "file path".
-        /// </summary>
-        public string Label => WholePath ? "file path" : "file name";
-
-        /// <summary>
-        /// The Julia expression giving the name, or path, of the file a loop is at (<c>_path</c>).
-        /// </summary>
-        public string Julia => WholePath ? "abspath(_path)" : "basename(_path)";
+        public bool WholePath { get; set; }
 
         public override string OutputType => "String";
-
-        public FileNameNode()
-        {
-            Color = NodePalette.FileName;
-        }
     }
 
     /// <summary>
