@@ -29,6 +29,7 @@
           <KeyBinding Gesture="Ctrl+Shift+A" Command="{Binding Path=ArrangeNodes}"/>
           <KeyBinding Gesture="Escape" Command="{Binding Path=ClearSelection}"/>
           <KeyBinding Gesture="Ctrl+C" Command="{Binding Path=Copy}"/>
+          <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding Path=CopyAsJulia}"/>
           <KeyBinding Gesture="Ctrl+X" Command="{Binding Path=Cut}"/>
           <KeyBinding Gesture="Ctrl+V" Command="{Binding Path=Paste}"/>
           <KeyBinding Gesture="Ctrl+D" Command="{Binding Path=Duplicate}"/>
@@ -62,6 +63,7 @@
               <Separator/>
               <MenuItem Header="Cu_t" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
               <MenuItem Header="_Copy" InputGesture="Ctrl+C" Command="{Binding Path=Copy}"/>
+              <MenuItem Header="Copy as _Julia" InputGesture="Ctrl+Shift+C" Command="{Binding Path=CopyAsJulia}"/>
               <MenuItem Header="_Paste" InputGesture="Ctrl+V" Command="{Binding Path=Paste}"/>
               <MenuItem Header="D_uplicate" InputGesture="Ctrl+D" Command="{Binding Path=Duplicate}"/>
               <Separator/>
@@ -75,6 +77,7 @@
               <Separator/>
               <MenuItem Header="Show _output" Command="{Binding Path=ToggleOutput}"/>
               <MenuItem Header="_Export Julia script…" Click="ExportScript_Click"/>
+              <MenuItem Header="Export _image…" Click="ExportImage_Click"/>
               <Separator/>
               <MenuItem Header="_Install missing packages…" Command="{Binding Path=InstallPackages}"/>
               <MenuItem Header="Restart _Julia" Command="{Binding Path=Restart}"/>

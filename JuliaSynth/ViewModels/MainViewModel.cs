@@ -12,6 +12,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace JuliaSynth.ViewModels;
 
@@ -624,6 +625,14 @@ public partial class MainViewModel : ReactiveObject
         Cut = ReactiveCommand.Create(CutSelection, notTyping);
         Paste = ReactiveCommand.Create(PasteClipboard, notTyping);
         Duplicate = ReactiveCommand.Create(DuplicateSelection, notTyping);
+        CopyAsJulia = ReactiveCommand.CreateFromTask(async () =>
+        {
+            if (SetClipboardText is not null)
+            {
+                await SetClipboardText(JuliaOfSelection());
+                Log("Copied as Julia: paste it in a REPL or a script.", OutputKind.Info);
+            }
+        }, notTyping);
         CreateRunCommands();
         CreateInspectorCommands();
         CreateStartCommands();
@@ -676,6 +685,16 @@ public partial class MainViewModel : ReactiveObject
     public ReactiveCommand<RxVoid, RxVoid> ClearSelection { get; }
 
     public ReactiveCommand<RxVoid, RxVoid> Copy { get; }
+
+    /// <summary>
+    /// Puts <see cref="JuliaOfSelection"/> on the system clipboard.
+    /// </summary>
+    public ReactiveCommand<RxVoid, RxVoid> CopyAsJulia { get; }
+
+    /// <summary>
+    /// Puts text on the system clipboard. Set by the window; without it (in tests), nothing is copied.
+    /// </summary>
+    public Func<string, Task>? SetClipboardText { get; set; }
 
     public ReactiveCommand<RxVoid, RxVoid> Cut { get; }
 

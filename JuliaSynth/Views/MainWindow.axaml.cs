@@ -1,7 +1,9 @@
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using JuliaSynth.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -61,6 +63,13 @@ public partial class MainWindow : Window
         if (ViewModel is MainViewModel viewModel)
         {
             viewModel.AskToInstall = AskToInstallAsync;
+            viewModel.SetClipboardText = async text =>
+            {
+                if (Clipboard is not null)
+                {
+                    await Clipboard.SetTextAsync(text);
+                }
+            };
         }
     }
 
@@ -340,6 +349,48 @@ public partial class MainWindow : Window
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             _ = await MessageDialog.ShowAsync(this, "Can't export the script", $"{Path.GetFileName(path)} couldn't be written.\n\n{error.Message}", "OK");
+        }
+    }
+
+    private async void ExportImage_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel is not MainViewModel viewModel
+            || this.GetVisualDescendants().OfType<Controls.DesignerGrid>().FirstOrDefault() is not Controls.DesignerGrid grid)
+        {
+            return;
+        }
+
+        if (grid.Picture() is not Avalonia.Media.Imaging.RenderTargetBitmap picture)
+        {
+            _ = await MessageDialog.ShowAsync(this, "Nothing to export", "The design has no nodes to draw.", "OK");
+            return;
+        }
+
+        using (picture)
+        {
+            IStorageFile? file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Export image",
+                FileTypeChoices = [FilePickerFileTypes.ImagePng],
+                DefaultExtension = ".png",
+                SuggestedFileName = (viewModel.FilePath is null ? "Untitled" : Path.GetFileNameWithoutExtension(viewModel.FilePath)) + ".png",
+                SuggestedStartLocation = await StartFolderAsync(viewModel),
+                ShowOverwritePrompt = true,
+            });
+
+            if (file?.TryGetLocalPath() is not string path)
+            {
+                return;
+            }
+
+            try
+            {
+                picture.Save(path);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                _ = await MessageDialog.ShowAsync(this, "Can't export the image", $"{Path.GetFileName(path)} couldn't be written.\n\n{error.Message}", "OK");
+            }
         }
     }
 

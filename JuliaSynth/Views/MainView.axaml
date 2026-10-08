@@ -79,6 +79,7 @@
                 <Separator/>
                 <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
                 <MenuItem Header="Copy" InputGesture="Ctrl+C" Command="{Binding Path=Copy}"/>
+                <MenuItem Header="Copy as Julia" InputGesture="Ctrl+Shift+C" Command="{Binding Path=CopyAsJulia}"/>
                 <MenuItem Header="Paste" InputGesture="Ctrl+V" Command="{Binding Path=Paste}"/>
                 <MenuItem Header="Duplicate" InputGesture="Ctrl+D" Command="{Binding Path=Duplicate}"/>
                 <Separator/>

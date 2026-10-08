@@ -308,6 +308,36 @@ public partial class MainViewModel
     }
 
     /// <summary>
+    /// The selected nodes as a plain Julia script that runs on its own: with every node they take their values from,
+    /// however far back. The whole design when nothing is selected.
+    /// </summary>
+    public static string JuliaOfSelection()
+    {
+        HashSet<string> wanted = Nodes.Where(n => n.IsSelected).Select(n => n.ID).ToHashSet();
+        if (wanted.Count == 0)
+        {
+            return ExportScript();
+        }
+
+        Queue<string> toVisit = new(wanted);
+        while (toVisit.TryDequeue(out string? id))
+        {
+            foreach (Connection wire in Connections.Where(c => c.TargetID == id))
+            {
+                if (wanted.Add(wire.SourceID))
+                {
+                    toVisit.Enqueue(wire.SourceID);
+                }
+            }
+        }
+
+        return ScriptGenerator.Generate(
+            Nodes.Where(n => wanted.Contains(n.ID)),
+            Connections.Where(c => wanted.Contains(c.SourceID) && wanted.Contains(c.TargetID)),
+            instrumented: false).Text;
+    }
+
+    /// <summary>
     /// Asks whether to install the packages named, which the design needs but Julia can't load; the
     /// flag says whether running without them is an option. Set by the window; without it (in tests),
     /// runs go ahead without them.
