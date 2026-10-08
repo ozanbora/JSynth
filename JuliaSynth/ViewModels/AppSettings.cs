@@ -37,6 +37,11 @@ namespace JuliaSynth.ViewModels
         public bool ShowMinimap { get; set; } = true;
 
         /// <summary>
+        /// Whether the design runs again a moment after a value is changed in the parameters panel.
+        /// </summary>
+        public bool RunOnChange { get; set; } = true;
+
+        /// <summary>
         /// The Julia program picked by the user; null to look for one.
         /// </summary>
         public string? JuliaPath { get; set; }

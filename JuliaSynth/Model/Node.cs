@@ -83,6 +83,63 @@ namespace JuliaSynth.Model
             }
         }
 
+        #region The parameters panel
+        private bool _inPanel;
+        private string _panelName = string.Empty;
+        private double? _panelFrom;
+        private double? _panelTo;
+
+        /// <summary>
+        /// Whether this input can be set from the parameters panel: numbers, arrays typed in, folders.
+        /// </summary>
+        public virtual bool CanBeInPanel => false;
+
+        /// <summary>
+        /// Whether this input is set from the parameters panel too.
+        /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool InPanel
+        {
+            get => _inPanel;
+            set => this.RaiseAndSetIfChanged(ref _inPanel, value);
+        }
+
+        /// <summary>
+        /// Its name in the panel; empty for the name of the parameter it is wired into.
+        /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string PanelName
+        {
+            get => _panelName;
+            set => this.RaiseAndSetIfChanged(ref _panelName, value ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Where a number's slider in the panel starts; null for a range around its value.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public double? PanelFrom
+        {
+            get => _panelFrom;
+            set => this.RaiseAndSetIfChanged(ref _panelFrom, value);
+        }
+
+        /// <summary>
+        /// Where a number's slider in the panel ends; null for a range around its value.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public double? PanelTo
+        {
+            get => _panelTo;
+            set => this.RaiseAndSetIfChanged(ref _panelTo, value);
+        }
+
+        /// <summary>
+        /// The properties of the panel: changing them doesn't change what the design works out.
+        /// </summary>
+        public static IReadOnlyList<string> PanelProperties { get; } = [nameof(InPanel), nameof(PanelName), nameof(PanelFrom), nameof(PanelTo)];
+        #endregion
+
         /// <summary>
         /// Being worked out in the run going on; not saved.
         /// </summary>

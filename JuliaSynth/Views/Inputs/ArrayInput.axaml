@@ -40,6 +40,13 @@
                   Grid.Column="1"
                   Classes="nodeActions">
 
+        <TextBlock Text="◆"
+                   FontSize="10"
+                   Opacity="0.7"
+                   Margin="0 0 4 0"
+                   VerticalAlignment="Center"
+                   IsVisible="{Binding Path=InPanel}"
+                   ToolTip.Tip="In the parameters panel"/>
         <jsControls:ResultBadge/>
 
         <TextBlock Text="⚠"

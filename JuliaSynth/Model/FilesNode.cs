@@ -292,6 +292,8 @@ namespace JuliaSynth.Model
         }
         #endregion
 
+        public override bool CanBeInPanel => true;
+
         public FilesNode()
         {
             Color = NodePalette.Files;

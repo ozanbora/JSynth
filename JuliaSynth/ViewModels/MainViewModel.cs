@@ -273,7 +273,7 @@ public partial class MainViewModel : ReactiveObject
         }
 
         // Moving or recolouring a node, or changing a frame, changes the design, but not what it computes: keep the results.
-        if (e.PropertyName is nameof(Node.Row) or nameof(Node.Column) or nameof(Node.Color) || sender is FrameNode)
+        if (e.PropertyName is nameof(Node.Row) or nameof(Node.Column) or nameof(Node.Color) || sender is FrameNode || Node.PanelProperties.Contains(e.PropertyName))
         {
             History.ScheduleCommit();
             return;
@@ -687,6 +687,7 @@ public partial class MainViewModel : ReactiveObject
         CreateRunCommands();
         CreateInspectorCommands();
         CreateStartCommands();
+        CreateParameterCommands();
         CreatePackageCommands();
 
         History.Changed += (_, _) =>

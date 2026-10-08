@@ -348,7 +348,7 @@ namespace JuliaSynth.Model
         /// <summary>
         /// Every node's variable: x1, z1, v1, A1, ... by kind, f_out for a function f.
         /// </summary>
-        private static Dictionary<string, string> NameVariables(List<Node> nodes)
+        internal static Dictionary<string, string> NameVariables(List<Node> nodes)
         {
             HashSet<string> taken = nodes.OfType<Function>().Select(f => f.Name).ToHashSet();
             Dictionary<string, string> variables = [];

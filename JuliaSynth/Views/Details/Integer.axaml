@@ -48,6 +48,12 @@
                    ToolTip.Tip="Select the color you want to display this node."
                    />
 
+      <CheckBox Content="In parameters"
+                Margin="12 0 0 0"
+                VerticalAlignment="Center"
+                IsChecked="{Binding Path=InPanel}"
+                ToolTip.Tip="Set it from the parameters panel too, with a slider or a box"/>
+
     </StackPanel>
 
     <Label Grid.Row="1"

@@ -51,6 +51,9 @@ namespace JuliaSynth.Model
             set => this.RaiseAndSetIfChanged(ref _max, value);
         }
         #endregion
+
+        public override bool CanBeInPanel => true;
+
         public NumericInput() : base()
         {
             Next = new Parameter("next", Function.AnyType);

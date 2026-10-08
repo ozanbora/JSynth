@@ -28,9 +28,19 @@
     </Grid.Resources>
 
     <Grid Grid.Row="0"
-          ColumnDefinitions="*,Auto"
+          ColumnDefinitions="Auto,*,Auto"
           >
+    <!-- The parameters, docked on the left. -->
     <Border Grid.Column="0"
+            IsVisible="{Binding Path=IsParametersOpen}"
+            Background="{DynamicResource StatusBarBackgroundBrush}"
+            BorderBrush="{DynamicResource StatusBarBorderBrush}"
+            BorderThickness="0 0 1 0"
+            >
+      <jsViews:ParametersPanel/>
+    </Border>
+
+    <Border Grid.Column="1"
             Background="{DynamicResource CanvasBackgroundBrush}"
             >
       <ScrollViewer x:Name="CanvasScroll"
@@ -204,7 +214,7 @@
     </Border>
 
     <!-- The whole design in small, in the corner above the scroll bars: a click or a drag there brings that part into view. -->
-    <Border Grid.Column="0"
+    <Border Grid.Column="1"
             x:Name="MinimapPanel"
             Width="220"
             Height="150"
@@ -226,7 +236,7 @@
     </Border>
 
     <!-- How to start, on an empty canvas; clicks go through to the canvas. -->
-    <TextBlock Grid.Column="0"
+    <TextBlock Grid.Column="1"
                IsVisible="{Binding Path=IsCanvasHintVisible}"
                IsHitTestVisible="False"
                MaxWidth="420"
@@ -237,7 +247,7 @@
                Opacity="0.55"
                Text="An empty design. Right-click to add a node, or open an example from File → Examples."/>
     <!-- Packages the design needs that aren't installed, and their installing. -->
-    <Border Grid.Column="0"
+    <Border Grid.Column="1"
             x:Name="PackageBanner"
             IsVisible="{Binding Path=IsPackageBannerVisible}"
             MaxWidth="720"
@@ -261,7 +271,7 @@
       </StackPanel>
     </Border>
     <!-- A stream running: from where, how far, and that edits wait for the next run. -->
-    <Border Grid.Column="0"
+    <Border Grid.Column="1"
             x:Name="StreamBanner"
             IsVisible="{Binding Path=IsStreaming}"
             MaxWidth="720"
@@ -280,7 +290,7 @@
       </Grid>
     </Border>
     <!-- Downloading the data of an example. -->
-    <Border Grid.Column="0"
+    <Border Grid.Column="1"
             x:Name="DownloadBanner"
             IsVisible="{Binding Path=IsDownloading}"
             MaxWidth="720"
@@ -300,9 +310,9 @@
       </StackPanel>
     </Border>
     <!-- The start page, over the canvas. -->
-    <jsViews:StartPage Grid.Column="0" IsVisible="{Binding Path=IsStartPageOpen}"/>
+    <jsViews:StartPage Grid.Column="1" IsVisible="{Binding Path=IsStartPageOpen}"/>
     <!-- The function panel: a function's settings and code, docked so it stays open while you work. -->
-    <Border Grid.Column="1"
+    <Border Grid.Column="2"
             x:Name="InspectorPanel"
             Width="480"
             IsVisible="{Binding Path=IsInspectorOpen}"
@@ -517,6 +527,10 @@
                   Content="Output"
                   Command="{Binding Path=ToggleOutput}"
                   ToolTip.Tip="Show or hide the output of runs" />
+          <Button Classes="bar"
+                  Content="Parameters"
+                  Command="{Binding Path=ToggleParameters}"
+                  ToolTip.Tip="Show or hide the parameters: inputs set with sliders and boxes" />
           <TextBlock VerticalAlignment="Center"
                      Margin="8 0 0 0"
                      Opacity="0.6"

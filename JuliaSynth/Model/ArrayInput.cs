@@ -22,6 +22,8 @@ namespace JuliaSynth.Model
         private IReadOnlyList<IReadOnlyList<string>> _rows = [];
         private string? _error;
 
+        public override bool CanBeInPanel => true;
+
         protected ArrayInput()
         {
             Next = new Parameter("next", Function.AnyType);

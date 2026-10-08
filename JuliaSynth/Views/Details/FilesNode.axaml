@@ -149,13 +149,20 @@
            VerticalAlignment="Center"
            Content="Color"
            />
-    <ColorPicker Grid.Row="5"
-                 Grid.Column="1"
-                 Color="{Binding Path=Color}"
-                 HorizontalAlignment="Left"
-                 VerticalAlignment="Center"
-                 ToolTip.Tip="Select the color you want to display this node."
-                 />
+    <StackPanel Grid.Row="5"
+                Grid.Column="1"
+                Orientation="Horizontal">
+      <ColorPicker Color="{Binding Path=Color}"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"
+                   ToolTip.Tip="Select the color you want to display this node."
+                   />
+      <CheckBox Content="In parameters"
+                Margin="12 0 0 0"
+                VerticalAlignment="Center"
+                IsChecked="{Binding Path=InPanel}"
+                ToolTip.Tip="Set its folder from the parameters panel too"/>
+    </StackPanel>
 
     <TextBlock Grid.Row="6"
                Grid.Column="1"

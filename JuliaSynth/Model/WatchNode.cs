@@ -252,6 +252,9 @@ namespace JuliaSynth.Model
 
         protected override bool NeedsFiles => false;
 
+        // A stream goes on from the folder it started with: not one to set from the panel.
+        public override bool CanBeInPanel => false;
+
         public WatchNode()
         {
             Color = NodePalette.Watch;
