@@ -30,7 +30,8 @@ namespace JuliaSynth.Model
             public Writer(IEnumerable<Node> designNodes, IEnumerable<Connection> designConnections, bool instrumented, string plotFolder, string? stopFile)
             {
                 (_instrumented, _plotFolder, _stopFile) = (instrumented, plotFolder, stopFile);
-                _nodes = designNodes.ToList();
+                // Frames are comments on the canvas: nothing to work out.
+                _nodes = designNodes.Where(n => n is not FrameNode).ToList();
                 List<Connection> attached = designConnections.Where(c => Wiring.IsAttached(_nodes, c)).ToList();
 
                 // Builders write wired arguments by name and typed-in ones by value; make sure they know which is

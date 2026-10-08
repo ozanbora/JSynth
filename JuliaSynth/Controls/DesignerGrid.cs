@@ -109,8 +109,8 @@ namespace JuliaSynth.Controls
         {
             if (ShowCustomGridLines && _gridLinesRenderer == null)
             {
-                // Below the wires, which are below the nodes.
-                _gridLinesRenderer = new GridLinesRenderer(this) { ZIndex = -2 };
+                // Below the frames and the wires, which are below the nodes.
+                _gridLinesRenderer = new GridLinesRenderer(this) { ZIndex = -3 };
                 VisualChildren.Add(_gridLinesRenderer);
             }
 

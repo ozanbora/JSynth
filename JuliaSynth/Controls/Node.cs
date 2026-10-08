@@ -58,9 +58,12 @@ namespace JuliaSynth.Controls
                 MainViewModel.SelectOnly(model);
             }
 
-            _group = this.FindAncestorOfType<DesignerGrid>()?.GetVisualDescendants().OfType<Node>()
-                .Where(n => n.NodeModel?.IsSelected == true)
-                .ToList() ?? [this];
+            // The selected nodes go, and the nodes in the selected frames with them.
+            List<Node> all = this.FindAncestorOfType<DesignerGrid>()?.GetVisualDescendants().OfType<Node>().ToList() ?? [this];
+            List<Model.FrameNode> frames = all.Select(n => n.NodeModel).OfType<Model.FrameNode>().Where(f => f.IsSelected).ToList();
+            _group = all
+                .Where(n => n.NodeModel is Model.Node m && (m.IsSelected || frames.Any(f => f.Holds(m))))
+                .ToList();
 
             // Capture first: taking capture from the child that was implicitly captured must not
             // be mistaken for losing it mid-drag in OnPointerCaptureLost.

@@ -26,7 +26,7 @@ namespace JuliaSynth.Controls
         {
             IEnumerable<Rect> parts = this.GetVisualDescendants()
                 .OfType<Border>()
-                .Where(b => b.Classes.Contains("node") && b.IsEffectivelyVisible)
+                .Where(b => (b.Classes.Contains("node") || b.Classes.Contains("frame")) && b.IsEffectivelyVisible)
                 .Select(b => new Rect(b.TranslatePoint(default, this) ?? default, b.Bounds.Size))
                 .Concat(Wires().Select(w => w.Geometry.Bounds));
             return parts.Any() ? parts.Aggregate((a, b) => a.Union(b)) : null;

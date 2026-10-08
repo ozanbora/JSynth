@@ -171,6 +171,14 @@ public partial class MainViewModel : ReactiveObject
 
         PruneConnections();
         MarkWiredInputs();
+
+        // Frames added or taken away: nothing worked out changes.
+        if ((e.NewItems ?? e.OldItems)?.OfType<Node>().All(n => n is FrameNode) == true && e.Action is NotifyCollectionChangedAction.Add or NotifyCollectionChangedAction.Remove)
+        {
+            History.ScheduleCommit();
+            return;
+        }
+
         DesignChanged();
     }
 
@@ -264,8 +272,8 @@ public partial class MainViewModel : ReactiveObject
             return;
         }
 
-        // Moving or recolouring a node changes the design, but not what it computes: keep the results.
-        if (e.PropertyName is nameof(Node.Row) or nameof(Node.Column) or nameof(Node.Color))
+        // Moving or recolouring a node, or changing a frame, changes the design, but not what it computes: keep the results.
+        if (e.PropertyName is nameof(Node.Row) or nameof(Node.Column) or nameof(Node.Color) || sender is FrameNode)
         {
             History.ScheduleCommit();
             return;
@@ -320,7 +328,7 @@ public partial class MainViewModel : ReactiveObject
     #region Editing
     /// <summary>
     /// Adds a new node of <paramref name="kind"/> (Float, Integer, UnsignedInteger, VectorNode,
-    /// MatrixNode, SparseInput, ArrayBuilder, ArrayFile, DisplayNode, SaveFile, PlotNode or Function)
+    /// MatrixNode, SparseInput, ArrayBuilder, ArrayFile, DisplayNode, SaveFile, PlotNode, a loop node, FrameNode or Function)
     /// at the first free spot at or below the given cell, and selects it.
     /// </summary>
     public static Node AddNode(string kind, int row, int column)
@@ -345,8 +353,27 @@ public partial class MainViewModel : ReactiveObject
             nameof(WhenNode) => new WhenNode(),
             nameof(ZipNode) => new ZipNode(),
             nameof(MergeNode) => new MergeNode(),
+            nameof(FrameNode) => new FrameNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };
+
+        // A frame goes around the selected nodes, or from the cell given.
+        if (node is FrameNode frame)
+        {
+            List<Node> selected = Nodes.Where(n => n.IsSelected && n is not FrameNode).ToList();
+            if (selected.Count > 0)
+            {
+                frame.Fit(selected);
+            }
+            else
+            {
+                (frame.Row, frame.Column) = (Math.Clamp(row, 0, Constants.ROWS - frame.Rows), Math.Clamp(column, 0, Constants.COLUMNS - frame.Columns));
+            }
+
+            SelectOnly(frame);
+            Nodes.Add(frame);
+            return frame;
+        }
 
         // Nodes are 9x6 cells centred on their cell; step down until this one overlaps none.
         row = Math.Clamp(row, 3, Constants.ROWS - 4);

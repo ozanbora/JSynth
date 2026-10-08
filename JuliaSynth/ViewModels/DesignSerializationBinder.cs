@@ -42,6 +42,7 @@ namespace JuliaSynth.ViewModels
             typeof(WhenNode),
             typeof(FileNameNode),
             typeof(ZipNode),
+            typeof(FrameNode),
             typeof(MergeNode),
             typeof(Argument),
             typeof(List<Argument>),

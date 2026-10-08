@@ -124,7 +124,9 @@ namespace JuliaSynth.Controls
                 }
 
                 Point topLeft = node.TranslatePoint(default, this) ?? default;
-                bool inBox = new Rect(topLeft, node.Bounds.Size).Intersects(box);
+                // A frame only when the box goes all around it: a box drawn in one is for the nodes in it.
+                Rect bounds = new(topLeft, node.Bounds.Size);
+                bool inBox = model is Model.FrameNode ? box.Contains(bounds) : bounds.Intersects(box);
                 if (inBox || !_addToSelection)
                 {
                     model.IsSelected = inBox || (_addToSelection && model.IsSelected);

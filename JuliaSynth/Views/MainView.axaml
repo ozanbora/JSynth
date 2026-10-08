@@ -75,6 +75,8 @@
                   <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Zip: folders in step, by file name (⋈)" Tag="ZipNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Merge: folders as one stream, as files come (∪)" Tag="MergeNode" Click="AddAtPointer_Click"/>
+                  <Separator/>
+                  <MenuItem Header="Frame: a titled box around the selected nodes (▭)" Tag="FrameNode" Click="AddAtPointer_Click"/>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
@@ -175,6 +177,9 @@
               </DataTemplate>
               <DataTemplate DataType="jsModel:WindowNode">
                 <jsViews:WindowNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:FrameNode">
+                <jsViews:FrameNode DataContext="{Binding}"/>
               </DataTemplate>
               <DataTemplate DataType="jsModel:WhenNode">
                 <jsViews:WhenNode DataContext="{Binding}"/>
@@ -459,6 +464,8 @@
                 <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Zip: folders in step, by file name (⋈)" Tag="ZipNode" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Merge: folders as one stream, as files come (∪)" Tag="MergeNode" Click="AddAtCenter_Click"/>
+                <Separator/>
+                <MenuItem Header="Frame: a titled box around the selected nodes (▭)" Tag="FrameNode" Click="AddAtCenter_Click"/>
               </MenuFlyout>
             </DropDownButton.Flyout>
           </DropDownButton>

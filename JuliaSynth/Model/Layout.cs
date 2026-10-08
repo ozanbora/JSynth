@@ -19,6 +19,12 @@ namespace JuliaSynth.Model
         /// </summary>
         public static (double Top, double Left, double Bottom, double Right) Footprint(Node node)
         {
+            // A frame is drawn from its cell, its size.
+            if (node is FrameNode frame)
+            {
+                return (frame.Row, frame.Column, frame.Row + frame.Rows, frame.Column + frame.Columns);
+            }
+
             (double width, double height) = node switch
             {
                 DisplayNode => (13, 9),
@@ -38,15 +44,26 @@ namespace JuliaSynth.Model
         /// Arranges <paramref name="nodes"/>: the rows of nodes from the top, then the columns from the left, each as
         /// near the ones before it as the nodes beside it allow, a gap away: empty space closed up, and nodes on top of
         /// each other moved apart. Nodes keep their order, and those lined up stay so; the topmost and leftmost stay
-        /// where they are.
+        /// where they are. Frames are drawn anew around the nodes they held.
         /// </summary>
-        public static void Arrange(IList<Node> nodes)
+        public static void Arrange(IList<Node> design)
         {
+            List<(FrameNode Frame, List<Node> Held)> frames = [.. design.OfType<FrameNode>().Select(f => (f, design.Where(n => n is not FrameNode && f.Holds(n)).ToList()))];
+            List<Node> nodes = [.. design.Where(n => n is not FrameNode)];
             if (nodes.Count == 0)
             {
                 return;
             }
 
+            Arrange(nodes);
+            foreach ((FrameNode frame, List<Node> held) in frames)
+            {
+                frame.Fit(held);
+            }
+        }
+
+        private static void Arrange(List<Node> nodes)
+        {
             Arrange(nodes, n => n.Row, (n, row) => n.Row = row, n => (Footprint(n).Top, Footprint(n).Bottom), n => (Footprint(n).Left, Footprint(n).Right), RowGap);
             Arrange(nodes, n => n.Column, (n, column) => n.Column = column, n => (Footprint(n).Left, Footprint(n).Right), n => (Footprint(n).Top, Footprint(n).Bottom), ColumnGap);
         }

@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JuliaSynth.Views.FrameNode"
+
+             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+
+             x:DataType="jsModel:FrameNode"
+             HorizontalAlignment="Left"
+             VerticalAlignment="Top"
+             >
+  <Design.DataContext>
+    <jsModel:FrameNode/>
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <Style Selector="Border.frame.selected">
+      <Setter Property="BoxShadow" Value="0 0 0 3 #6F9FD8"/>
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Only the title bar and the corner grip take the pointer: elsewhere a drag pans the canvas, and wires and nodes
+       in the frame are clicked as ever. -->
+  <Grid>
+    <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+            Opacity="0.18"
+            CornerRadius="8"
+            IsHitTestVisible="False"
+            />
+    <Border Classes="frame"
+            Classes.selected="{Binding Path=IsSelected}"
+            BorderBrush="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+            BorderThickness="2"
+            CornerRadius="8"
+            IsHitTestVisible="False"
+            />
+
+    <!-- Title bar: drags the frame and the nodes in it. -->
+    <Grid VerticalAlignment="Top"
+          Height="34"
+          TextElement.Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}">
+      <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+              Opacity="0.85"
+              CornerRadius="8 8 0 0"
+              />
+      <DockPanel Margin="12 0 6 0">
+        <StackPanel DockPanel.Dock="Right"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center">
+          <Button Classes="nodeAction"
+                  Content="Ξ"
+                  ToolTip.Tip="Edit">
+            <Button.Flyout>
+              <Flyout Placement="Bottom" ShowMode="Transient">
+                <Grid ColumnDefinitions="Auto,320" RowDefinitions="Auto,Auto,Auto" Margin="4">
+                  <Label Grid.Row="0" Content="Title" VerticalAlignment="Center"/>
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Path=Title}" Margin="0 2"/>
+                  <Label Grid.Row="1" Content="Note" VerticalAlignment="Top" Margin="0 6 0 0"/>
+                  <TextBox Grid.Row="1" Grid.Column="1"
+                           Text="{Binding Path=Note}"
+                           LostFocus="Note_LostFocus"
+                           AcceptsReturn="True"
+                           TextWrapping="Wrap"
+                           MinHeight="80"
+                           Margin="0 2"
+                           PlaceholderText="What these nodes do, and why"/>
+                  <Label Grid.Row="2" Content="Color" VerticalAlignment="Center"/>
+                  <ColorPicker Grid.Row="2" Grid.Column="1"
+                               Color="{Binding Path=Color}"
+                               HorizontalAlignment="Left"
+                               Margin="0 2"/>
+                </Grid>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+          <Button Classes="nodeAction danger"
+                  Content="✕"
+                  ToolTip.Tip="Delete the frame (not the nodes in it)"
+                  Click="Delete_Click"
+                  />
+        </StackPanel>
+        <TextBlock Text="{Binding Path=Title}"
+                   FontSize="16"
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   />
+      </DockPanel>
+    </Grid>
+
+    <TextBlock Text="{Binding Path=Note}"
+               Margin="14 40 14 14"
+               FontSize="12"
+               TextWrapping="Wrap"
+               Opacity="0.8"
+               IsHitTestVisible="False"
+               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+               />
+
+    <!-- Corner grip: resizes the frame. -->
+    <Border x:Name="Grip"
+            Width="18"
+            Height="18"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Background="Transparent"
+            Cursor="BottomRightCorner"
+            ToolTip.Tip="Drag to resize"
+            PointerPressed="Grip_PointerPressed"
+            PointerMoved="Grip_PointerMoved"
+            PointerReleased="Grip_PointerReleased"
+            >
+      <TextBlock Text="◢"
+                 FontSize="12"
+                 Opacity="0.6"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Bottom"
+                 Margin="0 0 3 1"
+                 Foreground="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+                 />
+    </Border>
+  </Grid>
+</UserControl>
