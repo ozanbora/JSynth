@@ -32,6 +32,11 @@ namespace JuliaSynth.ViewModels
         public bool AutoSave { get; set; } = true;
 
         /// <summary>
+        /// Whether the map of the whole design shows in the corner of the canvas.
+        /// </summary>
+        public bool ShowMinimap { get; set; } = true;
+
+        /// <summary>
         /// The Julia program picked by the user; null to look for one.
         /// </summary>
         public string? JuliaPath { get; set; }

@@ -203,6 +203,28 @@
       </ScrollViewer>
     </Border>
 
+    <!-- The whole design in small, in the corner above the scroll bars: a click or a drag there brings that part into view. -->
+    <Border Grid.Column="0"
+            x:Name="MinimapPanel"
+            Width="220"
+            Height="150"
+            Margin="0 0 22 22"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            CornerRadius="6"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource CanvasGridLineBrush}"
+            Background="{DynamicResource CanvasBackgroundBrush}"
+            BoxShadow="0 4 14 0 #30000000"
+            IsVisible="{Binding Path=ShowMinimap}"
+            >
+      <jsControls:Minimap Margin="4"
+                          Offset="{Binding Path=ScrollViewerOffset, Mode=TwoWay}"
+                          Scale="{Binding Path=Scale}"
+                          ViewportSize="{Binding #CanvasScroll.Viewport}"
+                          />
+    </Border>
+
     <!-- How to start, on an empty canvas; clicks go through to the canvas. -->
     <TextBlock Grid.Column="0"
                IsVisible="{Binding Path=IsCanvasHintVisible}"
@@ -513,6 +535,14 @@
                     Orientation="Horizontal"
                     Spacing="2"
                     VerticalAlignment="Center">
+          <ToggleButton Content="Map"
+                        IsChecked="{Binding Path=ShowMinimap}"
+                        Height="26"
+                        Padding="8 0"
+                        Margin="0 0 8 0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        ToolTip.Tip="Show or hide the map of the whole design"/>
           <Button Classes="bar"
                   Content="−"
                   Command="{Binding Path=ZoomOut}"

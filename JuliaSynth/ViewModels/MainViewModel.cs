@@ -624,6 +624,30 @@ public partial class MainViewModel : ReactiveObject
     /// </summary>
     public bool ShowShadows => Scale <= MaxShadowZoom;
 
+    private bool? _showMinimap;
+
+    /// <summary>
+    /// Whether the map of the whole design shows in the corner of the canvas; kept in the settings, on unless turned
+    /// off.
+    /// </summary>
+    public bool ShowMinimap
+    {
+        get => _showMinimap ??= AppSettings.Load().ShowMinimap;
+        set
+        {
+            if (value == ShowMinimap)
+            {
+                return;
+            }
+
+            _showMinimap = value;
+            this.RaisePropertyChanged();
+            AppSettings settings = AppSettings.Load();
+            settings.ShowMinimap = value;
+            settings.Save();
+        }
+    }
+
     private const double MaxShadowZoom = 2.0;
 
 

@@ -70,18 +70,18 @@ namespace JuliaSynth.Tests
                 Window window = new() { Content = new MainView(), DataContext = viewModel, Width = 1000, Height = 700 };
                 window.Show();
 
-                // Far from the starting design's nodes.
-                window.MouseDown(new Point(900, 500), MouseButton.Left);
-                window.MouseMove(new Point(850, 440), RawInputModifiers.LeftMouseButton);
-                window.MouseUp(new Point(850, 440), MouseButton.Left);
+                // Far from the starting design's nodes, and from the map in the corner.
+                window.MouseDown(new Point(800, 200), MouseButton.Left);
+                window.MouseMove(new Point(750, 140), RawInputModifiers.LeftMouseButton);
+                window.MouseUp(new Point(750, 140), MouseButton.Left);
 
                 // Dragging left and up shows more of the right and the bottom.
                 Assert.Equal(new Vector(350, 360), viewModel.ScrollViewerOffset);
 
                 // With Ctrl, a drag on the empty canvas selects (a box) and doesn't pan.
-                window.MouseDown(new Point(900, 500), MouseButton.Left, RawInputModifiers.Control);
-                window.MouseMove(new Point(850, 440), RawInputModifiers.Control | RawInputModifiers.LeftMouseButton);
-                window.MouseUp(new Point(850, 440), MouseButton.Left, RawInputModifiers.Control);
+                window.MouseDown(new Point(800, 200), MouseButton.Left, RawInputModifiers.Control);
+                window.MouseMove(new Point(750, 140), RawInputModifiers.Control | RawInputModifiers.LeftMouseButton);
+                window.MouseUp(new Point(750, 140), MouseButton.Left, RawInputModifiers.Control);
                 Assert.Equal(new Vector(350, 360), viewModel.ScrollViewerOffset);
                 window.Close();
             });
@@ -187,7 +187,7 @@ namespace JuliaSynth.Tests
 
                 // After one: the value, its first lines.
                 x.Result = new Runtime.Report(x.ID, Runtime.ReportStatus.Ok, "Matrix{Float64}", string.Join('\n', Enumerable.Range(1, 40)));
-                window.MouseMove(new Point(900, 500));
+                window.MouseMove(new Point(800, 200));
                 Assert.False(ToolTip.GetIsOpen(grid));
                 window.MouseMove(middle);
                 string[] shown = ((TextBlock)ToolTip.GetTip(grid)!).Text!.Split('\n');
@@ -195,6 +195,54 @@ namespace JuliaSynth.Tests
                 Assert.Equal("⋮", shown[^1]);
                 window.Close();
             });
+        }
+
+        [Fact]
+        public void A_click_on_the_map_brings_that_part_of_the_design_into_view_and_the_map_can_be_hidden()
+        {
+            string settingsBefore = AppSettings.SettingsPath;
+            string folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "JuliaSynth.Tests", System.Guid.NewGuid().ToString("N"));
+            _ = System.IO.Directory.CreateDirectory(folder);
+            AppSettings.SettingsPath = System.IO.Path.Combine(folder, "settings.json");
+            try
+            {
+                Ui.Run(() =>
+                {
+                    // A node far down and to the right of the others.
+                    MainViewModel.LoadStartingDesign();
+                    Model.Float far = new() { Row = 150, Column = 200 };
+                    MainViewModel.Nodes.Add(far);
+                    MainViewModel viewModel = new();
+                    Window window = new() { Content = new MainView(), DataContext = viewModel, Width = 1000, Height = 700 };
+                    window.Show();
+                    Controls.Minimap map = window.GetVisualDescendants().OfType<Controls.Minimap>().Single();
+                    Assert.True(map.IsEffectivelyVisible);
+
+                    // A click on it on the map: it comes into the middle of the view.
+                    (Rect area, double factor, Point origin) = map.Map();
+                    Point farOnCanvas = new((far.Column + 0.5) * Constants.WIDTH, (far.Row + 0.5) * Constants.HEIGHT);
+                    Point farOnMap = new(origin.X + ((farOnCanvas.X - area.X) * factor), origin.Y + ((farOnCanvas.Y - area.Y) * factor));
+                    window.MouseDown(map.TranslatePoint(farOnMap, window)!.Value, MouseButton.Left);
+                    window.MouseUp(map.TranslatePoint(farOnMap, window)!.Value, MouseButton.Left);
+                    Avalonia.Controls.ScrollViewer scroll = window.GetVisualDescendants().OfType<Avalonia.Controls.ScrollViewer>().Single(s => s.Name == "CanvasScroll");
+                    Point middle = new((viewModel.ScrollViewerOffset.X + (scroll.Viewport.Width / 2)) / viewModel.Scale, (viewModel.ScrollViewerOffset.Y + (scroll.Viewport.Height / 2)) / viewModel.Scale);
+                    Assert.InRange(middle.X - farOnCanvas.X, -2 / factor, 2 / factor);
+                    Assert.InRange(middle.Y - farOnCanvas.Y, -2 / factor, 2 / factor);
+
+                    // Hidden, and kept hidden.
+                    viewModel.ShowMinimap = false;
+                    Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                    Assert.False(map.IsEffectivelyVisible);
+                    Assert.False(AppSettings.Load().ShowMinimap);
+                    Assert.False(new MainViewModel().ShowMinimap);
+                    window.Close();
+                });
+            }
+            finally
+            {
+                AppSettings.SettingsPath = settingsBefore;
+                System.IO.Directory.Delete(folder, recursive: true);
+            }
         }
 
         [Fact]
