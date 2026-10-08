@@ -162,6 +162,42 @@ namespace JuliaSynth.Tests
         }
 
         [Fact]
+        public void The_pointer_over_a_wire_shows_what_it_carries()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MainViewModel viewModel = new();
+                Window window = new() { Content = new MainView(), DataContext = viewModel, Width = 1000, Height = 700 };
+                window.Show();
+                Controls.DesignerGrid grid = window.GetVisualDescendants().OfType<Controls.DesignerGrid>().Single();
+
+                Model.Function f = MainViewModel.Nodes.OfType<Model.Function>().Single(n => n.Name == "f");
+                Model.Connection wire = MainViewModel.ConnectionTo(f.Parameters[0])!;
+                Model.Node x = MainViewModel.Nodes.Single(n => n.ID == wire.SourceID);
+                Controls.Connector[] ports = [.. window.GetVisualDescendants().OfType<Controls.Connector>()];
+                Point from = ports.Single(c => !c.IsInput && c.Owner == x && c.Output is null).CenterIn(window);
+                Point to = ports.Single(c => c.Parameter == f.Parameters[0]).CenterIn(window);
+                Point middle = new((from.X + to.X) / 2, (from.Y + to.Y) / 2);
+
+                // Before a run: its type.
+                window.MouseMove(middle);
+                Assert.True(ToolTip.GetIsOpen(grid));
+                Assert.Equal("Float64\nRun the design (F5) to see the value", ((TextBlock)ToolTip.GetTip(grid)!).Text);
+
+                // After one: the value, its first lines.
+                x.Result = new Runtime.Report(x.ID, Runtime.ReportStatus.Ok, "Matrix{Float64}", string.Join('\n', Enumerable.Range(1, 40)));
+                window.MouseMove(new Point(900, 500));
+                Assert.False(ToolTip.GetIsOpen(grid));
+                window.MouseMove(middle);
+                string[] shown = ((TextBlock)ToolTip.GetTip(grid)!).Text!.Split('\n');
+                Assert.Equal(["Matrix{Float64}", "1", "2"], shown.Take(3));
+                Assert.Equal("⋮", shown[^1]);
+                window.Close();
+            });
+        }
+
+        [Fact]
         public void Dragging_the_top_edge_of_the_output_resizes_it()
         {
             Ui.Run(() =>

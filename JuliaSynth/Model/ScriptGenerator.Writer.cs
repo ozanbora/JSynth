@@ -483,6 +483,9 @@ namespace JuliaSynth.Model
                             + $"{Indent}end\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
                     : Guarded(node.ID, $"{outputs}global {variable} = {expression}", report: true, variable);
 
+                // Lit up while worked out, and timed.
+                compute = $"_jsynth_start({id})\n{compute}";
+
                 if (conditions.Count == 0)
                 {
                     return code.Append(compute).ToString();

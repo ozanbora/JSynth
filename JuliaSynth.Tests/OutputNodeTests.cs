@@ -250,7 +250,7 @@ namespace JuliaSynth.Tests
             _ = Directory.CreateDirectory(Path.Combine(_folder, "out"));
             JuliaRunner runner = new(julia.Path);
             ConcurrentQueue<Report> reports = new();
-            runner.Reported += reports.Enqueue;
+            runner.Reported += Finished.Into(reports);
             RunResult result = await runner.RunAsync(script, _folder);
 
             Assert.True(result.Succeeded);

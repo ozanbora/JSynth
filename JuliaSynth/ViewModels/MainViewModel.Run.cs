@@ -367,6 +367,13 @@ public partial class MainViewModel
                     return;
                 }
 
+                // Lit up while worked out; its result, when it comes, keeps the last one shown until then.
+                node.IsRunning = report.Status == ReportStatus.Running;
+                if (node.IsRunning)
+                {
+                    return;
+                }
+
                 node.Result = report;
                 if (node is PlotNode plot && report.Status == ReportStatus.Ok)
                 {
@@ -445,6 +452,12 @@ public partial class MainViewModel
                 }
             }
 
+            // The steps that took longest, to see where the time goes.
+            if (!result.Cancelled && Slowest(script) is string slowest)
+            {
+                Log(slowest, OutputKind.Info);
+            }
+
             string stream = StreamStatus;
             EndStream();
             Log(result.Cancelled ? "Stopped."
@@ -461,7 +474,31 @@ public partial class MainViewModel
         {
             EndStream();
             Finish(cancellation);
+
+            // Stopped, or failed on the way: nothing is being worked out any more.
+            foreach (Node node in Nodes)
+            {
+                node.IsRunning = false;
+            }
         }
+    }
+
+    // Steps quicker than this aren't worth naming among the slowest.
+    private const double NotableSeconds = 0.05;
+
+    /// <summary>
+    /// The three steps of the last run that took longest, e.g. "Slowest: fit 2.1 s, read 0.4 s"; null when none took
+    /// long enough to matter.
+    /// </summary>
+    private static string? Slowest(JuliaScript script)
+    {
+        List<string> slowest = Nodes
+            .Where(n => n.Result?.Seconds >= NotableSeconds && script.Variables.ContainsKey(n.ID))
+            .OrderByDescending(n => n.Result!.Seconds)
+            .Take(3)
+            .Select(n => $"{script.Variables[n.ID]} {Node.Duration(n.Result!.Seconds!.Value)}")
+            .ToList();
+        return slowest.Count == 0 ? null : $"Slowest: {string.Join(", ", slowest)}";
     }
 
     /// <summary>

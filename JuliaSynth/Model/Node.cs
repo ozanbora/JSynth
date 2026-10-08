@@ -17,6 +17,7 @@ namespace JuliaSynth.Model
         private Color _color;
         private bool _isSelected;
         private Report? _result;
+        private bool _isRunning;
 
         #endregion
 
@@ -83,6 +84,15 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
+        /// Being worked out in the run going on; not saved.
+        /// </summary>
+        public bool IsRunning
+        {
+            get => _isRunning;
+            set => this.RaiseAndSetIfChanged(ref _isRunning, value);
+        }
+
+        /// <summary>
         /// Lets a node update what it shows of <see cref="Result"/>.
         /// </summary>
         protected virtual void OnResultChanged()
@@ -95,14 +105,14 @@ namespace JuliaSynth.Model
         /// </summary>
         public virtual bool IsViewState(string property)
         {
-            return property == nameof(IsSelected) || ResultProperties.Contains(property);
+            return property is nameof(IsSelected) or nameof(IsRunning) || ResultProperties.Contains(property);
         }
 
         /// <summary>
         /// <see cref="Result"/> and the properties shown from it: changing them doesn't change the design.
         /// </summary>
         public static IReadOnlyList<string> ResultProperties { get; } = [
-            nameof(Result), nameof(HasResult), nameof(IsResultOk), nameof(IsResultError), nameof(IsResultSkipped), nameof(ResultTip),
+            nameof(Result), nameof(HasResult), nameof(IsResultOk), nameof(IsResultError), nameof(IsResultSkipped), nameof(ResultTip), nameof(ResultTime), nameof(TimeLabel),
         ];
 
         public bool HasResult => Result is not null;
@@ -114,14 +124,39 @@ namespace JuliaSynth.Model
         public bool IsResultSkipped => Result?.Status == ReportStatus.Skipped;
 
         /// <summary>
-        /// The value and its type, or what went wrong.
+        /// The value and its type, or what went wrong; and how long it took.
         /// </summary>
         public string ResultTip => Result switch
         {
-            { Status: ReportStatus.Ok } r => $"{r.Type}\n{r.Text}",
-            { Status: ReportStatus.Error } r => $"Error\n{r.Text}",
+            { Status: ReportStatus.Ok } r => $"{r.Type}\n{r.Text}{Took}",
+            { Status: ReportStatus.Error } r => $"Error\n{r.Text}{Took}",
             { Status: ReportStatus.Skipped } r => $"Not run\n{r.Text}",
             _ => string.Empty,
+        };
+
+        private string Took => ResultTime.Length == 0 ? string.Empty : $"\n\nTook {ResultTime}";
+
+        /// <summary>
+        /// How long working the value out took (going through files, for all of them so far), e.g. <c>12 ms</c>; empty
+        /// when it wasn't timed.
+        /// </summary>
+        public string ResultTime => Result?.Seconds is double seconds ? Duration(seconds) : string.Empty;
+
+        /// <summary>
+        /// <see cref="ResultTime"/> shown on the node: only when it took a millisecond or more, so the many quick ones
+        /// don't crowd the canvas.
+        /// </summary>
+        public string TimeLabel => Result?.Seconds >= 0.001 ? ResultTime : string.Empty;
+
+        /// <summary>
+        /// <paramref name="seconds"/> as a short time: <c>0.4 ms</c>, <c>12 ms</c>, <c>1.3 s</c>, <c>2 min 5 s</c>.
+        /// </summary>
+        public static string Duration(double seconds) => seconds switch
+        {
+            < 0.01 => FormattableString.Invariant($"{seconds * 1000:0.0} ms"),
+            < 1 => FormattableString.Invariant($"{seconds * 1000:0} ms"),
+            < 60 => FormattableString.Invariant($"{seconds:0.0} s"),
+            _ => FormattableString.Invariant($"{Math.Floor(seconds / 60)} min {seconds % 60:0} s"),
         };
 
         /// <summary>

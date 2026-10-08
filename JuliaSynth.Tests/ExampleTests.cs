@@ -174,7 +174,7 @@ namespace JuliaSynth.Tests
 
                 ConcurrentQueue<Report> reports = new();
 
-                RunResult result = await SessionFor(julia).RunAsync(script.Text, folder, reported: reports.Enqueue);
+                RunResult result = await SessionFor(julia).RunAsync(script.Text, folder, reported: Finished.Into(reports));
 
                 Assert.True(result.Succeeded);
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));

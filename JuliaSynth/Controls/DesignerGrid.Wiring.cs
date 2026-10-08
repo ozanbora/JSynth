@@ -332,6 +332,63 @@ namespace JuliaSynth.Controls
             return Wires().OrderBy(w => w.Highlighted).LastOrDefault(w => w.Geometry.StrokeContains(reach, point))?.Connection;
         }
 
+        #region Peeking at a wire
+        // Lines of a value shown over a wire: enough for a small matrix.
+        private const int PeekLines = 16;
+
+        private Connection? _peeked;
+
+        /// <summary>
+        /// With the pointer over a wire on the empty canvas (<paramref name="point"/>; null: elsewhere), shows what it
+        /// carries: the value the last run gave, as a node's badge does.
+        /// </summary>
+        private void PeekWire(Point? point)
+        {
+            Connection? wire = point is Point at && _dragPort is null ? WireAt(at) : null;
+            if (wire == _peeked)
+            {
+                return;
+            }
+
+            _peeked = wire;
+            ToolTip.SetIsOpen(this, false);
+            ToolTip.SetTip(this, wire is null ? null : new TextBlock
+            {
+                FontFamily = new FontFamily("Cascadia Mono,Consolas,Menlo,monospace"),
+                FontSize = 12,
+                MaxWidth = 520,
+                TextWrapping = TextWrapping.Wrap,
+                Text = WhatWireCarries(wire),
+            });
+            ToolTip.SetIsOpen(this, wire is not null);
+        }
+
+        /// <summary>
+        /// The type of the value on <paramref name="wire"/> and, after a run, the value (its first lines).
+        /// </summary>
+        internal static string WhatWireCarries(Connection wire)
+        {
+            if (MainViewModel.Nodes.FirstOrDefault(n => n.ID == wire.SourceID) is not Model.Node source)
+            {
+                return string.Empty;
+            }
+
+            string type = source.OutputTypeOf(wire.Output);
+            if (wire.Output is not null)
+            {
+                return $"{type}\nThe {wire.Output} of each file, as it is read";
+            }
+
+            if (source.Result is null)
+            {
+                return $"{type}\nRun the design (F5) to see the value";
+            }
+
+            string[] lines = source.ResultTip.Split('\n');
+            return lines.Length <= PeekLines ? source.ResultTip : string.Join('\n', lines.Take(PeekLines).Append("⋮"));
+        }
+        #endregion
+
         /// <summary>
         /// A wire carrying a value back to an input for the next file: out to the right of
         /// <paramref name="from"/>, along under both nodes, and into <paramref name="to"/> from the left.

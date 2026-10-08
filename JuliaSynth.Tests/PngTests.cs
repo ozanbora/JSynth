@@ -176,7 +176,7 @@ namespace JuliaSynth.Tests
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
                 ConcurrentQueue<OutputLine> output = new();
-                RunResult result = await session.RunAsync(script.Text + "\nforeach(println, " + script.Variables[files.ID] + ")", _folder, output.Enqueue, reports.Enqueue);
+                RunResult result = await session.RunAsync(script.Text + "\nforeach(println, " + script.Variables[files.ID] + ")", _folder, output.Enqueue, Finished.Into(reports));
 
                 Assert.True(result.Succeeded);
                 Assert.Equal("1×3 Matrix{Float64}:\n 0.0392157  0.0784314  0.117647", reports.Single(r => r.Id == intensity.ID).Text);

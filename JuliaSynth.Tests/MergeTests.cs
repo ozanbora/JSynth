@@ -240,7 +240,7 @@ namespace JuliaSynth.Tests
 
                 JuliaScript script = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true, _folder);
                 ConcurrentQueue<Report> reports = new();
-                Assert.True((await session.RunAsync(script.Text, _folder, reported: reports.Enqueue)).Succeeded);
+                Assert.True((await session.RunAsync(script.Text, _folder, reported: Finished.Into(reports))).Succeeded);
                 string[] Values(Node node) => [.. reports.Last(r => r.Id == node.ID).Text.Split('\n').Skip(1).Select(l => l.Trim())];
                 Assert.Equal<string[]>(["1.0", "20.0", "3.0", "30.0"], Values(design.Seen));
                 Assert.Equal<string[]>(["21.0", "23.0", "33.0"], Values(design.Sums));
@@ -268,7 +268,7 @@ namespace JuliaSynth.Tests
                 Assert.Contains($"more = [(raw\"{B}\", r\"^.*\\.csv$\"i)]", script.Text);
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                Task<RunResult> running = session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                Task<RunResult> running = session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
 
                 // b's file first, then a's: in the order they came, whatever their names.
                 _ = await Wait.Until(() => reports.Any(r => r.Id == a.ID && r.Text == WatchNode.WatchingText), 60);

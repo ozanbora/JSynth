@@ -73,7 +73,7 @@ namespace JuliaSynth.Tests
             JuliaRunner runner = new(julia);
             ConcurrentQueue<Report> reports = new();
             ConcurrentQueue<OutputLine> output = new();
-            runner.Reported += reports.Enqueue;
+            runner.Reported += Finished.Into(reports);
             runner.Output += output.Enqueue;
 
             RunResult result = await runner.RunAsync("println(1)", _folder);
@@ -236,7 +236,7 @@ namespace JuliaSynth.Tests
 
             JuliaRunner runner = new(julia.Path);
             ConcurrentQueue<Report> reports = new();
-            runner.Reported += reports.Enqueue;
+            runner.Reported += Finished.Into(reports);
             RunResult result = await runner.RunAsync(script, _folder);
 
             Assert.True(result.Succeeded);

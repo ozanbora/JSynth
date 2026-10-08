@@ -194,7 +194,7 @@ namespace JuliaSynth.Tests
 
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
 
                 Assert.True(result.Succeeded);
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
@@ -231,7 +231,7 @@ namespace JuliaSynth.Tests
 
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
 
                 Assert.True(result.Succeeded);
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
@@ -271,7 +271,7 @@ namespace JuliaSynth.Tests
 
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
 
                 Assert.True(result.Succeeded);
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
@@ -306,7 +306,7 @@ namespace JuliaSynth.Tests
 
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
 
                 Assert.True(result.Succeeded);
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
@@ -349,7 +349,7 @@ namespace JuliaSynth.Tests
 
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
 
                 Assert.True(result.Succeeded);
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));
@@ -387,7 +387,7 @@ namespace JuliaSynth.Tests
 
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
 
                 Assert.True(result.Succeeded);
                 Assert.DoesNotContain(reports, r => r.Status == ReportStatus.Error);
@@ -433,7 +433,7 @@ namespace JuliaSynth.Tests
 
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                RunResult result = await session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                RunResult result = await session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
 
                 Assert.True(result.Succeeded);
                 Assert.All(reports, r => Assert.True(r.Status == ReportStatus.Ok, $"{script.Variables[r.Id]}: {r.Text}"));

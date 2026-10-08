@@ -181,7 +181,7 @@ namespace JuliaSynth.Tests
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
                 ConcurrentQueue<OutputLine> output = new();
-                Task<RunResult> running = session.RunAsync(script.Text, _folder, output.Enqueue, reports.Enqueue);
+                Task<RunResult> running = session.RunAsync(script.Text, _folder, output.Enqueue, Finished.Into(reports));
 
                 async Task Until(Func<bool> condition) => Assert.True(await Wait.Until(condition, 60), string.Join("\n", output.Select(l => l.Text)));
 

@@ -32,22 +32,30 @@
     </Style>
   </UserControl.Styles>
 
-  <Border Classes="badge"
-          Classes.ok="{Binding Path=IsResultOk}"
-          Classes.error="{Binding Path=IsResultError}"
-          ToolTip.ShowDelay="200"
-          >
-    <ToolTip.Tip>
-      <SelectableTextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
-                           FontSize="12"
-                           MaxWidth="520"
-                           TextWrapping="Wrap"
-                           Text="{Binding Path=ResultTip}"/>
-    </ToolTip.Tip>
-    <Panel>
-      <TextBlock Text="✓" IsVisible="{Binding Path=IsResultOk}"/>
-      <TextBlock Text="✗" IsVisible="{Binding Path=IsResultError}"/>
-      <TextBlock Text="–" IsVisible="{Binding Path=IsResultSkipped}"/>
-    </Panel>
-  </Border>
+  <StackPanel Orientation="Horizontal" Spacing="4">
+    <!-- How long the value took to work out, when it took a while. -->
+    <TextBlock Text="{Binding Path=TimeLabel}"
+               IsVisible="{Binding Path=TimeLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               FontSize="10"
+               Opacity="0.75"
+               VerticalAlignment="Center"/>
+    <Border Classes="badge"
+            Classes.ok="{Binding Path=IsResultOk}"
+            Classes.error="{Binding Path=IsResultError}"
+            ToolTip.ShowDelay="200"
+            >
+      <ToolTip.Tip>
+        <SelectableTextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                             FontSize="12"
+                             MaxWidth="520"
+                             TextWrapping="Wrap"
+                             Text="{Binding Path=ResultTip}"/>
+      </ToolTip.Tip>
+      <Panel>
+        <TextBlock Text="✓" IsVisible="{Binding Path=IsResultOk}"/>
+        <TextBlock Text="✗" IsVisible="{Binding Path=IsResultError}"/>
+        <TextBlock Text="–" IsVisible="{Binding Path=IsResultSkipped}"/>
+      </Panel>
+    </Border>
+  </StackPanel>
 </UserControl>

@@ -122,6 +122,10 @@
               <Style Selector="ItemsControl.shadows Border.node.selected">
                 <Setter Property="BoxShadow" Value="0 0 0 3 #6F9FD8, 0 6 18 0 #40000000"/>
               </Style>
+              <!-- Being worked out in a run: an amber ring and glow, over the selection's. -->
+              <Style Selector="Border.node.running">
+                <Setter Property="BoxShadow" Value="0 0 0 3 #E8A33D, 0 0 22 8 #C0E8A33D"/>
+              </Style>
             </ItemsControl.Styles>
             
             <ItemsControl.DataTemplates>

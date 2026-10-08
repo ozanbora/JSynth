@@ -158,7 +158,7 @@ namespace JuliaSynth.Tests
                 // Each folder says which file it is at.
                 JuliaScript script = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true, _folder);
                 ConcurrentQueue<Report> reports = new();
-                Assert.True((await session.RunAsync(script.Text, _folder, reported: reports.Enqueue)).Succeeded);
+                Assert.True((await session.RunAsync(script.Text, _folder, reported: Finished.Into(reports))).Succeeded);
                 Assert.Equal("33.0", reports.Last(r => r.Id == sum.ID).Text);
                 Assert.Equal("file 2 of 2: 3.csv", reports.Last(r => r.Id == a.ID).Text);
                 Assert.Equal("file 2 of 2: 3.csv", reports.Last(r => r.Id == b.ID).Text);
@@ -185,7 +185,7 @@ namespace JuliaSynth.Tests
                 Assert.Contains($"also = [raw\"{B}\"]", script.Text);
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                Task<RunResult> running = session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                Task<RunResult> running = session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
 
                 // a's file alone: nothing yet, however long; its twin written: worked out.
                 _ = await Wait.Until(() => reports.Any(r => r.Id == watch.ID && r.Text == WatchNode.WatchingText), 60);

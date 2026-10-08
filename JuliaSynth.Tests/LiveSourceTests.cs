@@ -154,7 +154,7 @@ namespace JuliaSynth.Tests
                 JuliaScript script = ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true, _folder, stop);
                 using JuliaSession session = new(julia.Path);
                 ConcurrentQueue<Report> reports = new();
-                Task<RunResult> running = session.RunAsync(script.Text, _folder, reported: reports.Enqueue);
+                Task<RunResult> running = session.RunAsync(script.Text, _folder, reported: Finished.Into(reports));
                 Stopwatch clock = Stopwatch.StartNew();
                 while (!reports.Any(r => r.Id == n.ID) && clock.Elapsed < TimeSpan.FromSeconds(60))
                 {

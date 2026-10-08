@@ -77,6 +77,16 @@ namespace JuliaSynth.Controls
                 _boxEnd = e.GetPosition(this);
                 _selectionRenderer?.InvalidateVisual();
             }
+
+            // Over the empty canvas, not a node: what a wire there carries.
+            bool onNode = e.Source is Visual source && source.GetSelfAndVisualAncestors().OfType<Node>().Any();
+            PeekWire(!_isSelecting && !onNode ? e.GetPosition(this) : null);
+        }
+
+        protected override void OnPointerExited(PointerEventArgs e)
+        {
+            base.OnPointerExited(e);
+            PeekWire(null);
         }
 
         protected override void OnPointerReleased(PointerReleasedEventArgs e)
