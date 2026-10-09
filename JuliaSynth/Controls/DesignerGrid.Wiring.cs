@@ -22,6 +22,15 @@ namespace JuliaSynth.Controls
         // How wide a wire is to a click: a few pixels either side of it.
         private const double WireReach = 10;
 
+        // How far below its ports a wire going back runs: more than a node's height, so it passes under them.
+        private const double BackWireDrop = 110;
+
+        // A breakpoint's dot, and how near a click on it must be.
+        private const double BreakpointRadius = 7;
+
+        private static readonly IBrush BreakpointBrush = new ImmutableSolidColorBrush(Color.Parse("#D9443B"));
+        private static readonly IPen PausedGlow = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#D9443B"), 0.55), 12);
+
         private static readonly IBrush InvalidWireBrush = new ImmutableSolidColorBrush(Color.Parse("#E07A7A"));
 
         private readonly HashSet<Connector> _connectors = [];
@@ -58,6 +67,7 @@ namespace JuliaSynth.Controls
             base.OnAttachedToVisualTree(e);
             MainViewModel.Connections.CollectionChanged += ConnectionsChanged;
             MainViewModel.SelectionChanged += InvalidateWires;
+            MainViewModel.BreakpointsChanged += InvalidateWires;
             LayoutUpdated += OnLayoutUpdated;
         }
 
@@ -66,6 +76,7 @@ namespace JuliaSynth.Controls
             base.OnDetachedFromVisualTree(e);
             MainViewModel.Connections.CollectionChanged -= ConnectionsChanged;
             MainViewModel.SelectionChanged -= InvalidateWires;
+            MainViewModel.BreakpointsChanged -= InvalidateWires;
             LayoutUpdated -= OnLayoutUpdated;
         }
 
@@ -238,8 +249,16 @@ namespace JuliaSynth.Controls
                 // The selected wire and those of the selected nodes stand out: drawn last, bolder, with a glow of the
                 // blue of a selected node's border. With a wire selected, the others fade.
                 bool wireSelected = MainViewModel.SelectedConnection is not null;
-                foreach (Wire wire in grid.Wires().OrderBy(w => w.Highlighted))
+                List<Wire> wires = [.. grid.Wires().OrderBy(w => w.Highlighted)];
+                foreach (Wire wire in wires)
                 {
+                    // The wire a run is paused at glows red.
+                    if (wire.Connection == MainViewModel.PausedWire)
+                    {
+                        context.DrawGeometry(null, PausedGlow, wire.Geometry);
+                    }
+
+
                     // A type changed after wiring (or a mapped function's parameters): keep the wire but flag it.
                     // A wire into a next port carries the value on to the next file: dashed, as it goes back.
                     IBrush brush = wire.Fits ? WireBrush(wire.Source.Color) : InvalidWireBrush;
@@ -256,6 +275,13 @@ namespace JuliaSynth.Controls
                             context.DrawGeometry(null, new Pen(brush, Thickness, dashes), wire.Geometry);
                         }
                     }
+                }
+
+                // Breakpoints: a red dot halfway along the wire; a ring when off.
+                foreach (Wire wire in wires.Where(w => w.Connection.Breakpoint is not null))
+                {
+                    bool on = wire.Connection.Breakpoint!.On;
+                    context.DrawEllipse(on ? BreakpointBrush : grid.Background, new Pen(on ? Brushes.White : BreakpointBrush, 2), wire.Middle, BreakpointRadius, BreakpointRadius);
                 }
 
                 if (grid._dragPort is Connector port)
@@ -277,9 +303,9 @@ namespace JuliaSynth.Controls
 
         /// <summary>
         /// A wire as drawn: its connection and nodes, whether its types fit, whether it goes back to a next port, whether
-        /// it stands out (selected, or a selected node's), and its path.
+        /// it stands out (selected, or a selected node's), its path, and its middle, where a breakpoint is drawn.
         /// </summary>
-        private sealed record Wire(Connection Connection, Model.Node Source, bool Fits, bool Back, bool Highlighted, Geometry Geometry);
+        private sealed record Wire(Connection Connection, Model.Node Source, bool Fits, bool Back, bool Highlighted, Geometry Geometry, Point Middle);
 
         /// <summary>
         /// The wires between the connectors on the canvas.
@@ -318,9 +344,28 @@ namespace JuliaSynth.Controls
                         Wiring.Fits(source, target, parameter, connection.Output),
                         back,
                         connection == selected || source.IsSelected || target.IsSelected,
-                        back ? BackWireGeometry(from, to) : WireGeometry(from, to));
+                        back ? BackWireGeometry(from, to) : WireGeometry(from, to),
+                        back ? new Point((from.X + to.X) / 2, Math.Max(from.Y, to.Y) + BackWireDrop) : new Point((from.X + to.X) / 2, (from.Y + to.Y) / 2));
                 }
             }
+        }
+
+        /// <summary>
+        /// The wire whose breakpoint's dot is at <paramref name="point"/>; null when none is.
+        /// </summary>
+        internal Connection? BreakpointAt(Point point)
+        {
+            return Wires().FirstOrDefault(w => w.Connection.Breakpoint is not null && Distance(w.Middle, point) <= BreakpointRadius + 3)?.Connection;
+        }
+
+        /// <summary>
+        /// Opens the card setting <paramref name="wire"/>'s breakpoint, at its dot.
+        /// </summary>
+        internal void EditBreakpoint(Connection wire)
+        {
+            Flyout flyout = new() { Placement = PlacementMode.Pointer, ShowMode = FlyoutShowMode.Transient };
+            flyout.Content = new BreakpointEditor { DataContext = new BreakpointEditing(wire, flyout.Hide) };
+            flyout.ShowAt(this, showAtPointer: true);
         }
 
         /// <summary>
@@ -396,7 +441,7 @@ namespace JuliaSynth.Controls
         private static StreamGeometry BackWireGeometry(Point from, Point to)
         {
             // Below the ports by more than a node's height, so the wire passes under them.
-            double below = Math.Max(from.Y, to.Y) + 110;
+            double below = Math.Max(from.Y, to.Y) + BackWireDrop;
             const double Turn = 30;
 
             StreamGeometry geometry = new();

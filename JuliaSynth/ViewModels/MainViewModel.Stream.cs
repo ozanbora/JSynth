@@ -38,6 +38,7 @@ public partial class MainViewModel
         private set
         {
             _ = this.RaiseAndSetIfChanged(ref _isStreaming, value);
+            this.RaisePropertyChanged(nameof(IsStreamBannerVisible));
             this.RaisePropertyChanged(nameof(StreamText));
         }
     }

@@ -62,12 +62,13 @@
 
     <!-- Second output: the seconds since the start -->
     <jsControls:NodeBody.Extra>
-      <Grid Height="20"
+      <Grid RowDefinitions="20,20"
             VerticalAlignment="Top"
             >
-        <TextBlock HorizontalAlignment="Left"
+        <TextBlock Grid.Row="1"
+                   HorizontalAlignment="Right"
                    VerticalAlignment="Center"
-                   Margin="8 0 0 0"
+                   Margin="0 0 16 0"
                    Classes="caption"
                    Text="{Binding Path=LimitText}"
                    ToolTip.Tip="How many ticks before the stream ends by itself: set in Ξ"

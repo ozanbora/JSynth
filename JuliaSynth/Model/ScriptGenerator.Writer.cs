@@ -84,6 +84,11 @@ namespace JuliaSynth.Model
                 if (_instrumented)
                 {
                     _ = _script.AppendLine().AppendLine(Reports.Prelude.TrimEnd());
+                    if (_stopFile is not null && _connections.Concat(_nextWires).Any(c => c.Breakpoint is { On: true }))
+                    {
+                        _ = _script.AppendLine(Breakpoint.Prelude.TrimEnd());
+                    }
+
                     if (_nodes.OfType<PlotNode>().Any())
                     {
                         _ = _script.AppendLine(PlotData.Prelude.TrimEnd());
@@ -359,7 +364,30 @@ namespace JuliaSynth.Model
                 (string? expression, string? problem) = Expression(node, inputs, _variables, _byID, _instrumented, _plotFolder, inLoop ? _loop : null);
 
                 NodeParts parts = new(node, inputs, variable, inLoop, expression, problem, problem is null ? OtherOutputs(node, variable, inLoop) : string.Empty);
-                return _instrumented ? RunCode(parts) : PlainCode(parts);
+                return _instrumented ? RunCode(parts) + Breakpoints(node) : PlainCode(parts);
+            }
+
+            /// <summary>
+            /// The breakpoints on the wires from <paramref name="node"/>, those on: in a run, pausing once its value is worked
+            /// out (see <see cref="Breakpoint"/>). None in a run that can't be told to go on (without a stop file).
+            /// </summary>
+            private string Breakpoints(Node node)
+            {
+                if (_stopFile is null)
+                {
+                    return string.Empty;
+                }
+
+                StringBuilder code = new();
+                foreach (Connection wire in _connections.Concat(_nextWires).Where(c => c.SourceID == node.ID && c.Breakpoint is { On: true }))
+                {
+                    string value = ValueOf(_variables, wire);
+                    _ = code.AppendLine($"@isdefined({value}) && !_jsynth_blocked({StringLiteral(node.ID)}) && "
+                        + $"_jsynth_break({StringLiteral(wire.Key)}, {value}, {wire.Breakpoint!.Julia}, {ArrayFile.PathLiteral(Breakpoint.ResumeFile(_stopFile))}, {ArrayFile.PathLiteral(_stopFile)}"
+                        + (wire.Output is null && node != _loop.Root ? $", {StringLiteral(node.ID)})" : ")"));
+                }
+
+                return code.ToString();
             }
 
             /// <summary>

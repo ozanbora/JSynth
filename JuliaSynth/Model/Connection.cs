@@ -33,6 +33,18 @@ namespace JuliaSynth.Model
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string? Output { get; private set; }
 
+        /// <summary>
+        /// Where a run pauses on this wire; null for none. Set through MainViewModel.SetBreakpoint, which keeps the
+        /// design's history.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public Breakpoint? Breakpoint { get; set; }
+
+        /// <summary>
+        /// What tells the wire apart from the others: its source, its output and the input it goes into.
+        /// </summary>
+        public string Key => $"{SourceID}:{Output}:{ParameterID}";
+
         [JsonConstructor]
         public Connection(string sourceID, string targetID, string parameterID, string? output = null)
         {

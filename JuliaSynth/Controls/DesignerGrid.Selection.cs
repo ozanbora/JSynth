@@ -52,7 +52,12 @@ namespace JuliaSynth.Controls
             // starts on a wire, which selects the wire; Ctrl selects nodes.
             if (!e.KeyModifiers.HasFlag(KeyModifiers.Control))
             {
-                if (WireAt(e.GetPosition(this)) is Model.Connection wire)
+                if (BreakpointAt(e.GetPosition(this)) is Model.Connection paused)
+                {
+                    EditBreakpoint(paused);
+                    e.Handled = true;
+                }
+                else if (WireAt(e.GetPosition(this)) is Model.Connection wire)
                 {
                     MainViewModel.SelectedConnection = wire;
                     e.Handled = true;

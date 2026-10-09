@@ -90,6 +90,7 @@
                   <Separator/>
                   <MenuItem Header="Frame: a titled box around the selected nodes (▭)" Tag="FrameNode" Click="AddAtPointer_Click"/>
                 </MenuItem>
+                <MenuItem x:Name="PauseHereItem" Header="Pause on this wire" InputGesture="F9" Click="PauseHere_Click" IsVisible="False"/>
                 <Separator/>
                 <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding Path=Cut}"/>
                 <MenuItem Header="Copy" InputGesture="Ctrl+C" Command="{Binding Path=Copy}"/>
@@ -281,7 +282,7 @@
     <!-- A stream running: from where, how far, and that edits wait for the next run. -->
     <Border Grid.Column="1"
             x:Name="StreamBanner"
-            IsVisible="{Binding Path=IsStreaming}"
+            IsVisible="{Binding Path=IsStreamBannerVisible}"
             MaxWidth="720"
             Margin="16 12"
             Padding="14 10"
@@ -295,6 +296,29 @@
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding Path=StreamText}" TextWrapping="Wrap"/>
         <Button Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center" Content="Stop" Command="{Binding Path=Stop}"/>
+      </Grid>
+    </Border>
+    <!-- Paused at a breakpoint: where, the value, and how to go on. -->
+    <Border Grid.Column="1"
+            x:Name="PausedBanner"
+            IsVisible="{Binding Path=IsPaused}"
+            MaxWidth="900"
+            Margin="16 12"
+            Padding="14 10"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            CornerRadius="8"
+            Background="{DynamicResource StatusBarBackgroundBrush}"
+            BorderBrush="#D9443B"
+            BorderThickness="1.5"
+            BoxShadow="0 4 16 0 #30000000">
+      <Grid ColumnDefinitions="*,Auto">
+        <SelectableTextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding Path=PausedText}" TextWrapping="Wrap"/>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="12 0 0 0" VerticalAlignment="Center">
+          <Button Content="▶ Continue" Command="{Binding Path=Continue}" ToolTip.Tip="Go on to the next breakpoint (F5)"/>
+          <Button Content="To the next" Command="{Binding Path=ToNext}" ToolTip.Tip="Go on to this wire's next value, whatever its condition (F10)"/>
+          <Button Content="■ Stop" Command="{Binding Path=Stop}" ToolTip.Tip="End the run (Shift+F5)"/>
+        </StackPanel>
       </Grid>
     </Border>
     <!-- Downloading the data of an example. -->

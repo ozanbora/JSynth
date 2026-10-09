@@ -33,8 +33,10 @@
           <KeyBinding Gesture="Ctrl+X" Command="{Binding Path=Cut}"/>
           <KeyBinding Gesture="Ctrl+V" Command="{Binding Path=Paste}"/>
           <KeyBinding Gesture="Ctrl+D" Command="{Binding Path=Duplicate}"/>
-          <KeyBinding Gesture="F5" Command="{Binding Path=Run}"/>
+          <KeyBinding Gesture="F5" Command="{Binding Path=RunOrContinue}"/>
           <KeyBinding Gesture="Shift+F5" Command="{Binding Path=Stop}"/>
+          <KeyBinding Gesture="F10" Command="{Binding Path=ToNext}"/>
+          <KeyBinding Gesture="F9" Command="{Binding Path=ToggleBreakpoint}"/>
         </Window.KeyBindings>
 
         <DockPanel>
@@ -74,6 +76,9 @@
             <MenuItem Header="_Run">
               <MenuItem Header="_Run" InputGesture="F5" Command="{Binding Path=Run}"/>
               <MenuItem Header="_Stop" InputGesture="Shift+F5" Command="{Binding Path=Stop}"/>
+              <MenuItem Header="_Continue" InputGesture="F5" Command="{Binding Path=Continue}"/>
+              <MenuItem Header="To the _next value" InputGesture="F10" Command="{Binding Path=ToNext}"/>
+              <MenuItem Header="_Pause on the selected wire" InputGesture="F9" Command="{Binding Path=ToggleBreakpoint}"/>
               <Separator/>
               <MenuItem Header="Show _output" Command="{Binding Path=ToggleOutput}"/>
               <MenuItem Header="_Export Julia script…" Click="ExportScript_Click"/>

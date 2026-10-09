@@ -690,6 +690,7 @@ public partial class MainViewModel : ReactiveObject
         CreateInspectorCommands();
         CreateStartCommands();
         CreateParameterCommands();
+        CreateBreakpointCommands();
         CreatePackageCommands();
 
         History.Changed += (_, _) =>

@@ -25,6 +25,11 @@ namespace JuliaSynth.Runtime
         /// It is being worked out: a report of its own comes when it is done.
         /// </summary>
         Running,
+
+        /// <summary>
+        /// The run paused at a breakpoint on a wire (its id the wire's), when the value came on it: until told to go on.
+        /// </summary>
+        Paused,
     }
 
     /// <summary>
@@ -125,6 +130,7 @@ namespace JuliaSynth.Runtime
                 "error" => ReportStatus.Error,
                 "skipped" => ReportStatus.Skipped,
                 "running" => ReportStatus.Running,
+                "paused" => ReportStatus.Paused,
                 _ => null,
             };
 

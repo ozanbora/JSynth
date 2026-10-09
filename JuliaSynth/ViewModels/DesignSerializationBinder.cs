@@ -45,6 +45,7 @@ namespace JuliaSynth.ViewModels
             typeof(FrameNode),
             typeof(EveryNode),
             typeof(ButtonNode),
+            typeof(Breakpoint),
             typeof(MergeNode),
             typeof(Argument),
             typeof(List<Argument>),

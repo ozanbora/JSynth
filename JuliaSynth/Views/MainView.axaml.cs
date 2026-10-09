@@ -172,6 +172,22 @@ public partial class MainView : UserControl
     private void Canvas_ContextRequested(object? sender, ContextRequestedEventArgs e)
     {
         _menuPoint = Canvas is Control canvas && e.TryGetPosition(canvas, out Point point) ? point : null;
+
+        // On a wire: a breakpoint there, or none if it has one.
+        _menuWire = Canvas is Controls.DesignerGrid grid && _menuPoint is Point at ? grid.WireAt(at) : null;
+        PauseHereItem.IsVisible = _menuWire is not null;
+        PauseHereItem.Header = _menuWire?.Breakpoint is null ? "Pause on this wire" : "Remove the breakpoint";
+    }
+
+    // The wire the canvas menu was opened on; null when it wasn't on one.
+    private Model.Connection? _menuWire;
+
+    private void PauseHere_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_menuWire is Model.Connection wire)
+        {
+            MainViewModel.SetBreakpoint(wire, wire.Breakpoint is null ? Model.Breakpoint.Every : null);
+        }
     }
 
     private void AddAtPointer_Click(object? sender, RoutedEventArgs e)

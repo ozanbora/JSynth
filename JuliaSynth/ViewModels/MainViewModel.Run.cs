@@ -371,6 +371,7 @@ public partial class MainViewModel
             ClearPlotFiles();
             JuliaSession session = _session!;
             string stopFile = NewStopFile();
+            _runStopFile = stopFile;
             JuliaScript script = ScriptGenerator.Generate(Nodes, Connections, instrumented: true, PlotFolder, stopFile);
             bool streaming = script.Streams;
             bool looping = script.Looped.Count > 0;
@@ -390,6 +391,13 @@ public partial class MainViewModel
 
             void Show(Report report)
             {
+                // Paused at a breakpoint: the report is about a wire.
+                if (report.Status == ReportStatus.Paused)
+                {
+                    PausedAt(report, script);
+                    return;
+                }
+
                 // Nodes changed since the run started would show values they don't have; a stream goes on
                 // with the design it started with, and says so, so its values keep coming.
                 if ((!streaming && version != _designVersion) || !nodes.TryGetValue(report.Id, out Node? node) || !script.Variables.TryGetValue(report.Id, out string? variable))
@@ -510,6 +518,22 @@ public partial class MainViewModel
         {
             EndStream();
             Finish(cancellation);
+
+            // Paused or not, it has ended.
+            EndPause();
+            if (_runStopFile is string stop)
+            {
+                try
+                {
+                    File.Delete(Breakpoint.ResumeFile(stop));
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    // Left for the system's temp clean-up.
+                }
+            }
+
+            _runStopFile = null;
 
             // Stopped, or failed on the way: nothing is being worked out any more.
             foreach (Node node in Nodes)
