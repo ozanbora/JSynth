@@ -93,7 +93,9 @@ namespace JuliaSynth.ViewModels
                     + "100 times: at each tick darts throws a new batch (darts a tick, in the Parameters panel), hits keeps the "
                     + "count inside the quarter circle from tick to tick (it takes total as its next value), and estimate is 4 × "
                     + "hits over all the darts so far. A Window keeps the last 100 estimates, and the plot shows them closing in "
-                    + "on π; error says how far off it is, about 0.001 after the 2 million darts. Stop ends it early.",
+                    + "on π; error says how far off it is, about 0.001 after the 2 million darts. A breakpoint, off, waits on the "
+                    + "wire into error's display: click its dot and tick On to pause the run once the estimate is within 0.001 of π. "
+                    + "Stop ends it early.",
                     LiveMonteCarloPi),
                 new("Random walk",
                     "Probability: a random walk, at the press of a button. Press the Button node's Press (or run the design and "
@@ -145,7 +147,7 @@ namespace JuliaSynth.ViewModels
                     + "next to the data. A Window keeps the last 6 strengths, and smooth averages them: an hour of the full set, so one-off "
                     + "spikes don't set the alarm off. learn takes each bearing's strength when new from the first 12 running snapshots; "
                     + "wear is the most worn bearing's strength over it, plotted as it goes. The first time a bearing gets 10% stronger "
-                    + "than when new, the alarm notes when and which: bearing 1 on 16 February, 2.5 days before its outer race failed. "
+                    + "than when new (1.1, the slider on the left), the alarm notes when and which: bearing 1 on 16 February, 2.5 days before its outer race failed. "
                     + "The snapshots are downloaded when the example opens, every 8th or all 984.",
                     BearingWear) { Data = ImsBearings },
                 new("Bearing week in parallel",
@@ -154,7 +156,7 @@ namespace JuliaSynth.ViewModels
                     + "to every snapshot in parallel (∥ on the Map switches it to one at a time, to compare the time it takes). table "
                     + "holds them a row a snapshot, saved to bearing-features.csv next to the data. wear is each bearing's strength over "
                     + "when new, smoothed over the last 6 snapshots, drawn as a heatmap of the four and a line of the most worn. With "
-                    + "the whole week at hand, onset says when each bearing got 10% stronger for good, which a stream can't know: "
+                    + "the whole week at hand, onset says when each bearing got 10% stronger for good (the slider on the left), which a stream can't know: "
                     + "bearing 1 from early on 16 February, 3 days before its outer race failed, bearings 2 to 4 only in the last day, "
                     + "shaken by it. The snapshots are downloaded when the example opens, every 8th or all 984; all 984 take seconds "
                     + "on a few cores.",
@@ -163,17 +165,19 @@ namespace JuliaSynth.ViewModels
                     "Seismology: a seismometer's recording, a file a minute, gone through as a station's data logger writes them: "
                     + "station PFO in California on 4 July 2019, as the M6.4 Ridgecrest earthquake struck 200 km away. energy gives "
                     + "each second's energy; a Window keeps the last 5 minutes' typical level, the background. ratio says how much "
-                    + "each second shook over it; 4 times is a quake, and a new one (the minute before had none) is noted with when and how "
+                    + "each second shook over it; 4 times (the slider on the left) is a quake, and a new one (the minute before had none) is noted with when and how "
                     + "strong, and saved a row each to quakes.csv next to the data. In the hour from 16:40 UTC it notes the M4.0 foreshock "
                     + "(17:03, 247 times the background), an M2.5 (17:10) and an M1.5 100 km away (17:27) as the USGS catalogue lists "
                     + "them, a 4 times at 17:32 it doesn't, and the M6.4 (17:34); the 3 hours add 4 of its aftershocks. The plots show each minute's seismogram and the "
-                    + "loudest second of every minute. The files are downloaded when the example opens, the hour or 3 hours.",
+                    + "loudest second of every minute. The background is a group: double-click it to see its nodes. A breakpoint, off, waits on "
+                    + "the wire into only when: click its dot and tick On to pause the run at each new quake. The files are downloaded "
+                    + "when the example opens, the hour or 3 hours.",
                     EarthquakeDetector) { Data = RidgecrestSeismograms },
                 new("Earthquake network",
                     "Seismology: four seismometers in southern California as the M6.4 Ridgecrest earthquake struck, their minutes "
                     + "gone through in step: a Zip node takes each station's minute of the same name together. "
                     + "One station gets fooled by traffic or wind; a network only believes a quake two stations or more hear within "
-                    + "a minute of each other. Each station's seconds are compared with its background over the 5 minutes before; "
+                    + "a minute of each other. Each station's seconds are compared with its background over the 5 minutes before, 4 times it (the slider on the left) a quake; "
                     + "heard gives when each heard a new quake, and confirmed the quakes the network believes, noted with when and "
                     + "where, and saved a row each to quakes.csv next to the data. In the hour from 16:40 UTC it notes the M4.0 "
                     + "foreshock (17:03), an M2.5 (17:09), an M2.1 (17:12), an M1.5 (17:27) and the M6.4 (17:33), as the USGS "
@@ -183,7 +187,7 @@ namespace JuliaSynth.ViewModels
                 new("Motion in video",
                     "Video: what moves in the frames of a fixed camera over a highway, from the CDnet 2014 change detection "
                     + "dataset, gone through one at a time. As with the radar's clutter map, the background is the scene as it "
-                    + "usually is; moving marks the pixels far from it, and update makes it follow the scene, only where nothing "
+                    + "usually is; moving marks the pixels far from it (further than the slider on the left), and update makes it follow the scene, only where nothing "
                     + "moves. Each frame's mask is saved as a picture (masks/mask-in000123.png next to the data) and scored against "
                     + "the frame's twin marked by hand, found with the file path: f_score gives the precision, recall and F (1 is "
                     + "perfect) of every frame so far: 0.82 on the first 800 frames, 0.84 on all. The frames are downloaded when the example opens, 800 or all "
@@ -194,7 +198,7 @@ namespace JuliaSynth.ViewModels
                     + "Network's live web service. The Watch folder node fetches its address every 15 seconds and saves each answer "
                     + "as a JSON file, named by the time; latest only means a slow run skips to the newest answer rather than falling "
                     + "behind. airborne turns an answer into a row an aircraft (position, altitude, climb rate, speed), plotted as a "
-                    + "map; their count is saved a row a fetch to traffic.csv and plotted; steep lists those climbing or descending steeply. "
+                    + "map; their count is saved a row a fetch to traffic.csv and plotted; steep lists those climbing or descending faster than the slider on the left. "
                     + "Press Stop to end it. Without an account OpenSky answers 400 times a day: at one fetch every 15 seconds, about "
                     + "an hour and 40 minutes. OpenSky's data is for research and other non-commercial use "
                     + "(https://opensky-network.org); reading JSON needs the JSON package.",
@@ -314,8 +318,62 @@ namespace JuliaSynth.ViewModels
                 target.Wired(design.Connections);
             }
 
-            Layout.Arrange(design.Nodes);
+            Layout.Arrange(design.Nodes, Held(design));
             return design;
+        }
+
+        /// <summary>
+        /// Puts each node at its cell: a frame's nodes in a band of rows of their own, so that the frames come one after
+        /// the other.
+        /// </summary>
+        private static void Place(params (Node Node, int Row, int Column)[] places)
+        {
+            foreach ((Node node, int row, int column) in places)
+            {
+                (node.Row, node.Column) = (row, column);
+            }
+        }
+
+        // The nodes each example's frame is drawn around (see Framed).
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FrameNode, Node[]> FramedNodes = [];
+
+        /// <summary>
+        /// A frame titled <paramref name="title"/>, its note <paramref name="note"/>, drawn around <paramref name="nodes"/>
+        /// when the design is arranged.
+        /// </summary>
+        private static FrameNode Framed(string title, string note, params Node[] nodes)
+        {
+            FrameNode frame = new() { Title = title, Note = note, Row = nodes.Min(n => n.Row), Column = nodes.Min(n => n.Column) };
+            FramedNodes.Add(frame, nodes);
+            return frame;
+        }
+
+        /// <summary>
+        /// The nodes each frame of <paramref name="design"/> holds: those it was made around, or the group made of them.
+        /// </summary>
+        private static Dictionary<FrameNode, Node[]> Held(MainViewModel.DesignDocument design) =>
+            design.Nodes.OfType<FrameNode>().ToDictionary(f => f, f => FramedNodes.TryGetValue(f, out Node[]? nodes)
+                ? design.Nodes.Where(n => nodes.Contains(n) || (n is GroupNode g && g.Members.Intersect(nodes).Any())).ToArray()
+                : design.Nodes.Where(n => n is not FrameNode && f.Holds(n)).ToArray());
+
+        /// <summary>
+        /// <paramref name="design"/> with <paramref name="nodes"/> made one group, named <paramref name="name"/>, and
+        /// arranged again.
+        /// </summary>
+        private static GroupNode Grouped(MainViewModel.DesignDocument design, string name, params Node[] nodes)
+        {
+            GroupNode group = MainViewModel.Group(design.Nodes, design.Connections, [.. nodes], name);
+            Layout.Arrange(design.Nodes, Held(design));
+            return group;
+        }
+
+        /// <summary>
+        /// A breakpoint on the wire from <paramref name="source"/> to <paramref name="target"/>, pausing when
+        /// <paramref name="condition"/> holds; off, for the example's reader to switch on.
+        /// </summary>
+        private static void PauseOn(MainViewModel.DesignDocument design, Node source, Node target, string condition)
+        {
+            design.Connections.Single(c => c.SourceID == source.ID && c.TargetID == target.ID).Breakpoint = new Breakpoint(false, condition);
         }
     }
 }

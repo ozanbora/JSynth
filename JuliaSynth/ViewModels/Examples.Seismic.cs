@@ -137,7 +137,9 @@ namespace JuliaSynth.ViewModels
             // How much each second shook over the background, and whether the minute had a quake.
             Function ratio = Define("ratio", "Vector{Float64}", 17, Stage3 + 28, "sqrt.(e ./ B)  # each second's shaking over the background's, as amplitudes", ("e", "Vector{Float64}"), ("B", "Float64"));
             Function loudest = Define("loudest", "Float64", 17, Stage3 + 42, "maximum(r)", ("r", "Vector{Float64}"));
-            Function quake = Define("quake", "Bool", 29, Stage3 + 42, "m > 4  # 4 times the background's shaking", ("m", "Float64"));
+            Float trigger = InPanel(Scalar(4, 29), "quake at × the background", 2, 20);
+            trigger.Column = Stage3 + 28;
+            Function quake = Define("quake", "Bool", 29, Stage3 + 42, "m > t  # t times the background's shaking", ("m", "Float64"), ("t", "Float64"));
 
             // A new quake: one the minute before didn't have (a quake's shaking lasts into the next minute).
             Integer before = Whole(0, 29);
@@ -164,15 +166,32 @@ namespace JuliaSynth.ViewModels
             Function grow = Define("grow", "Vector{Float64}", 77, Stage3 + 56, "[T; log10(m)]  # the loudest second of every minute so far, as a power of 10", ("T", "Vector{Float64}"), ("m", "Float64"));
             PlotNode loudness = new() { Title = "Loudest second each minute (log10 of × the background)", Kind = "Line", Row = 79, Column = Stage3 + 74 };
 
-            return Design(
-                [files, seismogram, energy, level, last, background, ratio, loudest, quake, before, shook, newQuake, quakes, tally,
-                    note, noted, shown, saved, trend, grow, loudness],
+            FrameNode shaking = Framed("How hard each second shook",
+                "energy: each second's. The background group: the typical second over the last 5 minutes (double-click it to see "
+                + "its nodes). ratio: each second over the background, and loudest the minute's most.",
+                energy, level, last, background, ratio, loudest);
+            FrameNode newOnes = Framed("A new quake?",
+                "Shaking over the trigger (the slider on the left) is a quake; a new one if the minute before had none. "
+                + "tally counts them.",
+                trigger, quake, before, shook, newQuake, quakes, tally);
+            FrameNode noting = Framed("Noted and saved",
+                "Each new quake, when and how strong, a row each in quakes.csv. The wire into only when's condition has a "
+                + "breakpoint, off: click its dot and tick On to pause the run at each new quake.",
+                note, noted, shown, saved);
+            FrameNode trends = Framed("Minute by minute", "The loudest second of each minute so far.", trend, grow, loudness);
+
+            MainViewModel.DesignDocument design = Design(
+                [files, seismogram, shaking, newOnes, noting, trends, energy, level, last, background, ratio, loudest, trigger, quake,
+                    before, shook, newQuake, quakes, tally, note, noted, shown, saved, trend, grow, loudness],
                 (files, seismogram, "y"), (files, energy, 0), (energy, level, 0), (level, last, 0), (last, background, 0),
-                (energy, ratio, 0), (background, ratio, 1), (ratio, loudest, 0), (loudest, quake, 0),
+                (energy, ratio, 0), (background, ratio, 1), (ratio, loudest, 0), (loudest, quake, 0), (trigger, quake, 1),
                 (quake, shook, 0), (shook, before, "next"), (quake, newQuake, 0), (before, newQuake, 1),
                 (quakes, tally, 0), (newQuake, tally, 1), (tally, quakes, "next"),
                 (name, note, 0), (ratio, note, 1), (note, noted, "value"), (newQuake, noted, "condition"), (noted, shown, 0), (noted, saved, 0),
                 (trend, grow, 0), (loudest, grow, 1), (grow, trend, "next"), (grow, loudness, "y"));
+            PauseOn(design, newQuake, noted, "x");
+            _ = Grouped(design, "background", level, last, background);
+            return design;
         }
 
         private static MainViewModel.DesignDocument EarthquakeNetwork()
@@ -215,15 +234,17 @@ namespace JuliaSynth.ViewModels
 
             // A station hears a new quake: a second 4 times the background, the minute before it having none.
             ArrayBuilder shookBefore = Zeros(4, 30);
-            Function shook = Define("shook", "Vector{Float64}", 30, Stage3, "Float64[maximum(r) > 4 for r in R]  # whether each station shook this minute, for the next", ("R", "Vector"));
+            Float trigger = InPanel(Scalar(4, 30), "heard at × the background", 2, 20);
+            trigger.Column = Stage2 - 14;
+            Function shook = Define("shook", "Vector{Float64}", 30, Stage3, "Float64[maximum(r) > t for r in R]  # whether each station shook this minute, for the next", ("R", "Vector"), ("t", "Float64"));
             (Node, string) name = (stations[0], FilesNode.NameOutput);
             Function heard = Define("heard", "Vector{Float64}", 30, Stage2,
                 """
                 # When each station heard a new quake, in seconds of the day; 0: none. The minute is the file's name's.
                 m = parse(Int, name[12:13]) * 3600 + parse(Int, name[15:16]) * 60
-                [maximum(r) > 4 && b == 0 ? m + argmax(r) - 1.0 : 0.0 for (r, b) in zip(R, B)]
+                [maximum(r) > t && b == 0 ? m + argmax(r) - 1.0 : 0.0 for (r, b) in zip(R, B)]
                 """,
-                ("R", "Vector"), ("B", "Vector{Float64}"), ("name", Function.AnyType));
+                ("R", "Vector"), ("B", "Vector{Float64}"), ("name", Function.AnyType), ("t", "Float64"));
 
             // A quake the network confirms: heard by 2 stations or more within 60 s, this minute or the one before.
             ArrayBuilder heardBefore = Zeros(4, 54);
@@ -257,19 +278,32 @@ namespace JuliaSynth.ViewModels
             SaveFile saved = new() { Path = System.IO.Path.Combine(RidgecrestNetwork.Folder, "quakes.csv"), PerFile = true, Row = 66, Column = Stage3 + 30 };
 
             // The stations and their zip come first, the rest a column further on.
-            Node[] rest = [energies, levels, last, background, before, ratios, loudest, loud, shookBefore, shook, heard,
+            Node[] rest = [energies, levels, last, background, before, ratios, loudest, loud, trigger, shookBefore, shook, heard,
                 heardBefore, noted, confirmed, kept, quake, note, onlyQuakes, shown, saved];
             foreach (Node node in rest)
             {
                 node.Column += Stage2 - Stage1;
             }
 
+            FrameNode backgrounds = Framed("Each station's background",
+                "Each station's energy of each second, and its typical second over the 5 minutes before this one.",
+                energies, levels, last, background, before);
+            FrameNode shaking = Framed("How hard each station shook", "Each second over the station's background, and its loudest.",
+                ratios, loudest, loud);
+            FrameNode hearing = Framed("Who heard a new quake",
+                "A second over the background by the slider's times (on the left), the minute before having none: when, at each station.",
+                trigger, shookBefore, shook, heard);
+            FrameNode confirming = Framed("Confirmed by the network",
+                "Heard by 2 stations or more within a minute: noted with when and where, a row each in quakes.csv. What only one "
+                + "station felt is left out.",
+                heardBefore, noted, confirmed, kept, quake, note, onlyQuakes, shown, saved);
+
             return Design(
-                [.. stations, minutes, .. rest],
+                [.. stations, minutes, backgrounds, shaking, hearing, confirming, .. rest],
                 [.. stations.Select((s, i) => ((Node)s, (Node)minutes, (object)i)),
                 (minutes, energies, 0), (energies, levels, 0), (levels, last, 0), (last, background, 0), (background, before, "next"),
                 (energies, ratios, 0), (before, ratios, 1), (ratios, loudest, 0), (loudest, loud, 0),
-                (ratios, shook, 0), (shook, shookBefore, "next"), (ratios, heard, 0), (shookBefore, heard, 1), (name, heard, 2),
+                (ratios, shook, 0), (trigger, shook, 1), (shook, shookBefore, "next"), (ratios, heard, 0), (shookBefore, heard, 1), (name, heard, 2), (trigger, heard, 3),
                 (heard, confirmed, 0), (heardBefore, confirmed, 1), (noted, confirmed, 2), (heard, heardBefore, "next"),
                 (confirmed, kept, 0), (noted, kept, 1), (kept, noted, "next"), (confirmed, quake, 0),
                 (confirmed, note, 0), (heard, note, 1), (heardBefore, note, 2), (note, onlyQuakes, "value"), (quake, onlyQuakes, "condition"),

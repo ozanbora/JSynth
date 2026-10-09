@@ -44,28 +44,62 @@ namespace JuliaSynth.Model
         /// Arranges <paramref name="nodes"/>: the rows of nodes from the top, then the columns from the left, each as
         /// near the ones before it as the nodes beside it allow, a gap away: empty space closed up, and nodes on top of
         /// each other moved apart. Nodes keep their order, and those lined up stay so; the topmost and leftmost stay
-        /// where they are. Frames are drawn anew around the nodes they held.
+        /// where they are. A frame goes as one with the nodes it holds (<paramref name="held"/>, or those drawn in it):
+        /// they are arranged in it, it is drawn anew around them, and it is moved with them as a node is.
         /// </summary>
-        public static void Arrange(IList<Node> design)
+        public static void Arrange(IList<Node> design, IReadOnlyDictionary<FrameNode, Node[]>? held = null)
         {
-            List<(FrameNode Frame, List<Node> Held)> frames = [.. design.OfType<FrameNode>().Select(f => (f, design.Where(n => n is not FrameNode && f.Holds(n)).ToList()))];
-            List<Node> nodes = [.. design.Where(n => n is not FrameNode)];
-            if (nodes.Count == 0)
+            // Each frame's nodes; a node in two frames, the first's.
+            Dictionary<FrameNode, List<Node>> members = [];
+            HashSet<Node> framed = [];
+            foreach (FrameNode frame in design.OfType<FrameNode>())
             {
-                return;
+                IEnumerable<Node> inside = held?.GetValueOrDefault(frame) ?? design.Where(n => n is not FrameNode && frame.Holds(n));
+                members[frame] = [.. inside.Where(framed.Add)];
             }
 
-            Arrange(nodes);
-            foreach ((FrameNode frame, List<Node> held) in frames)
+            foreach ((FrameNode frame, List<Node> inside) in members.Where(m => m.Value.Count > 0))
             {
-                frame.Fit(held);
+                Arrange(inside, members);
+                frame.Fit(inside);
+
+                // Too near the canvas's top or left edge to draw it all around them: they move off it.
+                (double top, double left) = (inside.Min(n => Footprint(n).Top), inside.Min(n => Footprint(n).Left));
+                int rows = Math.Max(0, -(int)Math.Floor(top - FrameNode.Padding - FrameNode.TitleRows - frame.NoteRows(frame.Columns)));
+                int columns = Math.Max(0, -(int)Math.Floor(left - FrameNode.Padding));
+                if (rows > 0 || columns > 0)
+                {
+                    foreach (Node node in inside)
+                    {
+                        (node.Row, node.Column) = (node.Row + rows, node.Column + columns);
+                    }
+
+                    frame.Fit(inside);
+                }
+            }
+
+            List<Node> items = [.. design.Where(n => !framed.Contains(n))];
+            if (items.Count > 0)
+            {
+                Arrange(items, members);
             }
         }
 
-        private static void Arrange(List<Node> nodes)
+        private static void Arrange(List<Node> nodes, Dictionary<FrameNode, List<Node>> members)
         {
-            Arrange(nodes, n => n.Row, (n, row) => n.Row = row, n => (Footprint(n).Top, Footprint(n).Bottom), n => (Footprint(n).Left, Footprint(n).Right), RowGap);
-            Arrange(nodes, n => n.Column, (n, column) => n.Column = column, n => (Footprint(n).Left, Footprint(n).Right), n => (Footprint(n).Top, Footprint(n).Bottom), ColumnGap);
+            // A frame moved takes its nodes along.
+            void Move(Node node, int row, int column)
+            {
+                (int rows, int columns) = (row - node.Row, column - node.Column);
+                (node.Row, node.Column) = (row, column);
+                foreach (Node inside in node is FrameNode frame ? members.GetValueOrDefault(frame) ?? [] : [])
+                {
+                    (inside.Row, inside.Column) = (inside.Row + rows, inside.Column + columns);
+                }
+            }
+
+            Arrange(nodes, n => n.Row, (n, row) => Move(n, row, n.Column), n => (Footprint(n).Top, Footprint(n).Bottom), n => (Footprint(n).Left, Footprint(n).Right), RowGap);
+            Arrange(nodes, n => n.Column, (n, column) => Move(n, n.Row, column), n => (Footprint(n).Left, Footprint(n).Right), n => (Footprint(n).Top, Footprint(n).Bottom), ColumnGap);
         }
 
         /// <summary>

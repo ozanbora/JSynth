@@ -85,17 +85,29 @@ namespace JuliaSynth.Tests
             // (A skipped node is a "# x1: why" comment; other comments, like how to plot in Julia, are fine.)
             Assert.DoesNotMatch(@"\n# \w+: ", script.Split("# Values")[1]);
 
-            // No node on top of another.
+            // No node on top of another; a frame only around the nodes it holds, whole, apart from the other frames.
             foreach (Node a in design.Nodes)
             {
-                foreach (Node b in design.Nodes.Where(n => n != a))
+                foreach (Node b in design.Nodes.Where(n => n != a && !(a is FrameNode frame && frame.Holds(n))))
                 {
-                    (double top, double left, double bottom, double right) = Layout.Footprint(a);
-                    (double otherTop, double otherLeft, double otherBottom, double otherRight) = Layout.Footprint(b);
-                    bool overlap = top < otherBottom && otherTop < bottom && left < otherRight && otherLeft < right;
-                    Assert.False(overlap, $"{Label(a)} overlaps {Label(b)}");
+                    if (b is FrameNode around && around.Holds(a))
+                    {
+                        (double top, double left, double bottom, double right) = Layout.Footprint(a);
+                        Assert.True(top >= around.Row + FrameNode.TitleRows && left > around.Column && bottom < around.Row + around.Rows && right < around.Column + around.Columns,
+                            $"{Label(a)} is not all in {around.Title}");
+                        continue;
+                    }
+
+                    Assert.False(Overlap(a, b), $"{Label(a)} overlaps {Label(b)}");
                 }
             }
+        }
+
+        private static bool Overlap(Node a, Node b)
+        {
+            (double top, double left, double bottom, double right) = Layout.Footprint(a);
+            (double otherTop, double otherLeft, double otherBottom, double otherRight) = Layout.Footprint(b);
+            return top < otherBottom && otherTop < bottom && left < otherRight && otherLeft < right;
         }
 
         private static string Label(Node node) => node is Function f ? f.Name : $"{node.GetType().Name} at {node.Row},{node.Column}";
@@ -184,7 +196,7 @@ namespace JuliaSynth.Tests
                     .Select(c => c.SourceID)
                     .Distinct()
                     .Count();
-                Assert.Equal(design.Nodes.Count - applied, reports.Count);
+                Assert.Equal(MainViewModel.AllNodes(design.Nodes).Count(n => n is not (FrameNode or GroupNode)) - applied, reports.Count);
                 Report answer = reports.Single(r => script.Variables[r.Id] == variable);
                 Assert.InRange(double.Parse(answer.Text, CultureInfo.InvariantCulture), expected - tolerance, expected + tolerance);
 

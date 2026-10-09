@@ -73,10 +73,12 @@ namespace JuliaSynth.ViewModels
             ArrayBuilder background = Empty(JuliaTypes.Matrix, "Float64", 18);
             Function moving = Define("moving", "Matrix{Float64}", 6, Stage1,
                 """
-                # 1 where the frame is far from the background (something moves), 0 elsewhere: nothing on the first frame.
-                isempty(B) ? zeros(size(X)) : Float64.(abs.(X .- B) .> 0.12)
+                # 1 where the frame is further than d from the background (something moves), 0 elsewhere: nothing on
+                # the first frame.
+                isempty(B) ? zeros(size(X)) : Float64.(abs.(X .- B) .> d)
                 """,
-                ("X", "Matrix{Float64}"), ("B", "Matrix{Float64}"));
+                ("X", "Matrix{Float64}"), ("B", "Matrix{Float64}"), ("d", "Float64"));
+            Float far = InPanel(Scalar(0.12, 30), "moving when further than", 0.02, 0.5);
             Function update = Define("update", "Matrix{Float64}", 18, Stage2,
                 """
                 # The background follows the scene, 5% a frame, but only where nothing moves: a passing car doesn't
@@ -125,9 +127,23 @@ namespace JuliaSynth.ViewModels
                 ("T", "Vector{Float64}"));
             DisplayNode shown = Shown(44, Stage3 + 30);
 
+            // In bands: the frames and the frame shown, what moves, the score.
+            Place((frames, 6, Inputs), (frame, 8, Stage1 + 4),
+                (background, 30, Inputs), (far, 41, Inputs), (moving, 30, Stage1), (update, 41, Stage2), (mask, 32, Stage3 + 2), (saved, 46, Stage3 + 2),
+                (twin, 66, Stage1), (score, 66, Stage2), (totals, 77, Inputs), (add, 77, Stage3), (fScore, 77, Stage3 + 14), (shown, 77, Stage3 + 30));
+
+            FrameNode moves = Framed("What moves",
+                "moving: the pixels further from the background than the slider on the left, each frame's mask "
+                + "saved as a picture. update: the background following the scene where nothing moves.",
+                far, background, moving, update, mask, saved);
+            FrameNode scored = Framed("Scored against the frames marked by hand",
+                "Each frame's twin, marked by hand, found with the file path. f_score: the precision, recall and F (1 is perfect) "
+                + "of every frame so far.",
+                twin, score, totals, add, fScore, shown);
+
             return Design(
-                [frames, background, moving, update, frame, mask, saved, twin, score, totals, add, fScore, shown],
-                (frames, moving, 0), (background, moving, 1), (background, update, 0), (frames, update, 1), (moving, update, 2), (update, background, "next"),
+                [frames, moves, scored, far, background, moving, update, frame, mask, saved, twin, score, totals, add, fScore, shown],
+                (frames, moving, 0), (background, moving, 1), (far, moving, 2), (background, update, 0), (frames, update, 1), (moving, update, 2), (update, background, "next"),
                 (frames, frame, "y"), (moving, mask, "y"), (moving, saved, 0),
                 (path, twin, 0), (moving, score, 0), (twin, score, 1), (path, score, 2), (totals, add, 0), (score, add, 1), (add, totals, "next"),
                 (add, fScore, 0), (fScore, shown, 0));

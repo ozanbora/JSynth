@@ -100,7 +100,9 @@ namespace JuliaSynth.ViewModels
             PlotNode plot = new() { Title = "Wear: the most worn bearing's strength over when new", Kind = "Line", Row = 50, Column = Stage3 + 74 };
 
             // The alarm: 10% stronger than when new; the first one noted, with when and which bearing.
-            Function alarm = Define("alarm", "Bool", 29, Stage3 + 56, "w > 1.1  # 10% stronger than when new", ("w", "Float64"));
+            Float trigger = InPanel(Scalar(1.1, 29), "alarm at × when new", 1.02, 2);
+            trigger.Column = Stage3 + 42;
+            Function alarm = Define("alarm", "Bool", 29, Stage3 + 56, "w > t  # t times as strong as when new: 1.1, 10% stronger", ("w", "Float64"), ("t", "Float64"));
             Integer alarms = Whole(0, 64);
             Function alarmCount = Define("alarm_count", "Int64", 64, Stage3 + 70, "c + a  # the alarms so far", ("c", "Int64"), ("a", "Bool"));
             Function firstAlarm = Define("first_alarm", "Bool", 29, Stage3 + 70, "a && c == 0  # the first alarm only", ("a", "Bool"), ("c", "Int64"));
@@ -114,15 +116,36 @@ namespace JuliaSynth.ViewModels
             WhenNode noted = new() { Row = 17, Column = Stage3 + 70 };
             DisplayNode shown = Shown(17, Stage3 + 86);
 
+            // In bands, a frame's each: what each snapshot gives, the strength now and when new, the alarm.
+            Place((files, 6, Inputs), (running, 6, Stage1), (whileRunning, 6, Stage2),
+                (strength, 6, Stage3), (spikiness, 17, Stage3), (row, 17, Stage3 + 14), (saved, 17, Stage3 + 28),
+                (seen, 36, Inputs), (countUp, 36, Stage1), (last, 36, Stage2), (smooth, 36, Stage3), (baseline, 47, Inputs), (learn, 47, Stage2),
+                (wear, 36, Stage3 + 20), (trend, 47, Stage3 + 20), (grow, 47, Stage3 + 34), (plot, 42, Stage3 + 52),
+                (trigger, 64, Inputs), (alarm, 64, Stage1), (firstAlarm, 64, Stage2), (note, 64, Stage3), (noted, 64, Stage3 + 14),
+                (shown, 64, Stage3 + 28), (alarms, 75, Inputs), (alarmCount, 75, Stage2));
+
+            FrameNode runningOnly = Framed("Only when running", "Snapshots of the rig stopped are passed over.", running, whileRunning);
+            FrameNode features = Framed("Strength and spikiness",
+                "Each bearing's RMS vibration and kurtosis, saved a row a snapshot.", strength, spikiness, row, saved);
+            FrameNode compared = Framed("Now, and when new",
+                "smooth: each bearing's strength over the last 6 snapshots, so one-off spikes don't set the alarm off. learn: its "
+                + "strength when new, from the first 12 running snapshots.",
+                last, smooth, seen, countUp, baseline, learn);
+            FrameNode worn = Framed("Wear", "The most worn bearing's strength over when new, snapshot by snapshot.", wear, trend, grow, plot);
+            FrameNode alarmed = Framed("The first alarm",
+                "Stronger than when new by the slider's times (on the left) is an alarm: the first noted, with when and which bearing.",
+                trigger, alarm, alarms, alarmCount, firstAlarm, note, noted, shown);
+
             return Design(
-                [files, running, whileRunning, strength, spikiness, row, saved, last, smooth, seen, countUp, baseline, learn,
-                    wear, trend, grow, plot, alarm, alarms, alarmCount, firstAlarm, note, noted, shown],
+                [files, runningOnly, features, compared, worn, alarmed, running, whileRunning, strength, spikiness, row, saved, last,
+                    smooth, seen, countUp, baseline, learn, wear, trend, grow, plot, trigger, alarm, alarms, alarmCount, firstAlarm,
+                    note, noted, shown],
                 (files, running, 0), (files, whileRunning, "value"), (running, whileRunning, "condition"),
                 (whileRunning, strength, 0), (whileRunning, spikiness, 0), (strength, row, 0), (spikiness, row, 1), (row, saved, 0),
                 (strength, last, 0), (last, smooth, 0),
                 (seen, countUp, 0), (countUp, seen, "next"), (baseline, learn, 0), (countUp, learn, 1), (strength, learn, 2), (learn, baseline, "next"),
                 (smooth, wear, 0), (learn, wear, 1), (trend, grow, 0), (wear, grow, 1), (grow, trend, "next"), (grow, plot, "y"),
-                (wear, alarm, 0), (alarms, alarmCount, 0), (alarm, alarmCount, 1), (alarmCount, alarms, "next"),
+                (wear, alarm, 0), (trigger, alarm, 1), (alarms, alarmCount, 0), (alarm, alarmCount, 1), (alarmCount, alarms, "next"),
                 (alarm, firstAlarm, 0), (alarms, firstAlarm, 1),
                 (name, note, 0), (smooth, note, 1), (learn, note, 2), (note, noted, "value"), (firstAlarm, noted, "condition"), (noted, shown, 0));
         }
@@ -179,23 +202,40 @@ namespace JuliaSynth.ViewModels
             // With every snapshot at hand, when each bearing wore for good: hindsight a stream doesn't have.
             Function onset = Define("onset", Function.AnyType, 34, Stage3,
                 """
-                # When each bearing got 10% stronger than when new for good: after its last snapshot not above that. A stream
+                # When each bearing got t times as strong as when new (1.1: 10% stronger) for good: after its last snapshot not above that. A stream
                 # can only say it got stronger, not that it never calmed down again.
                 names = basename.(files.paths)[vec(maximum(T[:, 1:4]; dims = 2)) .> 0.01]
                 join(map(1:4) do b
-                    i = something(findlast(<=(1.1), W[:, b]), 0)
+                    i = something(findlast(<=(t), W[:, b]), 0)
                     i == size(W, 1) ? "bearing $b: not worn" :
                         "bearing $b: worn from $(names[i + 1]), $(size(W, 1) - i) snapshots before the end, at most $(round(maximum(W[:, b]); digits = 1))×"
                 end, "\n")
                 """,
-                ("files", Function.AnyType), ("T", "Matrix{Float64}"), ("W", "Matrix{Float64}"));
+                ("files", Function.AnyType), ("T", "Matrix{Float64}"), ("W", "Matrix{Float64}"), ("t", "Float64"));
             DisplayNode shown = Shown(34, Stage3 + 16);
+            Float worn = InPanel(Scalar(1.1, 34), "worn at × when new", 1.02, 2);
+            worn.Column = Stage3 - 14;
+
+            // In bands: the snapshots and their features, then what they say in hindsight.
+            Place((files, 6, Inputs), (each, 8, Stage1), (features, 19, Stage1), (table, 8, Stage2), (saved, 19, Stage2),
+                (wear, 8, Stage3 + 4), (byBearing, 8, Stage3 + 18), (heat, 8, Stage3 + 34), (worst, 19, Stage3 + 18), (line, 24, Stage3 + 34),
+                (worn, 48, Inputs), (onset, 48, Stage1), (shown, 48, Stage2));
+
+            FrameNode inParallel = Framed("Every snapshot at once",
+                "The Map applies features to every snapshot on all of Julia's threads (∥ switches it to one at a time); table "
+                + "holds them a row a snapshot, saved to bearing-features.csv.",
+                features, each, table, saved);
+            FrameNode wearing = Framed("Wear", "Each bearing's strength over when new, smoothed: a heatmap of the four, a line of the most worn.",
+                wear, byBearing, heat, worst, line);
+            FrameNode hindsight = Framed("Hindsight",
+                "With the whole week at hand, when each bearing got stronger for good (by the slider's times, on the left).",
+                worn, onset, shown);
 
             return Design(
-                [files, features, each, table, saved, wear, byBearing, heat, worst, line, onset, shown],
+                [files, inParallel, wearing, hindsight, features, each, table, saved, wear, byBearing, heat, worst, line, worn, onset, shown],
                 (files, each, "items"), (features, each, "f"), (each, table, 0), (table, saved, 0),
                 (table, wear, 0), (wear, byBearing, 0), (byBearing, heat, "y"), (wear, worst, 0), (worst, line, "y"),
-                (files, onset, 0), (table, onset, 1), (wear, onset, 2), (onset, shown, 0));
+                (files, onset, 0), (table, onset, 1), (wear, onset, 2), (worn, onset, 3), (onset, shown, 0));
         }
     }
 }

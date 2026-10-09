@@ -1,3 +1,4 @@
+using Avalonia.Collections;
 using JuliaSynth.Model;
 using ReactiveUI;
 using System;
@@ -62,13 +63,36 @@ public partial class MainViewModel
             return null;
         }
 
-        HashSet<string> ids = [.. chosen.Select(n => n.ID)];
-        List<Connection> inside = [.. Connections.Where(c => ids.Contains(c.SourceID) && ids.Contains(c.TargetID))];
-        List<Connection> incoming = [.. Connections.Where(c => !ids.Contains(c.SourceID) && ids.Contains(c.TargetID))];
-        List<Connection> outgoing = [.. Connections.Where(c => ids.Contains(c.SourceID) && !ids.Contains(c.TargetID))];
-
         HashSet<string> taken = [.. AllNodes(Nodes).OfType<GroupNode>().Select(g => g.Name)];
-        GroupNode group = new() { Name = Unique(frame is { Title.Length: > 0 } ? Name(frame.Title) : "group", taken, first: frame is not null) };
+        GroupNode group = Group(Nodes, Connections, chosen, Unique(frame is { Title.Length: > 0 } ? Name(frame.Title) : "group", taken, first: frame is not null));
+        if (frame is not null)
+        {
+            _ = Nodes.Remove(frame);
+        }
+
+        SelectOnly(group);
+        return group;
+    }
+
+    // Julia-like: letters, digits and underscores.
+    private static string Name(string text)
+    {
+        string name = new([.. text.Trim().ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '_')]);
+        return name.Length == 0 || char.IsDigit(name[0]) ? $"group_{name}" : name;
+    }
+
+    /// <summary>
+    /// Makes <paramref name="chosen"/>, nodes of the design given, one group named <paramref name="name"/> in their
+    /// place, wired as they were: see <see cref="GroupSelection"/>.
+    /// </summary>
+    internal static GroupNode Group(AvaloniaList<Node> nodes, AvaloniaList<Connection> connections, List<Node> chosen, string name)
+    {
+        HashSet<string> ids = [.. chosen.Select(n => n.ID)];
+        List<Connection> inside = [.. connections.Where(c => ids.Contains(c.SourceID) && ids.Contains(c.TargetID))];
+        List<Connection> incoming = [.. connections.Where(c => !ids.Contains(c.SourceID) && ids.Contains(c.TargetID))];
+        List<Connection> outgoing = [.. connections.Where(c => ids.Contains(c.SourceID) && !ids.Contains(c.TargetID))];
+
+        GroupNode group = new() { Name = name };
 
         // In the middle of the nodes.
         List<(double Top, double Left, double Bottom, double Right)> footprints = [.. chosen.Select(Layout.Footprint)];
@@ -110,28 +134,15 @@ public partial class MainViewModel
         group.Wires.AddRange(inside);
 
         // On the canvas: the group, wired as its nodes were.
-        Connections.RemoveAll([.. inside, .. incoming, .. outgoing]);
-        Nodes.RemoveAll(chosen);
-        if (frame is not null)
-        {
-            _ = Nodes.Remove(frame);
-        }
-
-        Nodes.Add(group);
-        Connections.AddRange(incoming.GroupBy(c => (c.SourceID, c.Output))
+        connections.RemoveAll([.. inside, .. incoming, .. outgoing]);
+        nodes.RemoveAll(chosen);
+        nodes.Add(group);
+        connections.AddRange(incoming.GroupBy(c => (c.SourceID, c.Output))
             .Select(s => new Connection(s.Key.SourceID, group.ID, entryOf[s.Key].Port.ID, s.Key.Output) { Breakpoint = s.First().Breakpoint }));
-        Connections.AddRange(outgoing.Select(c => exitOf[(c.SourceID, c.Output)] is var (exit, first)
+        connections.AddRange(outgoing.Select(c => exitOf[(c.SourceID, c.Output)] is var (exit, first)
             ? new Connection(group.ID, c.TargetID, c.ParameterID, first ? null : exit.Name) { Breakpoint = c.Breakpoint }
             : c));
-        SelectOnly(group);
         return group;
-
-        // Julia-like: letters, digits and underscores.
-        static string Name(string text)
-        {
-            string name = new([.. text.Trim().ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '_')]);
-            return name.Length == 0 || char.IsDigit(name[0]) ? $"group_{name}" : name;
-        }
     }
 
     /// <summary>

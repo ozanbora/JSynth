@@ -184,7 +184,7 @@ namespace JuliaSynth.ViewModels
             FilesNode storm = Folder(HeleneTrack, 78);
             MergeNode merged = new() { Row = 6, Column = Stage1 };
             (Node, string) from = (merged, MergeNode.FolderOutput);
-            Function isGauge = Define("is_gauge", "Bool", 30, Stage2, $"from != \"{HeleneTrack}\"  # a gauge's hour, not the storm's position", ("from", Function.AnyType));
+            Function isGauge = Define("is_gauge", "Bool", 17, Stage2, $"from != \"{HeleneTrack}\"  # a gauge's hour, not the storm's position", ("from", Function.AnyType));
             WhenNode hour = new() { Row = 6, Column = Stage2 };
 
             // The surge: the water level over the tide predicted for that minute.
@@ -241,8 +241,19 @@ namespace JuliaSynth.ViewModels
                 ("M", "Matrix{Float64}"), ("r", "Vector{Float64}"));
             PlotNode heat = new() { Title = "Surge (m) hour by hour from 25 September, gauges south to north (Key West at the top)", Kind = "Heatmap", Row = 58, Column = Stage3 + 32 };
 
+            FrameNode gaugeHours = Framed("A gauge's hour", "Only the gauges' hours go on: the storm's positions are kept for row.", isGauge, hour);
+            FrameNode surged = Framed("The surge",
+                "surge: the hour's highest water over the tide predicted for that minute. row: with how far the storm's latest "
+                + "position was, and on which side; saved a row an hour to surge.csv.",
+                surge, row, saved);
+            FrameNode highestSoFar = Framed("Each gauge's highest", "Each gauge's highest surge so far, when, and where the storm was then.",
+                peaksSoFar, highest, note, shown);
+            FrameNode hourByHour = Framed("Hour by hour", "Every hour's surge, gauge by gauge: the surge moving up the coast.",
+                hoursSoFar, paint, heat);
+
             return Design(
-                [.. gauges, storm, merged, isGauge, hour, tides, tables, surge, row, saved, peaksSoFar, highest, note, shown, hoursSoFar, paint, heat],
+                [.. gauges, storm, merged, gaugeHours, surged, highestSoFar, hourByHour, isGauge, hour, tides, tables, surge, row, saved,
+                    peaksSoFar, highest, note, shown, hoursSoFar, paint, heat],
                 [
                     .. gauges.Append(storm).Select(g => ((Node)g, (Node)merged, (object)"folders")),
                     (from, isGauge, 0), (merged, hour, "value"), (isGauge, hour, "condition"),

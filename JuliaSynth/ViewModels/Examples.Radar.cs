@@ -163,6 +163,8 @@ namespace JuliaSynth.ViewModels
                 (scan, interfered, 0), (update, interfered, 1),
             ];
 
+            List<Node> map = [clutter, update, topDown, clutterMap];
+            List<Node> interference = [interfered];
             if (list)
             {
                 Integer number = Whole(0, 48);
@@ -173,6 +175,7 @@ namespace JuliaSynth.ViewModels
                     ("hits", "Vector{Int64}"), ("k", "Int64"), ("hit", "Int64"));
                 DisplayNode shown = Shown(55, Stage3 + 16);
                 nodes.AddRange([number, countUp, hits, noted, shown]);
+                interference.AddRange([number, countUp, hits, noted, shown]);
                 wires.AddRange([(number, countUp, 0), (countUp, number, "next"), (hits, noted, 0), (countUp, noted, 1), (interfered, noted, 2), (noted, hits, "next"), (noted, shown, 0)]);
             }
             else
@@ -181,19 +184,30 @@ namespace JuliaSynth.ViewModels
                 Function plus = Define("plus", "Int64", 48, Stage3, "n + hit  # one more scan with interference, or not", ("n", "Int64"), ("hit", "Int64"));
                 DisplayNode shown = Shown(48, Stage3 + 16);
                 nodes.AddRange([count, plus, shown]);
+                interference.AddRange([count, plus, shown]);
                 wires.AddRange([(count, plus, 0), (interfered, plus, 1), (plus, count, "next"), (plus, shown, 0)]);
             }
 
             if (profile)
             {
-                Function rangeProfile = Define("range_profile", "Vector{Float64}", 6, Stage2,
+                Function rangeProfile = Define("range_profile", "Vector{Float64}", 27, Stage2,
                     "vec(sum(C; dims = 1)) ./ size(C, 1)  # the clutter's mean strength at each range bin",
                     ("C", "Matrix{Float64}"));
-                PlotNode plot = new() { Title = "Clutter strength by range bin", Row = 7, Column = Stage3 + 2 };
+                PlotNode plot = new() { Title = "Clutter strength by range bin", Row = 35, Column = Stage3 + 2 };
                 nodes.AddRange([rangeProfile, plot]);
+                map.AddRange([rangeProfile, plot]);
                 wires.AddRange([(update, rangeProfile, 0), (rangeProfile, plot, "y")]);
             }
 
+            nodes.InsertRange(1, [
+                Framed("The clutter map", "The scene as it usually is: empty at first, each scan moving it a little towards itself (update), "
+                    + "the input taking update as its next value. top_down shows it from above, like a radar screen.", [.. map]),
+                Framed("What stands out: the traffic", "Each spot that stood out from the clutter map, counted scan by scan: the tracks of "
+                    + "what moves.", tally, standsOut, add, traffic, tracks),
+                Framed("Another radar's interference", list
+                    ? "A scan with one azimuth standing out along most of its range: another radar's signal, listed by scan number."
+                    : "A scan with one azimuth standing out along most of its range: another radar's signal, counted.", [.. interference]),
+            ]);
             return Design([.. nodes], [.. wires]);
         }
 

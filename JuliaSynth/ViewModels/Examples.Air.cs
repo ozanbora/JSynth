@@ -51,18 +51,26 @@ namespace JuliaSynth.ViewModels
             // Who climbs or descends steeply now.
             Function steep = Define("steep", Function.AnyType, 42, Stage1,
                 """
-                # The aircraft climbing or descending more than 10 m/s (about 2,000 ft a minute): after take-off, or on the way down.
-                flying = [s for s in something(get(J, "states", nothing), []) if s[12] !== nothing && abs(s[12]) > 10 && s[9] == false]
+                # The aircraft climbing or descending faster than v m/s (10: about 2,000 ft a minute): after take-off, or on the way down.
+                flying = [s for s in something(get(J, "states", nothing), []) if s[12] !== nothing && abs(s[12]) > v && s[9] == false]
                 isempty(flying) ? "None" : join(["$(strip(something(s[2], s[1]))) $(s[12] > 0 ? "↑" : "↓") $(round(Int, abs(s[12]))) m/s at $(round(Int, something(s[8], 0))) m" for s in flying], "\n")
                 """,
-                ("J", Function.AnyType));
+                ("J", Function.AnyType), ("v", "Float64"));
             DisplayNode shown = Shown(42, Stage2 + 4);
+            Float faster = InPanel(Scalar(10, 52), "steep: faster than (m/s)", 2, 30);
+
+            FrameNode where = Framed("Where they are", "airborne: a row an aircraft in the air; the map plots their longitude and latitude.",
+                airborne, longitude, latitude, map);
+            FrameNode howMany = Framed("How many", "Counted fetch by fetch: saved a row each to traffic.csv, and plotted.",
+                count, saved, trend, grow, counted);
+            FrameNode climbing = Framed("Climbing or descending steeply", "Faster than the slider on the left: after take-off, or on the way down.",
+                faster, steep, shown);
 
             return Design(
-                [watch, airborne, longitude, latitude, map, count, saved, trend, grow, counted, steep, shown],
+                [watch, where, howMany, climbing, airborne, longitude, latitude, map, count, saved, trend, grow, counted, faster, steep, shown],
                 (watch, airborne, 0), (airborne, longitude, 0), (airborne, latitude, 0), (latitude, map, "y"), (longitude, map, "x"),
                 (airborne, count, 0), (count, saved, 0), (trend, grow, 0), (count, grow, 1), (grow, trend, "next"), (grow, counted, "y"),
-                (watch, steep, 0), (steep, shown, 0));
+                (watch, steep, 0), (faster, steep, 1), (steep, shown, 0));
         }
     }
 }
