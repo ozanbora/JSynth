@@ -129,11 +129,10 @@
     <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
   </Style>
 
-  <!-- Tabs in the title bar: the open one joined to the canvas below it. -->
+  <!-- Tabs in the title bar, all one width (a long name trimmed): the open one joined to the canvas below it. -->
   <Style Selector="Border.tab">
     <Setter Property="Height" Value="32"/>
-    <Setter Property="MinWidth" Value="96"/>
-    <Setter Property="MaxWidth" Value="220"/>
+    <Setter Property="Width" Value="180"/>
     <Setter Property="Margin" Value="0 8 2 0"/>
     <Setter Property="Padding" Value="12 0 4 0"/>
     <Setter Property="CornerRadius" Value="8 8 0 0"/>
