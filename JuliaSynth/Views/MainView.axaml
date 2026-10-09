@@ -68,33 +68,41 @@
             <ItemsControl.ContextMenu>
               <ContextMenu>
                 <MenuItem Header="Add node">
-                  <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Watch folder: a stream of new files (◉)" Tag="WatchNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Every: a stream ticking every few seconds (◷)" Tag="EveryNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Button: a stream going at each press (●)" Tag="ButtonNode" Click="AddAtPointer_Click"/>
-                  <Separator/>
-                  <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Plot (∿)" Tag="PlotNode" Click="AddAtPointer_Click"/>
-                  <Separator/>
+                  <!-- Grouped, so the menu fits a small screen: the function first, the rest by kind. -->
                   <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Window: the last values (⧗)" Tag="WindowNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Zip: folders in step, by file name (⋈)" Tag="ZipNode" Click="AddAtPointer_Click"/>
-                  <MenuItem Header="Merge: folders as one stream, as files come (∪)" Tag="MergeNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Numbers">
+                    <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtPointer_Click"/>
+                  </MenuItem>
+                  <MenuItem Header="Arrays">
+                    <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Array builder" ToolTip.Tip="zeros, ones, rand, range, fill, …" Tag="ArrayBuilder" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Load from file" ToolTip.Tip="CSV, .mtx, JLD2, PNG" Tag="ArrayFile" Click="AddAtPointer_Click"/>
+                  </MenuItem>
+                  <MenuItem Header="Files and streams">
+                    <MenuItem Header="Files in a folder (∀)" ToolTip.Tip="All the files at once, or one at a time" Tag="FilesNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Watch folder (◉)" ToolTip.Tip="A stream of new files, as they come" Tag="WatchNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Every (◷)" ToolTip.Tip="A stream ticking every few seconds" Tag="EveryNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Button (●)" ToolTip.Tip="A stream going at each press" Tag="ButtonNode" Click="AddAtPointer_Click"/>
+                  </MenuItem>
+                  <MenuItem Header="Flow">
+                    <MenuItem Header="Map (↦)" ToolTip.Tip="Apply a function to each" Tag="MapNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Window (⧗)" ToolTip.Tip="The last values" Tag="WindowNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Only when (if)" ToolTip.Tip="Pass a value on a condition" Tag="WhenNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Zip (⋈)" ToolTip.Tip="Folders in step, by file name" Tag="ZipNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Merge (∪)" ToolTip.Tip="Folders as one stream, as files come" Tag="MergeNode" Click="AddAtPointer_Click"/>
+                  </MenuItem>
+                  <MenuItem Header="Outputs">
+                    <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtPointer_Click"/>
+                    <MenuItem Header="Plot (∿)" Tag="PlotNode" Click="AddAtPointer_Click"/>
+                  </MenuItem>
                   <Separator/>
-                  <MenuItem Header="Frame: a titled box around the selected nodes (▭)" Tag="FrameNode" Click="AddAtPointer_Click"/>
-                  <Separator/>
-                  <MenuItem x:Name="LibraryMenu" Header="Library: nodes and groups you saved (▤)"/>
+                  <MenuItem Header="Frame (▭)" ToolTip.Tip="A titled box around the selected nodes" Tag="FrameNode" Click="AddAtPointer_Click"/>
+                  <MenuItem x:Name="LibraryMenu" Header="Library (▤)" ToolTip.Tip="Nodes and groups you saved"/>
                 </MenuItem>
                 <MenuItem x:Name="PauseHereItem" Header="Pause on this wire" InputGesture="F9" Click="PauseHere_Click" IsVisible="False"/>
                 <Separator/>
@@ -239,7 +247,7 @@
             x:Name="MinimapPanel"
             Width="220"
             Height="150"
-            Margin="0 0 22 200"
+            Margin="0 0 22 80"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
             CornerRadius="10"
@@ -266,10 +274,36 @@
       </Panel>
     </Border>
 
-    <!-- The tools, floating over the foot of the canvas: adding nodes, undoing, and running. -->
-    <Panel Grid.Column="1"
-           VerticalAlignment="Bottom"
-           Margin="16 0 80 22">
+    <!-- The tools, floating over the foot of the canvas: adding nodes, undoing, and running in the middle; the map and
+         zoom on the right. -->
+    <DockPanel Grid.Column="1"
+               VerticalAlignment="Bottom"
+               Margin="16 0 22 22">
+      <Border DockPanel.Dock="Right"
+              x:Name="ZoomBar"
+              Classes="floating"
+              Margin="12 0 0 0">
+        <StackPanel Orientation="Horizontal" Spacing="2">
+          <ToggleButton Content="Map"
+                        Classes="tool"
+                        IsChecked="{Binding Path=ShowMinimap}"
+                        ToolTip.Tip="Show or hide the map of the whole design"/>
+          <Rectangle Classes="divider"/>
+          <Button Classes="tool"
+                  Content="−"
+                  Command="{Binding Path=ZoomOut}"
+                  ToolTip.Tip="Zoom out (Ctrl+−)" />
+          <Button Classes="tool"
+                  MinWidth="52"
+                  Content="{Binding Path=SelectedZoomLevel, Converter={StaticResource PercentConverter}}"
+                  Command="{Binding Path=ResetZoom}"
+                  ToolTip.Tip="Reset zoom to 100% (Ctrl+0)" />
+          <Button Classes="tool"
+                  Content="+"
+                  Command="{Binding Path=ZoomIn}"
+                  ToolTip.Tip="Zoom in (Ctrl++)" />
+        </StackPanel>
+      </Border>
       <Border x:Name="Toolbar"
               Classes="floating"
               HorizontalAlignment="Center">
@@ -280,33 +314,41 @@
                           ToolTip.Tip="Add a node in the middle of the view (or right-click the canvas)">
             <DropDownButton.Flyout>
               <MenuFlyout Placement="Top" Opening="AddFlyout_Opening">
-                <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Watch folder: a stream of new files (◉)" Tag="WatchNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Every: a stream ticking every few seconds (◷)" Tag="EveryNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Button: a stream going at each press (●)" Tag="ButtonNode" Click="AddAtCenter_Click"/>
-                <Separator/>
-                <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Plot (∿)" Tag="PlotNode" Click="AddAtCenter_Click"/>
-                <Separator/>
+                <!-- Grouped, so the menu fits a small screen: the function first, the rest by kind. -->
                 <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Window: the last values (⧗)" Tag="WindowNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Zip: folders in step, by file name (⋈)" Tag="ZipNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Merge: folders as one stream, as files come (∪)" Tag="MergeNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Numbers">
+                  <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtCenter_Click"/>
+                </MenuItem>
+                <MenuItem Header="Arrays">
+                  <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Array builder" ToolTip.Tip="zeros, ones, rand, range, fill, …" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Load from file" ToolTip.Tip="CSV, .mtx, JLD2, PNG" Tag="ArrayFile" Click="AddAtCenter_Click"/>
+                </MenuItem>
+                <MenuItem Header="Files and streams">
+                  <MenuItem Header="Files in a folder (∀)" ToolTip.Tip="All the files at once, or one at a time" Tag="FilesNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Watch folder (◉)" ToolTip.Tip="A stream of new files, as they come" Tag="WatchNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Every (◷)" ToolTip.Tip="A stream ticking every few seconds" Tag="EveryNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Button (●)" ToolTip.Tip="A stream going at each press" Tag="ButtonNode" Click="AddAtCenter_Click"/>
+                </MenuItem>
+                <MenuItem Header="Flow">
+                  <MenuItem Header="Map (↦)" ToolTip.Tip="Apply a function to each" Tag="MapNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Window (⧗)" ToolTip.Tip="The last values" Tag="WindowNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Only when (if)" ToolTip.Tip="Pass a value on a condition" Tag="WhenNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Zip (⋈)" ToolTip.Tip="Folders in step, by file name" Tag="ZipNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Merge (∪)" ToolTip.Tip="Folders as one stream, as files come" Tag="MergeNode" Click="AddAtCenter_Click"/>
+                </MenuItem>
+                <MenuItem Header="Outputs">
+                  <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtCenter_Click"/>
+                  <MenuItem Header="Plot (∿)" Tag="PlotNode" Click="AddAtCenter_Click"/>
+                </MenuItem>
                 <Separator/>
-                <MenuItem Header="Frame: a titled box around the selected nodes (▭)" Tag="FrameNode" Click="AddAtCenter_Click"/>
-                <Separator/>
-                <MenuItem x:Name="LibraryFlyoutMenu" Header="Library: nodes and groups you saved (▤)"/>
+                <MenuItem Header="Frame (▭)" ToolTip.Tip="A titled box around the selected nodes" Tag="FrameNode" Click="AddAtCenter_Click"/>
+                <MenuItem x:Name="LibraryFlyoutMenu" Header="Library (▤)" ToolTip.Tip="Nodes and groups you saved"/>
               </MenuFlyout>
             </DropDownButton.Flyout>
           </DropDownButton>
@@ -336,43 +378,10 @@
                   ToolTip.Tip="Stop Julia (Shift+F5)" />
         </StackPanel>
       </Border>
-    </Panel>
+    </DockPanel>
 
-    <!-- Zoom and the map, upright on the right. -->
-    <Border Grid.Column="1"
-            x:Name="ZoomBar"
-            Classes="floating"
-            HorizontalAlignment="Right"
-            VerticalAlignment="Bottom"
-            Margin="0 0 22 22">
-      <StackPanel Spacing="2">
-        <ToggleButton Content="Map"
-                      Classes="tool"
-                      HorizontalAlignment="Stretch"
-                      IsChecked="{Binding Path=ShowMinimap}"
-                      ToolTip.Tip="Show or hide the map of the whole design"/>
-        <Rectangle Height="1" Margin="4 2" Fill="{DynamicResource StatusBarBorderBrush}"/>
-        <Button Classes="tool"
-                HorizontalAlignment="Stretch"
-                Content="+"
-                Command="{Binding Path=ZoomIn}"
-                ToolTip.Tip="Zoom in (Ctrl++)" />
-        <Button Classes="tool"
-                HorizontalAlignment="Stretch"
-                FontSize="11"
-                Padding="2 0"
-                Content="{Binding Path=SelectedZoomLevel, Converter={StaticResource PercentConverter}}"
-                Command="{Binding Path=ResetZoom}"
-                ToolTip.Tip="Reset zoom to 100% (Ctrl+0)" />
-        <Button Classes="tool"
-                HorizontalAlignment="Stretch"
-                Content="−"
-                Command="{Binding Path=ZoomOut}"
-                ToolTip.Tip="Zoom out (Ctrl+−)" />
-      </StackPanel>
-    </Border>
-
-    <!-- How to start, on an empty canvas; clicks go through to the canvas. -->    <TextBlock Grid.Column="1"
+    <!-- How to start, on an empty canvas; clicks go through to the canvas. -->
+    <TextBlock Grid.Column="1"
                IsVisible="{Binding Path=IsCanvasHintVisible}"
                IsHitTestVisible="False"
                MaxWidth="420"
