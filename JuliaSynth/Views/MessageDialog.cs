@@ -12,7 +12,7 @@ namespace JuliaSynth.Views;
 /// </summary>
 public sealed class MessageDialog : Window
 {
-    internal MessageDialog(string title, string message, string[] buttons)
+    internal MessageDialog(string title, string message, string[] buttons, TextBox? input = null)
     {
         Title = title;
         Icon = AppIcon.Window;
@@ -60,6 +60,13 @@ public sealed class MessageDialog : Window
                 buttonRow,
             },
         };
+
+        // A text asked for: under the question, its text selected to type over.
+        if (input is not null)
+        {
+            ((StackPanel)Content).Children.Insert(1, input);
+            Opened += (_, _) => { _ = input.Focus(); input.SelectAll(); };
+        }
     }
 
     /// <summary>
@@ -69,5 +76,16 @@ public sealed class MessageDialog : Window
     public static Task<string?> ShowAsync(Window owner, string title, string message, params string[] buttons)
     {
         return new MessageDialog(title, message, buttons).ShowDialog<string?>(owner);
+    }
+
+    /// <summary>
+    /// Asks for a line of text, starting from <paramref name="text"/>; returns the clicked button's label (null when
+    /// the dialog was closed another way) and the text then.
+    /// </summary>
+    public static async Task<(string? Button, string Text)> AskTextAsync(Window owner, string title, string message, string text, params string[] buttons)
+    {
+        TextBox input = new() { Text = text, MinWidth = 320 };
+        string? button = await new MessageDialog(title, message, buttons, input).ShowDialog<string?>(owner);
+        return (button, input.Text ?? string.Empty);
     }
 }

@@ -532,9 +532,10 @@ public partial class MainViewModel : ReactiveObject
 
     /// <summary>
     /// Adds the copied nodes as new ones (new identities, clashing function names changed), moved by
-    /// <paramref name="offset"/> cells, with their wires; the pasted nodes become the selection.
+    /// <paramref name="offset"/> cells, or with their top left node at <paramref name="at"/>, with their wires; the pasted
+    /// nodes become the selection.
     /// </summary>
-    private static void PasteCopy(string copy, int offset)
+    private static void PasteCopy(string copy, int offset, (int Row, int Column)? at = null)
     {
         if (JsonConvert.DeserializeObject<DesignDocument>(copy, settings) is not DesignDocument pasted || pasted.Nodes.Count == 0)
         {
@@ -580,8 +581,10 @@ public partial class MainViewModel : ReactiveObject
         }
 
         // Move the group as one, as far as the canvas edges allow.
-        int rows = Math.Min(offset, Constants.ROWS - 1 - pasted.Nodes.Max(n => n.Row));
-        int columns = Math.Min(offset, Constants.COLUMNS - 1 - pasted.Nodes.Max(n => n.Column));
+        (int top, int left) = (pasted.Nodes.Min(n => n.Row), pasted.Nodes.Min(n => n.Column));
+        (int rows, int columns) = at is (int row, int column) ? (row - top, column - left) : (offset, offset);
+        rows = Math.Max(-top, Math.Min(rows, Constants.ROWS - 1 - pasted.Nodes.Max(n => n.Row)));
+        columns = Math.Max(-left, Math.Min(columns, Constants.COLUMNS - 1 - pasted.Nodes.Max(n => n.Column)));
         foreach (Node node in pasted.Nodes)
         {
             node.Row += rows;
@@ -703,6 +706,7 @@ public partial class MainViewModel : ReactiveObject
         CreateParameterCommands();
         CreateBreakpointCommands();
         CreateGroupCommands();
+        CreateLibraryCommands();
         CreatePackageCommands();
 
         History.Changed += (_, _) =>

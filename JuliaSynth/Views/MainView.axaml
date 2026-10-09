@@ -89,6 +89,8 @@
                   <MenuItem Header="Merge: folders as one stream, as files come (∪)" Tag="MergeNode" Click="AddAtPointer_Click"/>
                   <Separator/>
                   <MenuItem Header="Frame: a titled box around the selected nodes (▭)" Tag="FrameNode" Click="AddAtPointer_Click"/>
+                  <Separator/>
+                  <MenuItem x:Name="LibraryMenu" Header="Library: nodes and groups you saved (▤)"/>
                 </MenuItem>
                 <MenuItem x:Name="PauseHereItem" Header="Pause on this wire" InputGesture="F9" Click="PauseHere_Click" IsVisible="False"/>
                 <Separator/>
@@ -103,6 +105,7 @@
                 <MenuItem Header="Arrange nodes" InputGesture="Ctrl+Shift+A" Command="{Binding Path=ArrangeNodes}"/>
                 <MenuItem Header="Group into one node" InputGesture="Ctrl+G" Command="{Binding Path=GroupNodes}"/>
                 <MenuItem Header="Open group" InputGesture="Ctrl+Shift+G" Command="{Binding Path=OpenGroups}"/>
+                <MenuItem Header="Save to library…" Command="{Binding Path=SaveToLibrary}"/>
                 <Separator/>
                 <MenuItem Header="Undo" InputGesture="Ctrl+Z" Command="{Binding Path=Undo}"/>
                 <MenuItem Header="Redo" InputGesture="Ctrl+Y" Command="{Binding Path=Redo}"/>
@@ -511,7 +514,7 @@
                           BorderThickness="0"
                           ToolTip.Tip="Add a node in the middle of the view (or right-click the canvas)">
             <DropDownButton.Flyout>
-              <MenuFlyout Placement="TopEdgeAlignedLeft">
+              <MenuFlyout Placement="TopEdgeAlignedLeft" Opening="AddFlyout_Opening">
                 <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtCenter_Click"/>
@@ -537,6 +540,8 @@
                 <MenuItem Header="Merge: folders as one stream, as files come (∪)" Tag="MergeNode" Click="AddAtCenter_Click"/>
                 <Separator/>
                 <MenuItem Header="Frame: a titled box around the selected nodes (▭)" Tag="FrameNode" Click="AddAtCenter_Click"/>
+                <Separator/>
+                <MenuItem x:Name="LibraryFlyoutMenu" Header="Library: nodes and groups you saved (▤)"/>
               </MenuFlyout>
             </DropDownButton.Flyout>
           </DropDownButton>

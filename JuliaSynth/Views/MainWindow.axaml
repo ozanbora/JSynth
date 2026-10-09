@@ -76,6 +76,9 @@
               <MenuItem Header="A_rrange nodes" InputGesture="Ctrl+Shift+A" Command="{Binding Path=ArrangeNodes}"/>
               <MenuItem Header="_Group into one node" InputGesture="Ctrl+G" Command="{Binding Path=GroupNodes}"/>
               <MenuItem Header="_Open group" InputGesture="Ctrl+Shift+G" Command="{Binding Path=OpenGroups}"/>
+              <Separator/>
+              <MenuItem Header="Save to _library…" Command="{Binding Path=SaveToLibrary}"/>
+              <MenuItem Header="_Manage library…" Click="ManageLibrary_Click"/>
             </MenuItem>
             <MenuItem Header="_Run">
               <MenuItem Header="_Run" InputGesture="F5" Command="{Binding Path=Run}"/>

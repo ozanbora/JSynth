@@ -177,6 +177,58 @@ public partial class MainView : UserControl
         _menuWire = Canvas is Controls.DesignerGrid grid && _menuPoint is Point at ? grid.WireAt(at) : null;
         PauseHereItem.IsVisible = _menuWire is not null;
         PauseHereItem.Header = _menuWire?.Breakpoint is null ? "Pause on this wire" : "Remove the breakpoint";
+        FillLibrary(LibraryMenu, () => _menuPoint ?? ViewCenter());
+    }
+
+    private void AddFlyout_Opening(object? sender, EventArgs e)
+    {
+        FillLibrary(LibraryFlyoutMenu, ViewCenter);
+    }
+
+    /// <summary>
+    /// The library's entries in <paramref name="menu"/>, each adding a copy of its nodes at <paramref name="where"/>;
+    /// then saving the selection to it, and managing it.
+    /// </summary>
+    private void FillLibrary(MenuItem menu, Func<Point> where)
+    {
+        menu.Items.Clear();
+        foreach (LibraryEntry entry in MainViewModel.LibraryEntries())
+        {
+            MenuItem item = new() { Header = entry.Name };
+            item.Click += async (_, _) =>
+            {
+                Point point = where();
+                try
+                {
+                    MainViewModel.AddFromLibrary(entry, (int)(point.Y / Constants.HEIGHT), (int)(point.X / Constants.WIDTH));
+                }
+                catch (Exception error) when (error is System.IO.IOException or UnauthorizedAccessException or Newtonsoft.Json.JsonException)
+                {
+                    if (TopLevel.GetTopLevel(this) is Window window)
+                    {
+                        _ = await MessageDialog.ShowAsync(window, "Can't add from the library", $"{entry.Name} couldn't be read.\n\n{error.Message}", "OK");
+                    }
+                }
+            };
+            menu.Items.Add(item);
+        }
+
+        if (menu.Items.Count == 0)
+        {
+            menu.Items.Add(new MenuItem { Header = "Nothing saved yet", IsEnabled = false });
+        }
+
+        menu.Items.Add(new Separator());
+        menu.Items.Add(new MenuItem { Header = "Save the selection to the library…", Command = _viewModel?.SaveToLibrary });
+        MenuItem manage = new() { Header = "Manage library…" };
+        manage.Click += async (_, _) =>
+        {
+            if (TopLevel.GetTopLevel(this) is Window window)
+            {
+                await new LibraryDialog().ShowDialog(window);
+            }
+        };
+        menu.Items.Add(manage);
     }
 
     // The wire the canvas menu was opened on; null when it wasn't on one.

@@ -63,6 +63,7 @@ public partial class MainWindow : Window
         if (ViewModel is MainViewModel viewModel)
         {
             viewModel.AskToInstall = AskToInstallAsync;
+            viewModel.AskLibraryName = suggested => LibraryDialog.AskNameAsync(this, "Save to library", suggested);
             viewModel.SetClipboardText = async text =>
             {
                 if (Clipboard is not null)
@@ -350,6 +351,11 @@ public partial class MainWindow : Window
         {
             _ = await MessageDialog.ShowAsync(this, "Can't export the script", $"{Path.GetFileName(path)} couldn't be written.\n\n{error.Message}", "OK");
         }
+    }
+
+    private async void ManageLibrary_Click(object? sender, RoutedEventArgs e)
+    {
+        await new LibraryDialog().ShowDialog(this);
     }
 
     private async void ExportImage_Click(object? sender, RoutedEventArgs e)
