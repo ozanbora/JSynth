@@ -74,14 +74,14 @@ namespace JuliaSynth.Model
         /// <summary>
         /// On the node: "every 2 s".
         /// </summary>
-        public override string Label => $"every {Duration(Seconds)}";
+        public override string Label => $"every {Interval(Seconds)}";
 
         /// <summary>
         /// On the node, under it: "100 ticks", "until stopped".
         /// </summary>
         public string LimitText => Limit > 0 ? $"{Limit.ToString(CultureInfo.InvariantCulture)} {(Limit == 1 ? "tick" : "ticks")}" : "until stopped";
 
-        private static string Duration(double seconds) => seconds switch
+        private static string Interval(double seconds) => seconds switch
         {
             >= 3600 when seconds % 3600 == 0 => FormattableString.Invariant($"{seconds / 3600:0} h"),
             >= 60 when seconds % 60 == 0 => FormattableString.Invariant($"{seconds / 60:0} min"),

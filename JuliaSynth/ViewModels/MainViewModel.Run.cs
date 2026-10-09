@@ -376,7 +376,9 @@ public partial class MainViewModel
             bool streaming = script.Streams;
             bool looping = script.Looped.Count > 0;
             int version = _designVersion;
-            Dictionary<string, Node> nodes = Nodes.ToDictionary(n => n.ID);
+            // The nodes, those in groups too; a group shows its value's, the first of its outputs.
+            Dictionary<string, Node> nodes = AllNodes(Nodes).ToDictionary(n => n.ID);
+            ILookup<string, GroupNode> showing = AllNodes(Nodes).OfType<GroupNode>().Where(g => g.Exits.Count > 0).ToLookup(g => g.Exits[0].NodeID);
 
             if (!await EnsurePackagesAsync(julia, script.Packages, folder, offerRunAnyway: true, cancellation.Token))
             {
@@ -384,7 +386,7 @@ public partial class MainViewModel
             }
 
             // Results of the last run no longer apply once the run starts.
-            foreach (Node node in Nodes)
+            foreach (Node node in nodes.Values)
             {
                 node.Result = null;
             }
@@ -407,12 +409,22 @@ public partial class MainViewModel
 
                 // Lit up while worked out; its result, when it comes, keeps the last one shown until then.
                 node.IsRunning = report.Status == ReportStatus.Running;
+                foreach (GroupNode group in showing[report.Id])
+                {
+                    group.IsRunning = node.IsRunning;
+                }
+
                 if (node.IsRunning)
                 {
                     return;
                 }
 
                 node.Result = report;
+                foreach (GroupNode group in showing[report.Id])
+                {
+                    group.Result = report;
+                }
+
                 if (node is PlotNode plot && report.Status == ReportStatus.Ok)
                 {
                     _ = LoadPlotAsync(plot, report.Text, streaming ? null : version, discard: looping);
@@ -536,7 +548,7 @@ public partial class MainViewModel
             _runStopFile = null;
 
             // Stopped, or failed on the way: nothing is being worked out any more.
-            foreach (Node node in Nodes)
+            foreach (Node node in AllNodes(Nodes))
             {
                 node.IsRunning = false;
             }
@@ -552,7 +564,7 @@ public partial class MainViewModel
     /// </summary>
     private static string? Slowest(JuliaScript script)
     {
-        List<string> slowest = Nodes
+        List<string> slowest = AllNodes(Nodes)
             .Where(n => n.Result?.Seconds >= NotableSeconds && script.Variables.ContainsKey(n.ID))
             .OrderByDescending(n => n.Result!.Seconds)
             .Take(3)
@@ -842,7 +854,7 @@ public partial class MainViewModel
     {
         History.ScheduleCommit();
         _designVersion++;
-        foreach (Node node in Nodes.Where(n => n.HasResult))
+        foreach (Node node in AllNodes(Nodes).Where(n => n.HasResult))
         {
             node.Result = null;
         }

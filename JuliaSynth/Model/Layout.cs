@@ -32,9 +32,9 @@ namespace JuliaSynth.Model
                 _ => (9, 6),
             };
             double top = node.Row + 0.5 - (height / 2);
-            if (node is not (DisplayNode or PlotNode) && node.Inputs.Count > 2)
+            if (node is not (DisplayNode or PlotNode) && node.ConnectorRows > 2)
             {
-                height += node.Inputs.Count - 2;
+                height += node.ConnectorRows - 2;
             }
 
             return (top, node.Column + 0.5 - (width / 2), top + height, node.Column + 0.5 + (width / 2));

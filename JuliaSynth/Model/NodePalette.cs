@@ -32,6 +32,7 @@ namespace JuliaSynth.Model
         public static readonly Color Frame = Color.Parse("#A9C4E0");         // slate blue, drawn faint behind the nodes
         public static readonly Color Every = Color.Parse("#F0CFC0");         // shell pink
         public static readonly Color Button = Color.Parse("#F4B8B0");        // coral
+        public static readonly Color Group = Color.Parse("#D3CBE0");         // heather
 
         /// <summary>
         /// Each kind's colour before the pastels, and its pastel.

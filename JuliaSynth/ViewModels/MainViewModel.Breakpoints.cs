@@ -141,7 +141,7 @@ public partial class MainViewModel
     {
         Node? source = Nodes.FirstOrDefault(n => n.ID == wire.SourceID);
         Node? target = Nodes.FirstOrDefault(n => n.ID == wire.TargetID);
-        string Name(Node? node) => node is Function f ? f.Name : node is not null && variables.TryGetValue(node.ID, out string? variable) ? variable : "?";
+        string Name(Node? node) => node is Function f ? f.Name : node is GroupNode g ? g.Name : node is not null && variables.TryGetValue(node.ID, out string? variable) ? variable : "?";
         string output = wire.Output is null ? string.Empty : $".{wire.Output}";
         string input = target?.Ports.FirstOrDefault(p => p.ID == wire.ParameterID)?.Name ?? "?";
         return $"{Name(source)}{output} → {Name(target)}({input})";

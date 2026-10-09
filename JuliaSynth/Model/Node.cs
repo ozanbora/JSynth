@@ -244,6 +244,12 @@ namespace JuliaSynth.Model
         public virtual IEnumerable<Parameter> AllInputs => Inputs;
 
         /// <summary>
+        /// How many rows it takes under its header, for its connectors: one an input (a group's, also one an output after
+        /// its value).
+        /// </summary>
+        public virtual int ConnectorRows => Inputs.Count;
+
+        /// <summary>
         /// The port of an input node taking its value for the next file, in a design going through files one
         /// at a time (a Files node so set, or a Watch folder): the value it starts with is the one set on it,
         /// and after each file it takes the value wired here, as <c>C = update(C, X)</c> in a loop. Null for

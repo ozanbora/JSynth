@@ -54,7 +54,7 @@ public class InputsNode : Node
     // grow it so that every input gets its own connector row.
     private void UpdateHeight()
     {
-        int rows = Math.Max(MinInputRows, (DataContext as Model.Node)?.Inputs.Count ?? 0);
+        int rows = Math.Max(MinInputRows, (DataContext as Model.Node)?.ConnectorRows ?? 0);
         Height = HeaderHeight + (rows * InputRowHeight);
     }
 }

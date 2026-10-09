@@ -30,7 +30,13 @@ public partial class Connector : UserControl
     /// <summary>
     /// For an output port other than the node's value, the name of that output (a Merge node's "folder"); else null.
     /// </summary>
-    public string? Output { get; set; }
+    public string? Output
+    {
+        get => GetValue(OutputProperty);
+        set => SetValue(OutputProperty, value);
+    }
+
+    public static readonly StyledProperty<string?> OutputProperty = AvaloniaProperty.Register<Connector, string?>(nameof(Output));
 
     /// <summary>
     /// The node the port belongs to.

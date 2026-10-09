@@ -50,7 +50,9 @@ namespace JuliaSynth.Model
         /// <param name="stopFile">For a run of a stream: the file whose appearing ends it.</param>
         public static JuliaScript Generate(IEnumerable<Node> designNodes, IEnumerable<Connection> designConnections, bool instrumented, string? plotFolder = null, string? stopFile = null)
         {
-            return new Writer(designNodes, designConnections, instrumented, plotFolder ?? Path.Combine(Path.GetTempPath(), "JuliaSynth"), stopFile).Write();
+            // Groups are their nodes.
+            (List<Node> nodes, List<Connection> connections) = GroupNode.Flatten(designNodes, designConnections);
+            return new Writer(nodes, connections, instrumented, plotFolder ?? Path.Combine(Path.GetTempPath(), "JuliaSynth"), stopFile).Write();
         }
 
         /// <summary>

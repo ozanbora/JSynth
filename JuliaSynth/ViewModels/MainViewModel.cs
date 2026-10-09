@@ -393,7 +393,7 @@ public partial class MainViewModel : ReactiveObject
 
     private static string FreeFunctionName()
     {
-        return FreeFunctionName(Nodes.OfType<Function>().Select(f => f.Name).ToHashSet());
+        return FreeFunctionName(AllNodes(Nodes).OfType<Function>().Select(f => f.Name).ToHashSet());
     }
 
     private static string FreeFunctionName(ISet<string> used)
@@ -542,12 +542,23 @@ public partial class MainViewModel : ReactiveObject
         }
 
         Dictionary<string, string> newIDs = [];
-        HashSet<string> functionNames = Nodes.OfType<Function>().Select(f => f.Name).ToHashSet();
+        HashSet<string> functionNames = AllNodes(Nodes).OfType<Function>().Select(f => f.Name).ToHashSet();
         foreach (Node node in pasted.Nodes)
         {
             string oldID = node.ID;
             node.RenewID();
             newIDs[oldID] = node.ID;
+
+            // A group's nodes are copies too.
+            if (node is GroupNode group)
+            {
+                group.RenewInside();
+                foreach (Function inner in AllNodes(group.Members).OfType<Function>())
+                {
+                    inner.Name = functionNames.Contains(inner.Name) ? FreeFunctionName(functionNames) : inner.Name;
+                    _ = functionNames.Add(inner.Name);
+                }
+            }
 
             foreach (Parameter parameter in node.Next is null ? node.AllInputs : node.AllInputs.Append(node.Next))
             {
@@ -584,7 +595,7 @@ public partial class MainViewModel : ReactiveObject
             node.IsSelected = true;
         }
 
-        Connections.AddRange(pasted.Connections.Select(c => new Connection(newIDs[c.SourceID], newIDs[c.TargetID], newIDs[c.ParameterID], c.Output)));
+        Connections.AddRange(pasted.Connections.Select(c => new Connection(newIDs[c.SourceID], newIDs[c.TargetID], newIDs[c.ParameterID], c.Output) { Breakpoint = c.Breakpoint }));
     }
     #endregion
 
@@ -691,6 +702,7 @@ public partial class MainViewModel : ReactiveObject
         CreateStartCommands();
         CreateParameterCommands();
         CreateBreakpointCommands();
+        CreateGroupCommands();
         CreatePackageCommands();
 
         History.Changed += (_, _) =>

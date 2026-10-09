@@ -51,6 +51,12 @@
         <StackPanel DockPanel.Dock="Right"
                     Orientation="Horizontal"
                     VerticalAlignment="Center">
+          <Button x:Name="GroupButton"
+                  Classes="nodeAction wide"
+                  Content="⧉ Group"
+                  ToolTip.Tip="Make the nodes in this frame one node, named after it (Ctrl+G with the frame selected). Double-click the group to open it again."
+                  Click="Group_Click"
+                  />
           <Button Classes="nodeAction"
                   Content="Ξ"
                   ToolTip.Tip="Edit">

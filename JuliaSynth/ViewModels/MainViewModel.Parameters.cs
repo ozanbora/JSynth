@@ -135,7 +135,7 @@ public partial class MainViewModel
             if (Nodes.FirstOrDefault(n => n.ID == wire.TargetID) is Node target && target.Ports.FirstOrDefault(p => p.ID == wire.ParameterID) is Parameter parameter)
             {
                 wiredName ??= parameter.Name;
-                into.Add($"{(target is Function f ? f.Name : variables.GetValueOrDefault(target.ID, "?"))}({parameter.Name})");
+                into.Add($"{(target is Function f ? f.Name : target is GroupNode g ? g.Name : variables.GetValueOrDefault(target.ID, "?"))}({parameter.Name})");
             }
         }
 

@@ -27,6 +27,8 @@
           <KeyBinding Gesture="Delete" Command="{Binding Path=DeleteSelected}"/>
           <KeyBinding Gesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
           <KeyBinding Gesture="Ctrl+Shift+A" Command="{Binding Path=ArrangeNodes}"/>
+          <KeyBinding Gesture="Ctrl+G" Command="{Binding Path=GroupNodes}"/>
+          <KeyBinding Gesture="Ctrl+Shift+G" Command="{Binding Path=OpenGroups}"/>
           <KeyBinding Gesture="Escape" Command="{Binding Path=ClearSelection}"/>
           <KeyBinding Gesture="Ctrl+C" Command="{Binding Path=Copy}"/>
           <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding Path=CopyAsJulia}"/>
@@ -72,6 +74,8 @@
               <MenuItem Header="_Delete" InputGesture="Delete" Command="{Binding Path=DeleteSelected}"/>
               <MenuItem Header="Select _all" InputGesture="Ctrl+A" Command="{Binding Path=SelectAll}"/>
               <MenuItem Header="A_rrange nodes" InputGesture="Ctrl+Shift+A" Command="{Binding Path=ArrangeNodes}"/>
+              <MenuItem Header="_Group into one node" InputGesture="Ctrl+G" Command="{Binding Path=GroupNodes}"/>
+              <MenuItem Header="_Open group" InputGesture="Ctrl+Shift+G" Command="{Binding Path=OpenGroups}"/>
             </MenuItem>
             <MenuItem Header="_Run">
               <MenuItem Header="_Run" InputGesture="F5" Command="{Binding Path=Run}"/>

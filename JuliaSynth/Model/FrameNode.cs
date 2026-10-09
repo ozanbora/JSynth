@@ -70,6 +70,18 @@ namespace JuliaSynth.Model
         public override bool HasOutput => false;
 
         /// <summary>
+        /// The nodes it was drawn over without being in the group opened into it (see MainViewModel.OpenGroup): grouping
+        /// the frame again leaves them out. Empty for a frame not opened from a group.
+        /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public List<string> Outside { get; init; } = [];
+
+        /// <summary>
+        /// The nodes grouping it would make one: those in it, but those it was drawn over when opened from a group.
+        /// </summary>
+        public IEnumerable<Node> Grouped(IEnumerable<Node> nodes) => nodes.Where(n => n is not FrameNode && Holds(n) && !Outside.Contains(n.ID));
+
+        /// <summary>
         /// Whether <paramref name="node"/> is drawn in this frame: its middle is.
         /// </summary>
         public bool Holds(Node node)

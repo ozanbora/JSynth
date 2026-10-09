@@ -133,6 +133,12 @@
       </ControlTemplate>
     </Setter>
   </Style>
+  <!-- A node action with a word on it, as wide as it needs. -->
+  <Style Selector="Button.nodeAction.wide">
+    <Setter Property="Width" Value="NaN"/>
+    <Setter Property="Padding" Value="6 0"/>
+    <Setter Property="FontSize" Value="12"/>
+  </Style>
   <Style Selector="Button.nodeAction:pointerover">
     <Setter Property="Background" Value="{StaticResource NodeActionHoverBrush}"/>
   </Style>

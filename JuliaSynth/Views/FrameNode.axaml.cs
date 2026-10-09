@@ -71,6 +71,16 @@ public partial class FrameNode : Controls.Node
         }
     }
 
+    // The nodes in the frame made one, named after it.
+    private void Group_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_frame is not null)
+        {
+            MainViewModel.SelectOnly(_frame);
+            _ = MainViewModel.GroupSelection();
+        }
+    }
+
     // A note written: the frame drawn again around its nodes, with room for it.
     private void Note_LostFocus(object? sender, RoutedEventArgs e)
     {
