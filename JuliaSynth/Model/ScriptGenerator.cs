@@ -363,7 +363,19 @@ namespace JuliaSynth.Model
         {
             HashSet<string> taken = nodes.OfType<Function>().Select(f => f.Name).ToHashSet();
             Dictionary<string, string> variables = [];
+
+            // Inputs given a name first: it is their variable (as near as Julia allows), before x1, v1, … are handed out.
             foreach (Node node in nodes)
+            {
+                if (VariableFor(node.PanelName) is string named)
+                {
+                    string name = taken.Contains(named) ? Enumerable.Range(2, int.MaxValue - 2).Select(i => $"{named}{i}").First(n => !taken.Contains(n)) : named;
+                    _ = taken.Add(name);
+                    variables[node.ID] = name;
+                }
+            }
+
+            foreach (Node node in nodes.Where(n => !variables.ContainsKey(n.ID)))
             {
                 string stem = node switch
                 {
@@ -395,6 +407,32 @@ namespace JuliaSynth.Model
             }
 
             return variables;
+        }
+
+        private static readonly HashSet<string> Keywords = ["baremodule", "begin", "break", "catch", "const", "continue", "do",
+            "else", "elseif", "end", "export", "false", "finally", "for", "function", "global", "if", "import", "let", "local",
+            "macro", "module", "public", "quote", "return", "struct", "true", "try", "using", "while", "abstract", "mutable",
+            "primitive", "type", "where", "in", "isa", "outer"];
+
+        /// <summary>
+        /// The variable for a node named <paramref name="name"/>: its letters, digits and underscores, other characters
+        /// one underscore ("quake at × the background": quake_at_the_background). A name Julia has already or a keyword
+        /// gets an underscore after it (length_), and one starting with a digit before it. Null for no name.
+        /// </summary>
+        internal static string? VariableFor(string name)
+        {
+            string variable = System.Text.RegularExpressions.Regex.Replace(name.Trim(), @"[^\p{L}\p{Nd}_]+", "_").Trim('_');
+            if (variable.Length == 0)
+            {
+                return null;
+            }
+
+            if (char.IsDigit(variable[0]))
+            {
+                variable = "_" + variable;
+            }
+
+            return Keywords.Contains(variable) || JuliaNames.Taken.Contains(variable) ? variable + "_" : variable;
         }
 
         /// <summary>

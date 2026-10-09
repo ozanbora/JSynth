@@ -106,14 +106,8 @@
                      DataContext="{Binding Path=Next}"
                      ToolTip.Tip="next: going through files one at a time, this takes the value wired here after each file, as C = update(C, X) in a loop. It starts with its own."/>
 
-      <!-- What it is for: its name in the parameters panel, or where its value goes. -->
-      <TextBlock Grid.Row="1"
-                 Grid.Column="1"
-                 Classes="purpose"
-                 Text="{Binding Path=Purpose}"
-                 ToolTip.Tip="{Binding Path=PurposeTip}"
-                 IsVisible="{Binding Path=HasPurpose}"
-                 />
+      <!-- Its name: the one given (its variable in the script), or the parameter it is wired into. -->
+      <jsControls:InputLabel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Margin="6 4 8 0"/>
 
       <TextBlock Grid.Row="1"
                  Grid.Column="1"

@@ -20,20 +20,41 @@
     <jsModel:Float />
   </Design.DataContext>
   
-  <Grid RowDefinitions="auto,auto,auto,auto,auto"
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto"
         ColumnDefinitions="auto,*"
         >
-    <Grid.Resources>
+
+    <!-- Its name: its variable in the script, so the output says which value is which (as Julia allows: see
+         ScriptGenerator.VariableFor), and its name in the parameters panel. -->
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           Content="Name"
+           />
+    <StackPanel Grid.Row="0"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="8"
+                >
+      <TextBox Width="180"
+               Text="{Binding Path=PanelName, UpdateSourceTrigger=LostFocus}"
+               PlaceholderText="{Binding Path=Variable}"
+               ToolTip.Tip="Its variable in the script, and its name in the parameters panel. Empty: named by the script (x1, v1, A1, …)."
+               />
+      <TextBlock Classes="caption"
+                 VerticalAlignment="Center"
+                 Text="{Binding Path=Variable, StringFormat='in the script: {0}'}"
+                 />
+    </StackPanel>    <Grid.Resources>
       <jsConverters:DoubleToScientificString x:Key="DoubleToScientificString"/>
     </Grid.Resources>
 
 
-    <Label Grid.Row="0"
+    <Label Grid.Row="1"
            Grid.Column="0"
            VerticalAlignment="Bottom"
            Content="Bitness"
            />
-    <StackPanel Grid.Row="0"
+    <StackPanel Grid.Row="1"
                 Grid.Column="1"
                 Orientation="Horizontal"
                 >
@@ -57,11 +78,11 @@
 
     </StackPanel>
 
-    <Label Grid.Row="1"
+    <Label Grid.Row="2"
            Grid.Column="0"
            Content="Value" />
 
-    <TextBox Grid.Row="1"
+    <TextBox Grid.Row="2"
              Grid.Column="1"
              HorizontalAlignment="Stretch"
              HorizontalContentAlignment="Right"
@@ -69,12 +90,12 @@
                    ToolTip.Tip="This is the initial value when the application is launched. You can always update it later on from the user interface."
                    />
 
-    <Label Grid.Row="2"
+    <Label Grid.Row="3"
            Grid.Column="0"
            Content="Minimum"
            />
 
-    <TextBox Grid.Row="2"
+    <TextBox Grid.Row="3"
              Grid.Column="1"
              HorizontalAlignment="Stretch"
              HorizontalContentAlignment="Right"
@@ -82,12 +103,12 @@
              ToolTip.Tip="Minimum value will be used for validation in the user interface. By default, it is set to minimum value of bitness representation."
                    />
 
-    <Label Grid.Row="3"
+    <Label Grid.Row="4"
            Grid.Column="0"
            Content="Maximum"
            />
 
-    <TextBox Grid.Row="3"
+    <TextBox Grid.Row="4"
              Grid.Column="1"
              HorizontalAlignment="Stretch"
              HorizontalContentAlignment="Right"
@@ -95,12 +116,12 @@
              ToolTip.Tip="Maximum value will be used for validation in the user interface. By default, it is set to maximum value of bitness representation."
                    />
 
-    <Label Grid.Row="4"
+    <Label Grid.Row="5"
            Grid.Column="0"
            Content="Epsilon"
            />
 
-    <TextBox Grid.Row="4"
+    <TextBox Grid.Row="5"
              Grid.Column="1"
              HorizontalAlignment="Stretch"
              HorizontalContentAlignment="Right"

@@ -112,10 +112,14 @@ public partial class MainViewModel
         Parameters.Clear();
         Parameters.AddRange(shown);
 
-        // Each input says what it is for.
-        foreach (Node node in Nodes.Where(n => n.CanBeInPanel))
+        // Each input says what it is for, and its variable, as the output names it.
+        foreach (Node node in Nodes)
         {
-            SetPurpose(node, variables);
+            node.Variable = variables.GetValueOrDefault(node.ID, string.Empty);
+            if (node is Float or Integer or UnsignedInteger or ArrayInput or SparseInput or ArrayBuilder or ArrayFile)
+            {
+                SetPurpose(node, variables);
+            }
         }
 
         _followed.AddRange(Nodes.Where(n => n.CanBeInPanel || n is DisplayNode));
@@ -170,7 +174,8 @@ public partial class MainViewModel
         string wired = string.Join(", ", Connections.Where(c => c.SourceID == node.ID && c.Output is null)
             .Select(c => Nodes.FirstOrDefault(n => n.ID == c.TargetID)?.Ports.FirstOrDefault(p => p.ID == c.ParameterID)?.Name)
             .OfType<string>().Distinct());
-        node.Purpose = node.PanelName.Length > 0 ? node.PanelName : wired;
+        // A vector, matrix or other array is named only by the name given it; a number, else by what it goes into.
+        node.Purpose = node.PanelName.Length > 0 || node is not (Float or Integer or UnsignedInteger) ? node.PanelName : wired;
         node.PurposeTip = into.Count == 0 ? node.Purpose : $"{(node.Purpose.Length > 0 ? node.Purpose + ": " : string.Empty)}goes into {string.Join(", ", into)}";
     }
 

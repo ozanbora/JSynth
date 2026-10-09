@@ -105,7 +105,8 @@ namespace JuliaSynth.Model
         }
 
         /// <summary>
-        /// Its name in the panel; empty for the name of the parameter it is wired into.
+        /// Its name, given by the user: its variable in the script (see ScriptGenerator.VariableFor), and its name in the
+        /// parameters panel. Empty: the script names it (x1, v1, …), and the panel after the parameter it is wired into.
         /// </summary>
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string PanelName
@@ -160,6 +161,18 @@ namespace JuliaSynth.Model
         [JsonIgnore]
         public bool HasPurpose => _purpose.Length > 0;
 
+        private string _variable = string.Empty;
+
+        /// <summary>
+        /// Its variable in the script, as the output names its value: x1, v1, A1, … . Not saved.
+        /// </summary>
+        [JsonIgnore]
+        public string Variable
+        {
+            get => _variable;
+            set => this.RaiseAndSetIfChanged(ref _variable, value ?? string.Empty);
+        }
+
         private string _purposeTip = string.Empty;
 
         /// <summary>
@@ -194,7 +207,7 @@ namespace JuliaSynth.Model
         /// </summary>
         public virtual bool IsViewState(string property)
         {
-            return property is nameof(IsSelected) or nameof(IsRunning) or nameof(Purpose) or nameof(HasPurpose) or nameof(PurposeTip) || ResultProperties.Contains(property);
+            return property is nameof(IsSelected) or nameof(IsRunning) or nameof(Purpose) or nameof(HasPurpose) or nameof(PurposeTip) or nameof(Variable) || ResultProperties.Contains(property);
         }
 
         /// <summary>

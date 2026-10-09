@@ -110,8 +110,14 @@ namespace JuliaSynth.Tests
                 p.FromText = "50000";
                 p.ToText = "2000000";
                 Assert.Equal(("loan", 50000.0, 2000000.0), (loan.PanelName, loan.PanelFrom, loan.PanelTo));
+
+                // Named, it is its variable in the script too; emptied, named after the parameter again, and by the script.
+                Assert.Contains("loan = Float64(1234567.5)", MainViewModel.ExportScript());
                 p.Name = "P";
+                Assert.Equal("P", loan.PanelName);
+                p.Name = "";
                 Assert.Equal(string.Empty, loan.PanelName);
+                Assert.Equal("P", p.Name);
             });
         }
 

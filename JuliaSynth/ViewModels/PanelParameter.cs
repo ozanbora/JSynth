@@ -46,12 +46,13 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Its name in the panel: the one given, else the name of the parameter it is wired into.
+    /// Its name in the panel: the one given (its variable in the script too), else the name of the parameter it is wired
+    /// into. Emptied, it is named so again.
     /// </summary>
     public string Name
     {
         get => Node.PanelName.Length > 0 ? Node.PanelName : _wiredName;
-        set => Node.PanelName = string.IsNullOrWhiteSpace(value) || value == _wiredName ? string.Empty : value.Trim();
+        set => Node.PanelName = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
     public bool IsNumber => Node is Float or Integer or UnsignedInteger;

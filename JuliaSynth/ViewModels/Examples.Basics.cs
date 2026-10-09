@@ -13,8 +13,8 @@ namespace JuliaSynth.ViewModels
         private static MainViewModel.DesignDocument LoanPayment()
         {
             Float amount = InPanel(Scalar(250_000, 5), "loan", 10_000, 1_000_000, 0, 1e9);
-            Float rate = InPanel(Scalar(0.045, 13), null, 0, 0.15, 0, 1);
-            Integer years = InPanel(Whole(30, 21), null, 1, 40, 1, 100);
+            Float rate = InPanel(Scalar(0.045, 13), "rate", 0, 0.15, 0, 1);
+            Integer years = InPanel(Whole(30, 21), "years", 1, 40, 1, 100);
 
             Function payment = Define("payment", "Float64", 9, Stage1,
                 """
@@ -40,7 +40,7 @@ namespace JuliaSynth.ViewModels
         private static MainViewModel.DesignDocument Projectile()
         {
             Float speed = InPanel(Scalar(20, 9), "speed", 0, 50, 0, 1_000);
-            Float angle = InPanel(Scalar(45, 19), null, 0, 90, 0, 90);
+            Float angle = InPanel(Scalar(45, 19), "angle", 0, 90, 0, 90);
 
             Function distance = Define("distance", "Float64", 4, Stage1, "v^2 * sind(2angle) / 9.81 # metres", ("v", "Float64"), ("angle", "Float64"));
             Function peak = Define("peak", "Float64", 14, Stage1, "(v * sind(angle))^2 / (2 * 9.81) # metres", ("v", "Float64"), ("angle", "Float64"));
@@ -57,9 +57,9 @@ namespace JuliaSynth.ViewModels
 
         private static MainViewModel.DesignDocument LineFit()
         {
-            VectorNode hours = new() { Text = "[1, 2, 3, 4, 5, 6]" };
-            VectorNode scores = new() { Text = "[52, 55, 61, 64, 70, 73]" };
-            Float question = InPanel(Scalar(8, 21), null, 0, 12, 0, 24);
+            VectorNode hours = new() { Text = "[1, 2, 3, 4, 5, 6]", PanelName = "hours" };
+            VectorNode scores = new() { Text = "[52, 55, 61, 64, 70, 73]", PanelName = "scores" };
+            Float question = InPanel(Scalar(8, 21), "new hours", 0, 12, 0, 24);
             (hours.Row, hours.Column) = (5, Inputs);
             (scores.Row, scores.Column) = (13, Inputs);
 
@@ -84,7 +84,7 @@ namespace JuliaSynth.ViewModels
 
         private static MainViewModel.DesignDocument PageRank()
         {
-            MatrixNode links = new() { Text = "[0 1 1 0; 0 0 1 0; 1 0 0 1; 0 0 1 0]", Row = 5, Column = Inputs };
+            MatrixNode links = new() { Text = "[0 1 1 0; 0 0 1 0; 1 0 0 1; 0 0 1 0]", PanelName = "links", Row = 5, Column = Inputs };
             Float damping = InPanel(Scalar(0.85, 13), "damping", 0, 1, 0, 1);
 
             Function pagerank = Define("pagerank", "Vector{Float64}", 9, Stage1,

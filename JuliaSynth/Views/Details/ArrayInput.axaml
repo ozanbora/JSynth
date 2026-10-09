@@ -22,15 +22,36 @@
   <UserControl.Resources>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="auto,auto,auto,auto"
+  <Grid RowDefinitions="auto,auto,auto,auto,auto"
         ColumnDefinitions="auto,*"
         >
 
+    <!-- Its name: its variable in the script, so the output says which value is which (as Julia allows: see
+         ScriptGenerator.VariableFor), and its name in the parameters panel. -->
     <Label Grid.Row="0"
+           Grid.Column="0"
+           Content="Name"
+           />
+    <StackPanel Grid.Row="0"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="8"
+                >
+      <TextBox Width="180"
+               Text="{Binding Path=PanelName, UpdateSourceTrigger=LostFocus}"
+               PlaceholderText="{Binding Path=Variable}"
+               ToolTip.Tip="Its variable in the script, and its name in the parameters panel. Empty: named by the script (x1, v1, A1, …)."
+               />
+      <TextBlock Classes="caption"
+                 VerticalAlignment="Center"
+                 Text="{Binding Path=Variable, StringFormat='in the script: {0}'}"
+                 />
+    </StackPanel>
+    <Label Grid.Row="1"
            Grid.Column="0"
            Content="Elements"
            />
-    <StackPanel Grid.Row="0"
+    <StackPanel Grid.Row="1"
                 Grid.Column="1"
                 Orientation="Horizontal"
                 >
@@ -54,12 +75,12 @@
                 ToolTip.Tip="Set it from the parameters panel too, with a slider or a box"/>
     </StackPanel>
 
-    <Label Grid.Row="1"
+    <Label Grid.Row="2"
            Grid.Column="0"
            VerticalAlignment="Top"
            Content="Values"
            />
-    <StackPanel Grid.Row="1"
+    <StackPanel Grid.Row="2"
                 Grid.Column="1"
                 Spacing="4">
       <TextBox Height="120"
@@ -76,7 +97,7 @@
                  />
     </StackPanel>
 
-    <TextBlock Grid.Row="2"
+    <TextBlock Grid.Row="3"
                Grid.Column="1"
                Margin="0 4"
                Foreground="{DynamicResource ConsoleErrorBrush}"
@@ -86,13 +107,13 @@
                />
 
     <!-- Hidden while there's an error: it would only repeat it. -->
-    <Label Grid.Row="3"
+    <Label Grid.Row="4"
            Grid.Column="0"
            VerticalAlignment="Top"
            Content="Julia"
            IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNull}}"
            />
-    <Border Grid.Row="3"
+    <Border Grid.Row="4"
             Grid.Column="1"
             IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNull}}"
             Padding="6"
