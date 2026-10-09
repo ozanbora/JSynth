@@ -272,11 +272,23 @@ namespace JuliaSynth.ViewModels
 
         /// <summary>
         /// <paramref name="node"/> put in the parameters panel: named <paramref name="name"/> (null: after the input it
-        /// is wired into), its slider from <paramref name="from"/> to <paramref name="to"/>.
+        /// is wired into), its slider from <paramref name="from"/> to <paramref name="to"/>, and the number itself kept
+        /// from <paramref name="min"/> to <paramref name="max"/>: what makes sense for it, wider than the slider, so a
+        /// value typed in the panel's box can go past the slider but not past sense.
         /// </summary>
-        private static T InPanel<T>(T node, string? name, double from, double to) where T : Node
+        private static T InPanel<T>(T node, string? name, double from, double to, double min, double max) where T : Node
         {
             (node.InPanel, node.PanelName, node.PanelFrom, node.PanelTo) = (true, name ?? string.Empty, from, to);
+            switch (node)
+            {
+                case Float x:
+                    (x.Min, x.Max) = (min, max);
+                    break;
+                case Integer z:
+                    (z.Min, z.Max) = ((long)min, (long)max);
+                    break;
+            }
+
             return node;
         }
 

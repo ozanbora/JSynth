@@ -100,7 +100,7 @@ namespace JuliaSynth.ViewModels
             PlotNode plot = new() { Title = "Wear: the most worn bearing's strength over when new", Kind = "Line", Row = 50, Column = Stage3 + 74 };
 
             // The alarm: 10% stronger than when new; the first one noted, with when and which bearing.
-            Float trigger = InPanel(Scalar(1.1, 29), "alarm at × when new", 1.02, 2);
+            Float trigger = InPanel(Scalar(1.1, 29), "alarm at × when new", 1.02, 2, 1, 10);
             trigger.Column = Stage3 + 42;
             Function alarm = Define("alarm", "Bool", 29, Stage3 + 56, "w > t  # t times as strong as when new: 1.1, 10% stronger", ("w", "Float64"), ("t", "Float64"));
             Integer alarms = Whole(0, 64);
@@ -213,7 +213,7 @@ namespace JuliaSynth.ViewModels
                 """,
                 ("files", Function.AnyType), ("T", "Matrix{Float64}"), ("W", "Matrix{Float64}"), ("t", "Float64"));
             DisplayNode shown = Shown(34, Stage3 + 16);
-            Float worn = InPanel(Scalar(1.1, 34), "worn at × when new", 1.02, 2);
+            Float worn = InPanel(Scalar(1.1, 34), "worn at × when new", 1.02, 2, 1, 10);
             worn.Column = Stage3 - 14;
 
             // In bands: the snapshots and their features, then what they say in hindsight.

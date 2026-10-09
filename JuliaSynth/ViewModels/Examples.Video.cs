@@ -78,7 +78,7 @@ namespace JuliaSynth.ViewModels
                 isempty(B) ? zeros(size(X)) : Float64.(abs.(X .- B) .> d)
                 """,
                 ("X", "Matrix{Float64}"), ("B", "Matrix{Float64}"), ("d", "Float64"));
-            Float far = InPanel(Scalar(0.12, 30), "moving when further than", 0.02, 0.5);
+            Float far = InPanel(Scalar(0.12, 30), "moving when further than", 0.02, 0.5, 0, 1);
             Function update = Define("update", "Matrix{Float64}", 18, Stage2,
                 """
                 # The background follows the scene, 5% a frame, but only where nothing moves: a passing car doesn't
