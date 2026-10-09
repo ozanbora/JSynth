@@ -20,7 +20,7 @@ namespace JuliaSynth.Controls
         private const double BoxThreshold = 3;
 
         // The blue of a selected node's border.
-        private static readonly Color SelectionColor = Color.Parse("#6F9FD8");
+        private static readonly Color SelectionColor = Color.Parse("#9558B2");
 
         private static readonly IBrush BoxFill = new ImmutableSolidColorBrush(SelectionColor, 0.12);
         private static readonly IPen BoxPen = new ImmutablePen(new ImmutableSolidColorBrush(SelectionColor), 1);

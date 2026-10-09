@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using System.CommandLine.Binding;
 
 namespace JuliaSynth.Desktop
@@ -28,6 +28,12 @@ namespace JuliaSynth.Desktop
         public Option<string?> VNCHost { get; set; }
 
         public Option<int> VNCPort { get; set; }
+
+        public Option<string?> OpenFile { get; set; }
+
+        public Option<string?> UntitledFile { get; set; }
+
+        public Option<string?> DesignName { get; set; }
 
         public CLISettingsBinder()
         {
@@ -102,6 +108,21 @@ namespace JuliaSynth.Desktop
                 getDefaultValue: () => CLISettings.Default.VNCPort,
                 description: "VNC port"
             );
+
+            OpenFile = new Option<string?>(
+                aliases: ["--open"],
+                description: "Open this design file, alone in the window"
+            );
+
+            UntitledFile = new Option<string?>(
+                aliases: ["--untitled"],
+                description: "Open this design never saved, alone in the window"
+            );
+
+            DesignName = new Option<string?>(
+                aliases: ["--name"],
+                description: "What to call the design given with --untitled"
+            );
         }
 
         private static T? GetOptionValue<T>(BindingContext bindingContext, Option<T> option)
@@ -124,6 +145,9 @@ namespace JuliaSynth.Desktop
                 EnableVNCServer = GetOptionValue(bindingContext, EnableVNCServer),
                 VNCHost = GetOptionValue(bindingContext, VNCHost),
                 VNCPort = GetOptionValue(bindingContext, VNCPort),
+                OpenFile = GetOptionValue(bindingContext, OpenFile),
+                UntitledFile = GetOptionValue(bindingContext, UntitledFile),
+                DesignName = GetOptionValue(bindingContext, DesignName),
             };
         }
     }

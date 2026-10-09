@@ -18,7 +18,6 @@
 
   <UserControl.Resources>
     <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
-    <FontFamily x:Key="CodeFont">Cascadia Mono,Consolas,Menlo,monospace</FontFamily>
   </UserControl.Resources>
 
   <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
@@ -117,7 +116,7 @@
                   Margin="4 0 8 0"
                   ToolTip.Tip="{Binding Path=OutputType}"
                   >
-        <TextBlock FontSize="16"
+        <TextBlock Classes="nodeTitle"
                    Text="{Binding Path=Size}"
                    />
         <TextBlock Classes="caption"

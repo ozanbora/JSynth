@@ -112,6 +112,12 @@ public partial class MainViewModel
         Parameters.Clear();
         Parameters.AddRange(shown);
 
+        // Each input says what it is for.
+        foreach (Node node in Nodes.Where(n => n.CanBeInPanel))
+        {
+            SetPurpose(node, variables);
+        }
+
         _followed.AddRange(Nodes.Where(n => n.CanBeInPanel || n is DisplayNode));
         foreach (Node node in _followed)
         {
@@ -128,19 +134,44 @@ public partial class MainViewModel
     private PanelParameter Describe(Node node, Dictionary<string, string> variables)
     {
         string variable = variables.GetValueOrDefault(node.ID, "?");
+        List<string> into = WiredInto(node, variables);
+        string? wiredName = Connections.Where(c => c.SourceID == node.ID && c.Output is null)
+            .Select(c => Nodes.FirstOrDefault(n => n.ID == c.TargetID)?.Ports.FirstOrDefault(p => p.ID == c.ParameterID)?.Name)
+            .FirstOrDefault(n => n is not null);
+
+        string source = into.Count == 0 ? variable : $"{variable} → {string.Join(", ", into)}";
+        return new PanelParameter(node, wiredName ?? variable, source, ParameterEdited);
+    }
+
+    /// <summary>
+    /// Where <paramref name="node"/>'s value goes: each function (or group, or node) and parameter, e.g. payment(P).
+    /// </summary>
+    private static List<string> WiredInto(Node node, Dictionary<string, string> variables)
+    {
         List<string> into = [];
-        string? wiredName = null;
         foreach (Connection wire in Connections.Where(c => c.SourceID == node.ID && c.Output is null))
         {
             if (Nodes.FirstOrDefault(n => n.ID == wire.TargetID) is Node target && target.Ports.FirstOrDefault(p => p.ID == wire.ParameterID) is Parameter parameter)
             {
-                wiredName ??= parameter.Name;
                 into.Add($"{(target is Function f ? f.Name : target is GroupNode g ? g.Name : variables.GetValueOrDefault(target.ID, "?"))}({parameter.Name})");
             }
         }
 
-        string source = into.Count == 0 ? variable : $"{variable} → {string.Join(", ", into)}";
-        return new PanelParameter(node, wiredName ?? variable, source, ParameterEdited);
+        return into;
+    }
+
+    /// <summary>
+    /// What <paramref name="node"/> is for, as the panel names it: the name given, else the parameters it is wired into;
+    /// and, as its tip, where its value goes in full.
+    /// </summary>
+    private static void SetPurpose(Node node, Dictionary<string, string> variables)
+    {
+        List<string> into = WiredInto(node, variables);
+        string wired = string.Join(", ", Connections.Where(c => c.SourceID == node.ID && c.Output is null)
+            .Select(c => Nodes.FirstOrDefault(n => n.ID == c.TargetID)?.Ports.FirstOrDefault(p => p.ID == c.ParameterID)?.Name)
+            .OfType<string>().Distinct());
+        node.Purpose = node.PanelName.Length > 0 ? node.PanelName : wired;
+        node.PurposeTip = into.Count == 0 ? node.Purpose : $"{(node.Purpose.Length > 0 ? node.Purpose + ": " : string.Empty)}goes into {string.Join(", ", into)}";
     }
 
     private static string ShownName(Node node) => node switch
@@ -153,7 +184,11 @@ public partial class MainViewModel
 
     private void FollowedChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(Node.InPanel))
+        if (e.PropertyName == nameof(Node.PanelName) && sender is Node named)
+        {
+            SetPurpose(named, ScriptGenerator.NameVariables([.. Nodes.Where(n => n is not FrameNode)]));
+        }
+        else if (e.PropertyName == nameof(Node.InPanel))
         {
             // Put in the panel: it opens to show it.
             RefreshParameters();

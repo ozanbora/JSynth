@@ -20,7 +20,7 @@
 
   <UserControl.Styles>
     <Style Selector="Border.frame.selected">
-      <Setter Property="BoxShadow" Value="0 0 0 3 #6F9FD8"/>
+      <Setter Property="BoxShadow" Value="0 0 0 3 #9558B2"/>
     </Style>
   </UserControl.Styles>
 
@@ -93,8 +93,7 @@
                   />
         </StackPanel>
         <TextBlock Text="{Binding Path=Title}"
-                   FontSize="16"
-                   FontWeight="SemiBold"
+                   Classes="frameTitle"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis"
                    />

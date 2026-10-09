@@ -140,6 +140,38 @@ namespace JuliaSynth.Model
         public static IReadOnlyList<string> PanelProperties { get; } = [nameof(InPanel), nameof(PanelName), nameof(PanelFrom), nameof(PanelTo)];
         #endregion
 
+        private string _purpose = string.Empty;
+
+        /// <summary>
+        /// What an input is for, shown on it: its name in the parameters panel, else the name of the parameter it is wired
+        /// into (as the panel calls it). Worked out from the wires (see MainViewModel.RefreshParameters); not saved.
+        /// </summary>
+        [JsonIgnore]
+        public string Purpose
+        {
+            get => _purpose;
+            set
+            {
+                _ = this.RaiseAndSetIfChanged(ref _purpose, value ?? string.Empty);
+                this.RaisePropertyChanged(nameof(HasPurpose));
+            }
+        }
+
+        [JsonIgnore]
+        public bool HasPurpose => _purpose.Length > 0;
+
+        private string _purposeTip = string.Empty;
+
+        /// <summary>
+        /// Where its value goes, in full, e.g. <c>payment(P), interest(P)</c>.
+        /// </summary>
+        [JsonIgnore]
+        public string PurposeTip
+        {
+            get => _purposeTip;
+            set => this.RaiseAndSetIfChanged(ref _purposeTip, value ?? string.Empty);
+        }
+
         /// <summary>
         /// Being worked out in the run going on; not saved.
         /// </summary>
@@ -162,7 +194,7 @@ namespace JuliaSynth.Model
         /// </summary>
         public virtual bool IsViewState(string property)
         {
-            return property is nameof(IsSelected) or nameof(IsRunning) || ResultProperties.Contains(property);
+            return property is nameof(IsSelected) or nameof(IsRunning) or nameof(Purpose) or nameof(HasPurpose) or nameof(PurposeTip) || ResultProperties.Contains(property);
         }
 
         /// <summary>

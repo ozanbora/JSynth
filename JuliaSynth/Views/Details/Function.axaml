@@ -23,7 +23,6 @@
   </Design.DataContext>
 
   <UserControl.Resources>
-    <FontFamily x:Key="CodeFont">Cascadia Mono,Consolas,Menlo,monospace</FontFamily>
   </UserControl.Resources>
 
   <UserControl.Styles>
@@ -191,7 +190,7 @@
                       Margin="0 4 0 0"
                       >
             <TextBlock VerticalAlignment="Center"
-                       Foreground="Goldenrod"
+                       Foreground="{DynamicResource WarningTextBrush}"
                        Text="⚠"
                        />
             <TextBlock VerticalAlignment="Center">
@@ -211,7 +210,7 @@
     <TextBlock Grid.Row="6"
                Grid.Column="1"
                Margin="0 4"
-               Foreground="OrangeRed"
+               Foreground="{DynamicResource ConsoleErrorBrush}"
                TextWrapping="Wrap"
                Text="{Binding Path=Error}"
                IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"

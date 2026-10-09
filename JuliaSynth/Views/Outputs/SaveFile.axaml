@@ -65,7 +65,7 @@
                    Text="𝑖"
                    >
           <ToolTip.Tip>
-            <TextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+            <TextBlock FontFamily="{StaticResource CodeFont}"
                        TextAlignment="Left"
                        TextWrapping="Wrap"
                        MaxWidth="480"
@@ -90,7 +90,7 @@
                   Margin="4 0 8 0"
                   ToolTip.Tip="{Binding Path=Path}"
                   >
-        <TextBlock FontSize="16"
+        <TextBlock Classes="nodeTitle"
                    MaxWidth="96"
                    TextTrimming="CharacterEllipsis"
                    Text="{Binding Path=FileName}"

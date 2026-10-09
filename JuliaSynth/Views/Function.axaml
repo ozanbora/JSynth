@@ -61,7 +61,7 @@
                    Text="𝑖"
                    >
           <ToolTip.Tip>
-            <TextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+            <TextBlock FontFamily="{StaticResource CodeFont}"
                        TextAlignment="Left"
                        Text="{Binding Path=Code}"/>
           </ToolTip.Tip>
@@ -92,7 +92,7 @@
                  ToolTip.Tip="{Binding Path=Code}"
                  >
         <TextBlock DockPanel.Dock="Left"
-                   FontSize="18"
+                   Classes="nodeTitle"
                    TextTrimming="CharacterEllipsis"
                    Text="{Binding Path=Name}"
                    />

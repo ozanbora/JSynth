@@ -287,6 +287,7 @@ public partial class MainViewModel
         Load(example.Build());
         History.Reset();
         FilePath = null;
+        _activeTab.UntitledName = example.Name;
         ScrollViewerOffset = Avalonia.Vector.Zero;
         DesignOpened();
 

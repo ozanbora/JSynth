@@ -21,9 +21,9 @@ namespace JuliaSynth.Controls
         // Canvas left around the design, in pixels of the canvas at 100%.
         private const double Room = 200;
 
-        private static readonly IBrush ViewFill = new ImmutableSolidColorBrush(Color.Parse("#6F9FD8"), 0.15);
-        private static readonly IPen ViewPen = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#6F9FD8")), 1.5);
-        private static readonly IPen SelectedPen = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#6F9FD8")), 1.5);
+        private static readonly IBrush ViewFill = new ImmutableSolidColorBrush(Color.Parse("#9558B2"), 0.15);
+        private static readonly IPen ViewPen = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#9558B2")), 1.5);
+        private static readonly IPen SelectedPen = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#9558B2")), 1.5);
 
         public static readonly StyledProperty<Vector> OffsetProperty =
             AvaloniaProperty.Register<Minimap, Vector>(nameof(Offset), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);

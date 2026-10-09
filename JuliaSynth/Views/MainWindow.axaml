@@ -4,6 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:JuliaSynth.Views"
+        xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="JuliaSynth.Views.MainWindow"
         x:DataType="vm:MainViewModel"
@@ -12,6 +14,8 @@
         MinWidth="640"
         MinHeight="400"
         WindowStartupLocation="CenterScreen"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="40"
         >
         <Window.KeyBindings>
           <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding Path=ZoomIn}"/>
@@ -42,16 +46,30 @@
         </Window.KeyBindings>
 
         <DockPanel>
-          <Border DockPanel.Dock="Top"
-                  Background="{DynamicResource StatusBarBackgroundBrush}"
-                  BorderBrush="{DynamicResource StatusBarBorderBrush}"
-                  BorderThickness="0 0 0 1">
-          <Menu>
+          <!-- The title bar, drawn by the app: the menu, the sidebar's button, the icon, and the tabs; dragging it moves
+               the window. On the right, room for the window's own buttons. -->
+          <Grid x:Name="TitleBar"
+                DockPanel.Dock="Top"
+                Height="40"
+                ColumnDefinitions="Auto,Auto,Auto,*,Auto"
+                Background="{DynamicResource SidebarBackgroundBrush}"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar">
+          <Menu Grid.Column="0"
+                x:Name="MainMenu"
+                Margin="6 0 0 0"
+                VerticalAlignment="Center"
+                chrome:WindowDecorationProperties.ElementRole="User">
+          <MenuItem Padding="8 6" ToolTip.Tip="Menu">
+            <MenuItem.Header>
+              <jsControls:Icon Data="{StaticResource IconMenu}" Width="18" Height="18"/>
+            </MenuItem.Header>
             <MenuItem Header="_File">
-              <MenuItem Header="_New" InputGesture="Ctrl+N" HotKey="Ctrl+N" Click="New_Click"/>
-              <MenuItem Header="_Open…" InputGesture="Ctrl+O" HotKey="Ctrl+O" Click="Open_Click"/>
-              <MenuItem Header="_Save" InputGesture="Ctrl+S" HotKey="Ctrl+S" Click="Save_Click"/>
-              <MenuItem Header="Save _As…" InputGesture="Ctrl+Shift+S" HotKey="Ctrl+Shift+S" Click="SaveAs_Click"/>
+              <MenuItem Header="_New" InputGesture="Ctrl+N" Click="New_Click"/>
+              <MenuItem Header="_Close tab" InputGesture="Ctrl+W" Click="CloseActiveTab_Click"/>
+              <MenuItem Header="Open in new _window" Click="ActiveTabNewWindow_Click"/>
+              <MenuItem Header="_Open…" InputGesture="Ctrl+O" Click="Open_Click"/>
+              <MenuItem Header="_Save" InputGesture="Ctrl+S" Click="Save_Click"/>
+              <MenuItem Header="Save _As…" InputGesture="Ctrl+Shift+S" Click="SaveAs_Click"/>
               <MenuItem Header="_Autosave" ToggleType="CheckBox" IsChecked="{Binding Path=AutoSave}"
                         ToolTip.Tip="Save the design a moment after each change; a design never saved is kept to open again"/>
               <Separator/>
@@ -80,6 +98,20 @@
               <MenuItem Header="Save to _library…" Command="{Binding Path=SaveToLibrary}"/>
               <MenuItem Header="_Manage library…" Click="ManageLibrary_Click"/>
             </MenuItem>
+            <MenuItem Header="_View">
+              <MenuItem Header="_Theme">
+                <MenuItem Header="As the _system" ToggleType="Radio" GroupName="Theme" IsChecked="{Binding Path=IsSystemTheme}"
+                          ToolTip.Tip="Light or dark as Windows (or your desktop) is set"/>
+                <MenuItem Header="_Light" ToggleType="Radio" GroupName="Theme" IsChecked="{Binding Path=IsLightTheme}"/>
+                <MenuItem Header="_Dark" ToggleType="Radio" GroupName="Theme" IsChecked="{Binding Path=IsDarkTheme}"/>
+              </MenuItem>
+              <Separator/>
+              <MenuItem Header="_Sidebar" InputGesture="Ctrl+B" ToggleType="CheckBox" IsChecked="{Binding Path=IsSidebarOpen}"/>
+              <MenuItem Header="_Map of the design" ToggleType="CheckBox" IsChecked="{Binding Path=ShowMinimap}"/>
+              <MenuItem Header="_Output" Command="{Binding Path=ToggleOutput}"/>
+              <MenuItem Header="_Parameters" Command="{Binding Path=ToggleParameters}"/>
+              <MenuItem Header="Start pa_ge" Command="{Binding Path=ShowStartPage}"/>
+            </MenuItem>
             <MenuItem Header="_Run">
               <MenuItem Header="_Run" InputGesture="F5" Command="{Binding Path=Run}"/>
               <MenuItem Header="_Stop" InputGesture="Shift+F5" Command="{Binding Path=Stop}"/>
@@ -95,8 +127,102 @@
               <MenuItem Header="Restart _Julia" Command="{Binding Path=Restart}"/>
               <MenuItem Header="_Choose Julia…" Click="ChooseJulia_Click"/>
             </MenuItem>
+          </MenuItem>
           </Menu>
-          </Border>
-          <views:MainView />
+          <Button Grid.Column="1"
+                  Classes="quiet"
+                  Width="34"
+                  Height="32"
+                  Padding="0"
+                  VerticalAlignment="Center"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Command="{Binding Path=ToggleSidebar}"
+                  ToolTip.Tip="Show or hide the sidebar (Ctrl+B)"
+                  chrome:WindowDecorationProperties.ElementRole="User">
+            <jsControls:Icon Data="{StaticResource IconSidebar}" Width="18" Height="18"/>
+          </Button>
+          <Image Grid.Column="2"
+                 Source="/Assets/Icon/juliasynth-32.png"
+                 Width="20"
+                 Height="20"
+                 Margin="8 0 10 0"
+                 VerticalAlignment="Center"
+                 IsHitTestVisible="False"
+                 ToolTip.Tip="JuliaSynth"/>
+          <!-- The designs open, a tab each, and + for another. -->
+          <StackPanel Grid.Column="3"
+                      Orientation="Horizontal"
+                      VerticalAlignment="Bottom"
+                      ClipToBounds="True">
+            <ItemsControl x:Name="TabStrip" ItemsSource="{Binding Path=Tabs}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DesignTab">
+                  <Border Classes="tab"
+                          Classes.active="{Binding Path=IsActive}"
+                          ToolTip.Tip="{Binding Path=ToolTip}"
+                          PointerPressed="Tab_PointerPressed"
+                          chrome:WindowDecorationProperties.ElementRole="User">
+                    <Border.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="Open in new window" Click="TabNewWindow_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Close" InputGesture="Ctrl+W" Click="TabClose_Click"/>
+                        <MenuItem Header="Close the others" Click="TabCloseOthers_Click"/>
+                      </ContextMenu>
+                    </Border.ContextMenu>
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                      <TextBlock VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis"
+                                 Text="{Binding Path=Name}"/>
+                      <Ellipse Grid.Column="1"
+                               Width="7"
+                               Height="7"
+                               Margin="6 0 2 0"
+                               VerticalAlignment="Center"
+                               Fill="{DynamicResource AccentBrush}"
+                               IsVisible="{Binding Path=IsDirty}"
+                               ToolTip.Tip="Changed since saved"/>
+                      <Button Grid.Column="2"
+                              x:Name="NewWindowButton"
+                              Classes="tabAction"
+                              Margin="6 0 0 0"
+                              Click="TabNewWindow_Click"
+                              ToolTip.Tip="Open in a new window">
+                        <jsControls:Icon Data="{StaticResource IconNewWindow}" Width="13" Height="13"/>
+                      </Button>
+                      <Button Grid.Column="3"
+                              x:Name="CloseTabButton"
+                              Classes="tabAction"
+                              Click="TabClose_Click"
+                              ToolTip.Tip="Close (Ctrl+W)">
+                        <jsControls:Icon Data="{StaticResource IconClose}" Width="13" Height="13"/>
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Classes="quiet"
+                    Width="30"
+                    Height="28"
+                    Padding="0"
+                    Margin="2 0 0 2"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Click="New_Click"
+                    ToolTip.Tip="New design, in a new tab (Ctrl+T)"
+                    chrome:WindowDecorationProperties.ElementRole="User">
+              <jsControls:Icon Data="{StaticResource IconPlus}" Width="15" Height="15"/>
+            </Button>
+          </StackPanel>
+          <!-- The window's minimize, maximize and close. -->
+          <Border Grid.Column="4" Width="146"/>
+          </Grid>          <views:MainView />
         </DockPanel>
 </Window>

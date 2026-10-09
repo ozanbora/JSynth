@@ -29,7 +29,7 @@ namespace JuliaSynth.Model
         public static readonly Color When = Color.Parse("#F2E6A0");          // butter
         public static readonly Color Zip = Color.Parse("#CFE3F2");           // powder blue
         public static readonly Color Merge = Color.Parse("#D8E8C8");         // celery
-        public static readonly Color Frame = Color.Parse("#A9C4E0");         // slate blue, drawn faint behind the nodes
+        public static readonly Color Frame = Color.Parse("#C9BCDD");         // lilac grey, drawn faint behind the nodes
         public static readonly Color Every = Color.Parse("#F0CFC0");         // shell pink
         public static readonly Color Button = Color.Parse("#F4B8B0");        // coral
         public static readonly Color Group = Color.Parse("#D3CBE0");         // heather

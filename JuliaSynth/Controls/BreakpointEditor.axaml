@@ -20,7 +20,7 @@
                  IsChecked="{Binding Path=OnCondition}"/>
     <TextBox x:Name="ConditionBox"
              Margin="24 0 0 0"
-             FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+             FontFamily="{StaticResource CodeFont}"
              FontSize="12"
              PlaceholderText="x &gt; 0.5"
              IsEnabled="{Binding Path=OnCondition}"

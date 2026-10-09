@@ -42,6 +42,44 @@ namespace JuliaSynth.ViewModels
         public bool RunOnChange { get; set; } = true;
 
         /// <summary>
+        /// Light, dark, or as the system is (the default).
+        /// </summary>
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        public AppTheme Theme { get; set; } = AppTheme.System;
+
+        /// <summary>
+        /// Whether the sidebar shows.
+        /// </summary>
+        public bool ShowSidebar { get; set; } = true;
+
+        /// <summary>
+        /// The designs opened or saved lately, the latest first.
+        /// </summary>
+        public List<string> RecentFiles
+        {
+            get => _recentFiles;
+            set => _recentFiles = value ?? [];
+        }
+
+        private List<string> _recentFiles = [];
+
+        /// <summary>
+        /// The tabs open when JuliaSynth last closed, in order.
+        /// </summary>
+        public List<SessionTab> OpenTabs
+        {
+            get => _openTabs;
+            set => _openTabs = value ?? [];
+        }
+
+        private List<SessionTab> _openTabs = [];
+
+        /// <summary>
+        /// Which of <see cref="OpenTabs"/> was open.
+        /// </summary>
+        public int ActiveTab { get; set; }
+
+        /// <summary>
         /// The Julia program picked by the user; null to look for one.
         /// </summary>
         public string? JuliaPath { get; set; }

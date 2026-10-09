@@ -28,8 +28,8 @@ namespace JuliaSynth.Controls
         // A breakpoint's dot, and how near a click on it must be.
         private const double BreakpointRadius = 7;
 
-        private static readonly IBrush BreakpointBrush = new ImmutableSolidColorBrush(Color.Parse("#D9443B"));
-        private static readonly IPen PausedGlow = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#D9443B"), 0.55), 12);
+        private static readonly IBrush BreakpointBrush = new ImmutableSolidColorBrush(Color.Parse("#CB3C33"));
+        private static readonly IPen PausedGlow = new ImmutablePen(new ImmutableSolidColorBrush(Color.Parse("#CB3C33"), 0.55), 12);
 
         private static readonly IBrush InvalidWireBrush = new ImmutableSolidColorBrush(Color.Parse("#E07A7A"));
 

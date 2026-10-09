@@ -59,6 +59,39 @@ namespace JuliaSynth.ViewModels
         }
 
         /// <summary>
+        /// The steps, where in them the design is, and which was saved: what a tab keeps of the history while
+        /// another tab's design is open.
+        /// </summary>
+        public sealed record Steps(IReadOnlyList<string> States, int Index, string? Saved)
+        {
+            public bool CanUndo => Index > 0;
+
+            public bool IsDirty => Index >= 0 && States[Index] != Saved;
+        }
+
+        /// <summary>
+        /// The history so far (once anything pending is a step).
+        /// </summary>
+        public Steps Save()
+        {
+            Commit();
+            return new([.. _states], _index, _savedState);
+        }
+
+        /// <summary>
+        /// Back to <paramref name="steps"/>, for the design they were saved with.
+        /// </summary>
+        public void Restore(Steps steps)
+        {
+            _timer.Stop();
+            _states.Clear();
+            _states.AddRange(steps.States);
+            _index = steps.Index;
+            _savedState = steps.Saved;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
         /// The current design was just saved.
         /// </summary>
         public void MarkSaved()

@@ -72,7 +72,7 @@
                  Margin="4 0 8 0"
                  >
         <TextBlock DockPanel.Dock="Left"
-                   FontSize="18"
+                   Classes="nodeTitle"
                    Text="{Binding $parent[jsControls:NodeBody].Title}"
                    />
         <TextBlock Classes="caption"

@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Collections;
 using JuliaSynth.Converters;
 using JuliaSynth.Model;
@@ -675,6 +675,7 @@ public partial class MainViewModel : ReactiveObject
 
     public MainViewModel()
     {
+        CreateTabs();
         ZoomIn = ReactiveCommand.Create(() => StepZoom(1));
         ZoomOut = ReactiveCommand.Create(() => StepZoom(-1));
         ResetZoom = ReactiveCommand.Create(() => { SelectedZoomLevel = 1.0; });
@@ -875,6 +876,7 @@ public partial class MainViewModel : ReactiveObject
         private set
         {
             _ = this.RaiseAndSetIfChanged(ref _filePath, value);
+            _activeTab.FilePath = value;
             this.RaisePropertyChanged(nameof(Title));
         }
     }
@@ -889,11 +891,62 @@ public partial class MainViewModel : ReactiveObject
     /// </summary>
     public void StartUp()
     {
+        StartUp(null, null, null);
+    }
+
+    /// <summary>
+    /// As <see cref="StartUp()"/>, or, for a window opened from another's tab, with only that tab's design: its
+    /// <paramref name="file"/>, or where it was kept <paramref name="untitled"/> (named <paramref name="name"/>).
+    /// Such a window doesn't keep its tabs for the next start: the first window does.
+    /// </summary>
+    public void StartUp(string? file, string? untitled, string? name)
+    {
         _ = FindJuliaAtStartAsync();
+        RefreshRecentDesigns();
         DeleteOldPlotFiles();
         StartAutoSave();
 
+        if (file is not null || untitled is not null)
+        {
+            RemembersSession = false;
+            _activeTab.IsFresh = false;
+            try
+            {
+                if (file is not null)
+                {
+                    OpenDesign(file);
+                }
+                else
+                {
+                    OpenUntitled(untitled!);
+                    _activeTab.UntitledName = name ?? _activeTab.UntitledName;
+                }
+
+                return;
+            }
+            catch (Exception e) when (IsFileError(e))
+            {
+                Log($"Couldn't open {file ?? untitled}: {e.Message}", OutputKind.Error);
+            }
+        }
+
         AppSettings settings = AppSettings.Load();
+        try
+        {
+            StartUpDesign(settings);
+        }
+        finally
+        {
+            if (!IsStartPageOpen)
+            {
+                RestoreTabs(settings);
+            }
+        }
+    }
+
+    // The design open when JuliaSynth last closed.
+    private void StartUpDesign(AppSettings settings)
+    {
         if (settings.LastUntitled && settings.LastFile is string untitled && File.Exists(untitled))
         {
             try
@@ -938,7 +991,12 @@ public partial class MainViewModel : ReactiveObject
     /// </summary>
     public void RememberOpenDesign()
     {
-        if (FilePath is null && !IsDirty && Nodes.Count > 0)
+        if (!RemembersSession)
+        {
+            return;
+        }
+
+        if (FilePath is null && !IsDirty && Nodes.Count > 0 && !_activeTab.IsDiscarded)
         {
             try
             {
@@ -954,6 +1012,7 @@ public partial class MainViewModel : ReactiveObject
         AppSettings settings = AppSettings.Load();
         settings.LastUntitled = false;
         settings.LastFile = FilePath;
+        RememberTabs(settings);
         settings.Save();
     }
 
@@ -964,6 +1023,7 @@ public partial class MainViewModel : ReactiveObject
     {
         ReadDesign(path);
         FilePath = null;
+        _activeTab.UntitledFile = path;
         DesignOpened();
     }
 
@@ -973,6 +1033,7 @@ public partial class MainViewModel : ReactiveObject
         Load(new DesignDocument());
         History.Reset();
         FilePath = null;
+        _activeTab.UntitledName = "Untitled";
         DesignOpened();
     }
 
@@ -1022,12 +1083,14 @@ public partial class MainViewModel : ReactiveObject
         return e is IOException or UnauthorizedAccessException or JsonException;
     }
 
-    private static void Remember(string path)
+    private void Remember(string path)
     {
         AppSettings settings = AppSettings.Load();
         settings.LastFile = path;
         settings.LastUntitled = false;
+        AddRecent(settings, path);
         settings.Save();
+        RefreshRecentDesigns();
     }
     #endregion
 }

@@ -1,0 +1,177 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:jsViewModels="clr-namespace:JuliaSynth.ViewModels"
+             xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
+             x:Class="JuliaSynth.Views.Sidebar"
+             x:DataType="jsViewModels:MainViewModel">
+
+  <!-- Open: new and open, the examples, the library and the panels; the designs opened lately; and Julia, at the
+       foot. Closed (Ctrl+B): the same as icons in a narrow bar. -->
+  <Border Background="{DynamicResource SidebarBackgroundBrush}"
+          BorderBrush="{DynamicResource StatusBarBorderBrush}"
+          BorderThickness="0 0 1 0">
+    <Panel>
+
+      <!-- The sidebar -->
+      <DockPanel x:Name="FullSidebar"
+                 Width="248"
+                 Margin="8 4 8 8"
+                 IsVisible="{Binding Path=IsSidebarOpen}">
+
+        <!-- Julia: its version, or how to get it; and the theme. -->
+        <Grid DockPanel.Dock="Bottom"
+              ColumnDefinitions="*,Auto"
+              Margin="0 8 0 0">
+          <Button x:Name="JuliaButton"
+                  Classes="sidebarItem"
+                  Height="46"
+                  Click="ChooseJulia_Click"
+                  ToolTip.Tip="{Binding Path=Julia.Path, FallbackValue='Install Julia, or click to choose the Julia program'}">
+            <Grid ColumnDefinitions="Auto,*">
+              <Panel Width="22" Margin="0 0 10 0" VerticalAlignment="Center">
+                <Ellipse Width="9" Height="9" Fill="{DynamicResource RunBrush}" IsVisible="{Binding Path=IsJuliaFound}"/>
+                <Ellipse Width="9" Height="9" Fill="{DynamicResource StopBrush}" IsVisible="{Binding !IsJuliaFound}"/>
+              </Panel>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock FontWeight="SemiBold" Text="{Binding Path=JuliaStatus}"/>
+                <TextBlock Classes="secondary"
+                           FontSize="11"
+                           Text="Choose another Julia…"
+                           IsVisible="{Binding Path=IsJuliaFound}"/>
+                <TextBlock Classes="secondary"
+                           FontSize="11"
+                           Text="Choose the Julia program…"
+                           IsVisible="{Binding !IsJuliaFound}"/>
+              </StackPanel>
+            </Grid>
+          </Button>
+          <Button Grid.Column="1"
+                  Classes="quiet"
+                  Width="36"
+                  Height="36"
+                  VerticalAlignment="Center"
+                  FontSize="16"
+                  Content="{Binding Path=ThemeGlyph}"
+                  Command="{Binding Path=NextTheme}"
+                  ToolTip.Tip="{Binding Path=ThemeTip}"/>
+        </Grid>
+
+        <StackPanel DockPanel.Dock="Top" Spacing="1">
+          <Button Classes="sidebarItem" Click="New_Click" ToolTip.Tip="An empty design, in a new tab (Ctrl+N)">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Border Classes="newBadge">
+                <jsControls:Icon Data="{StaticResource IconPlus}" Width="14" Height="14" StrokeThickness="2.6" Foreground="White"/>
+              </Border>
+              <TextBlock Text="New design" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button Classes="sidebarItem" Click="Open_Click" ToolTip.Tip="Open a design file, in a new tab (Ctrl+O)">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <jsControls:Icon Classes="row" Data="{StaticResource IconOpen}"/>
+              <TextBlock Text="Open design…" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button Classes="sidebarItem" Command="{Binding Path=ShowStartPage}" ToolTip.Tip="The start page, with the examples to open">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <jsControls:Icon Classes="row" Data="{StaticResource IconExamples}"/>
+              <TextBlock Text="Examples" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button Classes="sidebarItem" Click="Library_Click" ToolTip.Tip="Nodes and groups you saved: rename or delete them">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <jsControls:Icon Classes="row" Data="{StaticResource IconLibrary}"/>
+              <TextBlock Text="Library" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <ToggleButton Classes="sidebarItem"
+                        IsChecked="{Binding Path=IsParametersOpen}"
+                        ToolTip.Tip="Show or hide the parameters: inputs set with sliders and boxes">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <jsControls:Icon Classes="row" Data="{StaticResource IconParameters}"/>
+              <TextBlock Text="Parameters" VerticalAlignment="Center"/>
+            </StackPanel>
+          </ToggleButton>
+          <ToggleButton Classes="sidebarItem"
+                        IsChecked="{Binding Path=IsOutputVisible}"
+                        ToolTip.Tip="Show or hide the output of runs">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <jsControls:Icon Classes="row" Data="{StaticResource IconOutput}"/>
+              <TextBlock Text="Output" VerticalAlignment="Center"/>
+            </StackPanel>
+          </ToggleButton>
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Top"
+                   Classes="sectionHeader"
+                   Margin="10 18 0 6"
+                   Text="Recents"
+                   IsVisible="{Binding Path=HasRecentDesigns}"/>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+          <ItemsControl x:Name="RecentList" ItemsSource="{Binding Path=RecentDesigns}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="jsViewModels:RecentDesign">
+                <Button Classes="sidebarItem recent"
+                        Click="Recent_Click"
+                        ToolTip.Tip="{Binding Path=Path}">
+                  <Button.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="Remove from recents" Click="ForgetRecent_Click"/>
+                    </ContextMenu>
+                  </Button.ContextMenu>
+                  <TextBlock Text="{Binding Path=Name}" TextTrimming="CharacterEllipsis"/>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+
+      <!-- Closed: the icons alone, with their names as tips. -->
+      <DockPanel x:Name="Rail"
+                 Width="52"
+                 Margin="0 4 0 8"
+                 IsVisible="{Binding !IsSidebarOpen}">
+        <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center">
+          <Button Classes="railItem"
+                  Click="ChooseJulia_Click"
+                  ToolTip.Tip="{Binding Path=JuliaStatus}">
+            <Panel>
+              <Ellipse Width="10" Height="10" Fill="{DynamicResource RunBrush}" IsVisible="{Binding Path=IsJuliaFound}"/>
+              <Ellipse Width="10" Height="10" Fill="{DynamicResource StopBrush}" IsVisible="{Binding !IsJuliaFound}"/>
+            </Panel>
+          </Button>
+          <Button Classes="railItem"
+                  FontSize="16"
+                  Content="{Binding Path=ThemeGlyph}"
+                  Command="{Binding Path=NextTheme}"
+                  ToolTip.Tip="{Binding Path=ThemeTip}"/>
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Top" Spacing="4" HorizontalAlignment="Center">
+          <Button Classes="railItem" Click="New_Click" ToolTip.Tip="New design (Ctrl+N)">
+            <Border Classes="newBadge">
+              <jsControls:Icon Data="{StaticResource IconPlus}" Width="14" Height="14" StrokeThickness="2.6" Foreground="White"/>
+            </Border>
+          </Button>
+          <Button Classes="railItem" Click="Open_Click" ToolTip.Tip="Open design… (Ctrl+O)">
+            <jsControls:Icon Classes="row" Data="{StaticResource IconOpen}"/>
+          </Button>
+          <Button Classes="railItem" Command="{Binding Path=ShowStartPage}" ToolTip.Tip="Examples">
+            <jsControls:Icon Classes="row" Data="{StaticResource IconExamples}"/>
+          </Button>
+          <Button Classes="railItem" Click="Library_Click" ToolTip.Tip="Library">
+            <jsControls:Icon Classes="row" Data="{StaticResource IconLibrary}"/>
+          </Button>
+          <ToggleButton Classes="railItem" IsChecked="{Binding Path=IsParametersOpen}" ToolTip.Tip="Parameters">
+            <jsControls:Icon Classes="row" Data="{StaticResource IconParameters}"/>
+          </ToggleButton>
+          <ToggleButton Classes="railItem" IsChecked="{Binding Path=IsOutputVisible}" ToolTip.Tip="Output">
+            <jsControls:Icon Classes="row" Data="{StaticResource IconOutput}"/>
+          </ToggleButton>
+        </StackPanel>
+      </DockPanel>
+    </Panel>
+  </Border>
+</UserControl>

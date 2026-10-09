@@ -20,8 +20,12 @@
     <jsViewModels:MainViewModel/>
   </Design.DataContext>
   
+  <DockPanel>
+  <!-- The sidebar, the whole height on the left; closed (Ctrl+B), a narrow bar of its icons. -->
+  <jsViews:Sidebar DockPanel.Dock="Left"/>
+
   <Grid x:Name="MainGrid"
-        RowDefinitions="*,Auto,Auto">
+        RowDefinitions="*,Auto">
     <Grid.Resources>
       <jsConverters:VectorFormatConverter x:Key="VectorConverter"/>
       <jsConverters:PercentConverter x:Key="PercentConverter"/>
@@ -138,14 +142,14 @@
               </Style>
               <!-- Selection ring: a spread shadow without blur, so it costs nothing and moves nothing. -->
               <Style Selector="Border.node.selected">
-                <Setter Property="BoxShadow" Value="0 0 0 3 #6F9FD8"/>
+                <Setter Property="BoxShadow" Value="0 0 0 3 #9558B2"/>
               </Style>
               <Style Selector="ItemsControl.shadows Border.node.selected">
-                <Setter Property="BoxShadow" Value="0 0 0 3 #6F9FD8, 0 6 18 0 #40000000"/>
+                <Setter Property="BoxShadow" Value="0 0 0 3 #9558B2, 0 6 18 0 #40000000"/>
               </Style>
               <!-- Being worked out in a run: an amber ring and glow, over the selection's. -->
               <Style Selector="Border.node.running">
-                <Setter Property="BoxShadow" Value="0 0 0 3 #E8A33D, 0 0 22 8 #C0E8A33D"/>
+                <Setter Property="BoxShadow" Value="0 0 0 3 #389826, 0 0 22 8 #B0389826"/>
               </Style>
             </ItemsControl.Styles>
             
@@ -235,25 +239,140 @@
             x:Name="MinimapPanel"
             Width="220"
             Height="150"
-            Margin="0 0 22 22"
+            Margin="0 0 22 200"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
-            CornerRadius="6"
+            CornerRadius="10"
             BorderThickness="1"
             BorderBrush="{DynamicResource CanvasGridLineBrush}"
             Background="{DynamicResource CanvasBackgroundBrush}"
             BoxShadow="0 4 14 0 #30000000"
             IsVisible="{Binding Path=ShowMinimap}"
             >
+      <Panel>
       <jsControls:Minimap Margin="4"
                           Offset="{Binding Path=ScrollViewerOffset, Mode=TwoWay}"
                           Scale="{Binding Path=Scale}"
                           ViewportSize="{Binding #CanvasScroll.Viewport}"
                           />
+      <TextBlock HorizontalAlignment="Left"
+                 VerticalAlignment="Bottom"
+                 Margin="8 0 0 4"
+                 Classes="secondary"
+                 FontSize="10"
+                 IsHitTestVisible="False"
+                 ToolTip.Tip="Scroll position"
+                 Text="{Binding Path=ScrollViewerOffset, Converter={StaticResource VectorConverter}}" />
+      </Panel>
     </Border>
 
-    <!-- How to start, on an empty canvas; clicks go through to the canvas. -->
-    <TextBlock Grid.Column="1"
+    <!-- The tools, floating over the foot of the canvas: adding nodes, undoing, and running. -->
+    <Panel Grid.Column="1"
+           VerticalAlignment="Bottom"
+           Margin="16 0 80 22">
+      <Border x:Name="Toolbar"
+              Classes="floating"
+              HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="2">
+          <DropDownButton x:Name="AddNodeButton"
+                          Classes="tool"
+                          Content="+  Add node"
+                          ToolTip.Tip="Add a node in the middle of the view (or right-click the canvas)">
+            <DropDownButton.Flyout>
+              <MenuFlyout Placement="Top" Opening="AddFlyout_Opening">
+                <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Watch folder: a stream of new files (◉)" Tag="WatchNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Every: a stream ticking every few seconds (◷)" Tag="EveryNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Button: a stream going at each press (●)" Tag="ButtonNode" Click="AddAtCenter_Click"/>
+                <Separator/>
+                <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Plot (∿)" Tag="PlotNode" Click="AddAtCenter_Click"/>
+                <Separator/>
+                <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Window: the last values (⧗)" Tag="WindowNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Zip: folders in step, by file name (⋈)" Tag="ZipNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Merge: folders as one stream, as files come (∪)" Tag="MergeNode" Click="AddAtCenter_Click"/>
+                <Separator/>
+                <MenuItem Header="Frame: a titled box around the selected nodes (▭)" Tag="FrameNode" Click="AddAtCenter_Click"/>
+                <Separator/>
+                <MenuItem x:Name="LibraryFlyoutMenu" Header="Library: nodes and groups you saved (▤)"/>
+              </MenuFlyout>
+            </DropDownButton.Flyout>
+          </DropDownButton>
+          <Rectangle Classes="divider"/>
+          <Button Classes="tool"
+                  Content="↶"
+                  FontFamily="{StaticResource NotoSansMath}"
+                  FontSize="18"
+                  Command="{Binding Path=Undo}"
+                  ToolTip.Tip="Undo (Ctrl+Z)" />
+          <Button Classes="tool"
+                  Content="↷"
+                  FontFamily="{StaticResource NotoSansMath}"
+                  FontSize="18"
+                  Command="{Binding Path=Redo}"
+                  ToolTip.Tip="Redo (Ctrl+Y)" />
+          <Rectangle Classes="divider"/>
+          <Button Classes="run"
+                  Content="▶  Run"
+                  Command="{Binding Path=Run}"
+                  IsVisible="{Binding !IsRunning}"
+                  ToolTip.Tip="Run the design with Julia (F5)" />
+          <Button Classes="stop"
+                  Content="■  Stop"
+                  Command="{Binding Path=Stop}"
+                  IsVisible="{Binding IsRunning}"
+                  ToolTip.Tip="Stop Julia (Shift+F5)" />
+        </StackPanel>
+      </Border>
+    </Panel>
+
+    <!-- Zoom and the map, upright on the right. -->
+    <Border Grid.Column="1"
+            x:Name="ZoomBar"
+            Classes="floating"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="0 0 22 22">
+      <StackPanel Spacing="2">
+        <ToggleButton Content="Map"
+                      Classes="tool"
+                      HorizontalAlignment="Stretch"
+                      IsChecked="{Binding Path=ShowMinimap}"
+                      ToolTip.Tip="Show or hide the map of the whole design"/>
+        <Rectangle Height="1" Margin="4 2" Fill="{DynamicResource StatusBarBorderBrush}"/>
+        <Button Classes="tool"
+                HorizontalAlignment="Stretch"
+                Content="+"
+                Command="{Binding Path=ZoomIn}"
+                ToolTip.Tip="Zoom in (Ctrl++)" />
+        <Button Classes="tool"
+                HorizontalAlignment="Stretch"
+                FontSize="11"
+                Padding="2 0"
+                Content="{Binding Path=SelectedZoomLevel, Converter={StaticResource PercentConverter}}"
+                Command="{Binding Path=ResetZoom}"
+                ToolTip.Tip="Reset zoom to 100% (Ctrl+0)" />
+        <Button Classes="tool"
+                HorizontalAlignment="Stretch"
+                Content="−"
+                Command="{Binding Path=ZoomOut}"
+                ToolTip.Tip="Zoom out (Ctrl+−)" />
+      </StackPanel>
+    </Border>
+
+    <!-- How to start, on an empty canvas; clicks go through to the canvas. -->    <TextBlock Grid.Column="1"
                IsVisible="{Binding Path=IsCanvasHintVisible}"
                IsHitTestVisible="False"
                MaxWidth="420"
@@ -274,7 +393,7 @@
             VerticalAlignment="Top"
             CornerRadius="8"
             Background="{DynamicResource StatusBarBackgroundBrush}"
-            BorderBrush="{DynamicResource NodeWarningBrush}"
+            BorderBrush="{DynamicResource WarningTextBrush}"
             BorderThickness="1"
             BoxShadow="0 4 16 0 #30000000">
       <StackPanel Spacing="8">
@@ -317,7 +436,7 @@
             VerticalAlignment="Top"
             CornerRadius="8"
             Background="{DynamicResource StatusBarBackgroundBrush}"
-            BorderBrush="#D9443B"
+            BorderBrush="{DynamicResource RejectBrush}"
             BorderThickness="1.5"
             BoxShadow="0 4 16 0 #30000000">
       <Grid ColumnDefinitions="*,Auto">
@@ -368,13 +487,12 @@
                 >
             <TextBlock Grid.Column="0"
                        VerticalAlignment="Center"
-                       FontWeight="SemiBold"
+                       Classes="panelTitle"
                        TextTrimming="CharacterEllipsis"
                        Text="{Binding Path=Inspected.Signature, StringFormat=Function {0}, FallbackValue=Function}"
                        />
             <Button Grid.Column="1"
-                    Background="Transparent"
-                    BorderThickness="0"
+                    Classes="quiet"
                     Content="✕"
                     Command="{Binding Path=CloseInspector}"
                     ToolTip.Tip="Close the function panel"
@@ -420,18 +538,16 @@
                 >
             <TextBlock Grid.Column="0"
                        VerticalAlignment="Center"
-                       FontWeight="SemiBold"
+                       Classes="panelTitle"
                        Text="Output"
                        />
             <Button Grid.Column="1"
-                    Background="Transparent"
-                    BorderThickness="0"
+                    Classes="quiet"
                     Content="Clear"
                     Command="{Binding Path=ClearOutput}"
                     />
             <Button Grid.Column="2"
-                    Background="Transparent"
-                    BorderThickness="0"
+                    Classes="quiet"
                     Content="✕"
                     Command="{Binding Path=ToggleOutput}"
                     ToolTip.Tip="Hide the output"
@@ -459,7 +575,7 @@
             </ListBox.Styles>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="jsViewModels:OutputEntry">
-                <SelectableTextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
                                      FontSize="12"
                                      TextWrapping="Wrap"
                                      Classes.error="{Binding Path=IsError}"
@@ -483,149 +599,6 @@
       </Panel>
     </Border>
 
-    <!-- Status bar -->
-    <Border Grid.Row="2"
-            Background="{DynamicResource StatusBarBackgroundBrush}"
-            BorderBrush="{DynamicResource StatusBarBorderBrush}"
-            BorderThickness="0 1 0 0"
-            Padding="12 2"
-            >
-      <Grid ColumnDefinitions="*,Auto">
-        <Grid.Styles>
-          <Style Selector="Button.bar">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="6 0"/>
-            <Setter Property="MinWidth" Value="28"/>
-            <Setter Property="Height" Value="26"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-          </Style>
-        </Grid.Styles>
-
-        <StackPanel Grid.Column="0"
-                    Orientation="Horizontal"
-                    Spacing="2"
-                    VerticalAlignment="Center">
-          <DropDownButton Content="Add node"
-                          Height="26"
-                          Padding="8 0"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          ToolTip.Tip="Add a node in the middle of the view (or right-click the canvas)">
-            <DropDownButton.Flyout>
-              <MenuFlyout Placement="TopEdgeAlignedLeft" Opening="AddFlyout_Opening">
-                <MenuItem Header="Float (𝑥)" Tag="Float" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Integer (𝑧)" Tag="Integer" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Unsigned integer (𝑛)" Tag="UnsignedInteger" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Vector (𝒗)" Tag="VectorNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Matrix (𝑨)" Tag="MatrixNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Sparse entries (𝑨)" Tag="SparseInput" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Array builder (zeros, rand, …)" Tag="ArrayBuilder" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Watch folder: a stream of new files (◉)" Tag="WatchNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Every: a stream ticking every few seconds (◷)" Tag="EveryNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Button: a stream going at each press (●)" Tag="ButtonNode" Click="AddAtCenter_Click"/>
-                <Separator/>
-                <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Plot (∿)" Tag="PlotNode" Click="AddAtCenter_Click"/>
-                <Separator/>
-                <MenuItem Header="Function (𝒇)" Tag="Function" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Map: apply a function to each (↦)" Tag="MapNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Window: the last values (⧗)" Tag="WindowNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Only when: pass a value on a condition (if)" Tag="WhenNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Zip: folders in step, by file name (⋈)" Tag="ZipNode" Click="AddAtCenter_Click"/>
-                <MenuItem Header="Merge: folders as one stream, as files come (∪)" Tag="MergeNode" Click="AddAtCenter_Click"/>
-                <Separator/>
-                <MenuItem Header="Frame: a titled box around the selected nodes (▭)" Tag="FrameNode" Click="AddAtCenter_Click"/>
-                <Separator/>
-                <MenuItem x:Name="LibraryFlyoutMenu" Header="Library: nodes and groups you saved (▤)"/>
-              </MenuFlyout>
-            </DropDownButton.Flyout>
-          </DropDownButton>
-          <Button Classes="bar"
-                  Content="↶"
-                  FontSize="16"
-                  Command="{Binding Path=Undo}"
-                  ToolTip.Tip="Undo (Ctrl+Z)" />
-          <Button Classes="bar"
-                  Content="↷"
-                  FontSize="16"
-                  Command="{Binding Path=Redo}"
-                  ToolTip.Tip="Redo (Ctrl+Y)" />
-          <Button Classes="bar"
-                  Margin="8 0 0 0"
-                  Content="▶ Run"
-                  Command="{Binding Path=Run}"
-                  IsVisible="{Binding !IsRunning}"
-                  ToolTip.Tip="Run the design with Julia (F5)" />
-          <Button Classes="bar"
-                  Margin="8 0 0 0"
-                  Content="■ Stop"
-                  Command="{Binding Path=Stop}"
-                  IsVisible="{Binding IsRunning}"
-                  ToolTip.Tip="Stop Julia (Shift+F5)" />
-          <Button Classes="bar"
-                  Content="Output"
-                  Command="{Binding Path=ToggleOutput}"
-                  ToolTip.Tip="Show or hide the output of runs" />
-          <Button Classes="bar"
-                  Content="Parameters"
-                  Command="{Binding Path=ToggleParameters}"
-                  ToolTip.Tip="Show or hide the parameters: inputs set with sliders and boxes" />
-          <TextBlock VerticalAlignment="Center"
-                     Margin="8 0 0 0"
-                     Opacity="0.6"
-                     FontSize="12"
-                     Text="{Binding Path=JuliaStatus}"
-                     ToolTip.Tip="{Binding Path=Julia.Path, FallbackValue='Install Julia, or pick julia.exe with Run → Choose Julia…'}" />
-          <TextBlock VerticalAlignment="Center"
-                     Margin="12 0 0 0"
-                     Opacity="0.6"
-                     FontSize="12"
-                     ToolTip.Tip="Scroll position"
-                     Text="{Binding Path=ScrollViewerOffset, Converter={StaticResource VectorConverter}}" />
-        </StackPanel>
-
-        <StackPanel Grid.Column="1"
-                    Orientation="Horizontal"
-                    Spacing="2"
-                    VerticalAlignment="Center">
-          <ToggleButton Content="Map"
-                        IsChecked="{Binding Path=ShowMinimap}"
-                        Height="26"
-                        Padding="8 0"
-                        VerticalContentAlignment="Center"
-                        Margin="0 0 8 0"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        ToolTip.Tip="Show or hide the map of the whole design"/>
-          <Button Classes="bar"
-                  Content="−"
-                  Command="{Binding Path=ZoomOut}"
-                  ToolTip.Tip="Zoom out (Ctrl+−)" />
-          <Slider Name="ZoomSlider"
-                  Value="{Binding Path=SelectedZoomLevel, Mode=TwoWay}"
-                  Minimum="{Binding Path=MinZoom, Mode=OneTime}"
-                  Maximum="{Binding Path=MaxZoom, Mode=OneTime}"
-                  IsSnapToTickEnabled="True"
-                  Ticks="{Binding Path=ZoomLevels, Mode=OneTime}"
-                  Width="160"
-                  VerticalAlignment="Center"
-                  />
-          <Button Classes="bar"
-                  Content="+"
-                  Command="{Binding Path=ZoomIn}"
-                  ToolTip.Tip="Zoom in (Ctrl++)" />
-          <Button Classes="bar"
-                  MinWidth="52"
-                  Content="{Binding Path=SelectedZoomLevel, Converter={StaticResource PercentConverter}}"
-                  Command="{Binding Path=ResetZoom}"
-                  ToolTip.Tip="Reset zoom to 100% (Ctrl+0)" />
-        </StackPanel>
-      </Grid>
-    </Border>
   </Grid>
+  </DockPanel>
 </UserControl>

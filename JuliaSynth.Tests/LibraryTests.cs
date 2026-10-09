@@ -169,7 +169,7 @@ namespace JuliaSynth.Tests
                 Assert.Equal(["smoothing"], MainViewModel.LibraryEntries().Select(e => e.Name));
 
                 // Add node's menu: the entry, then saving and managing.
-                DropDownButton add = window.GetVisualDescendants().OfType<DropDownButton>().Single(b => Equals(b.Content, "Add node"));
+                DropDownButton add = window.GetVisualDescendants().OfType<DropDownButton>().Single(b => b.Name == "AddNodeButton");
                 MenuFlyout flyout = (MenuFlyout)add.Flyout!;
                 flyout.ShowAt(add);
                 Dispatcher.UIThread.RunJobs();

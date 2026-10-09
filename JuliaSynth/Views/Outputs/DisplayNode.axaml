@@ -91,7 +91,7 @@
               Background="{StaticResource NodeInsetBrush}"
               ClipToBounds="True"
               >
-        <TextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+        <TextBlock FontFamily="{StaticResource CodeFont}"
                    FontSize="11"
                    TextWrapping="NoWrap"
                    FontStyle="{Binding Path=IsShownError, Converter={x:Static jsControls:ResultStyles.ItalicWhenTrue}}"

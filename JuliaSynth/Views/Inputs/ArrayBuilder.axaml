@@ -66,7 +66,7 @@
                    Text="𝑖"
                    >
           <ToolTip.Tip>
-            <TextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+            <TextBlock FontFamily="{StaticResource CodeFont}"
                        TextAlignment="Left"
                        Text="{Binding Path=Code}"/>
           </ToolTip.Tip>
@@ -114,7 +114,7 @@
                    />
         <StackPanel Orientation="Horizontal"
                     HorizontalAlignment="Right">
-          <TextBlock FontSize="18"
+          <TextBlock Classes="nodeTitle"
                      Text="{Binding Path=Kind}"
                      />
           <TextBlock Classes="caption"

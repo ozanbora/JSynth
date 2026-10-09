@@ -1,4 +1,4 @@
-﻿using Splat;
+using Splat;
 using System.CommandLine;
 
 namespace JuliaSynth.Desktop
@@ -32,6 +32,9 @@ namespace JuliaSynth.Desktop
             rootCommand.AddOption(binder.EnableVNCServer);
             rootCommand.AddOption(binder.VNCHost);
             rootCommand.AddOption(binder.VNCPort);
+            rootCommand.AddOption(binder.OpenFile);
+            rootCommand.AddOption(binder.UntitledFile);
+            rootCommand.AddOption(binder.DesignName);
 
             rootCommand.SetHandler((settings) => { parsedSettings = settings; }, binder);
 

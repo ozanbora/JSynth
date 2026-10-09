@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -41,9 +42,45 @@ public partial class MainWindow : Window
             ExamplesMenu.Items.Add(item);
         }
 
+        // The title bar is the app's own: the one Avalonia draws keeps only its minimize, maximize and close.
+        Opened += (_, _) => Dispatcher.UIThread.Post(HideDrawnTitle, DispatcherPriority.Background);
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == WindowStateProperty)
+            {
+                Dispatcher.UIThread.Post(HideDrawnTitle, DispatcherPriority.Background);
+            }
+        };
+
+        // Ctrl+Tab goes to the next tab before keyboard navigation takes Tab for itself.
+        AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key == Key.Tab && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                NextTab(e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? -1 : 1);
+                e.Handled = true;
+            }
+        }, RoutingStrategies.Tunnel);
+
         // The window's shortcuts edit the design; while a text field has the keyboard, its keys are the text's.
         AddHandler(GotFocusEvent, (_, e) => SetTyping(e.Source), RoutingStrategies.Bubble, handledEventsToo: true);
         AddHandler(LostFocusEvent, (_, _) => Dispatcher.UIThread.Post(() => SetTyping(FocusManager?.GetFocusedElement())), RoutingStrategies.Bubble, handledEventsToo: true);
+    }
+
+    // The window's title and full-screen button, drawn by Avalonia in a layer above the window that its styles don't
+    // reach.
+    private void HideDrawnTitle()
+    {
+        Avalonia.Visual root = this;
+        while (root.GetVisualParent() is Avalonia.Visual parent)
+        {
+            root = parent;
+        }
+
+        foreach (Control part in root.GetVisualDescendants().OfType<Control>().Where(c => c.Name is "PART_TitleTextPanel" or "PART_FullScreenButton"))
+        {
+            part.IsVisible = false;
+        }
     }
 
     private void SetTyping(object? focused)
@@ -97,11 +134,11 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Opens <paramref name="example"/>, once unsaved changes are dealt with.
+    /// Opens <paramref name="example"/>, in a tab of its own (unless the open one has nothing in it yet).
     /// </summary>
     internal async Task OpenExampleAsync(Example example)
     {
-        if (ViewModel is not MainViewModel viewModel || !await ConfirmDiscardAsync())
+        if (ViewModel is not MainViewModel viewModel)
         {
             return;
         }
@@ -142,18 +179,22 @@ public partial class MainWindow : Window
             }
         }
 
+        viewModel.UseTabForOpening();
         viewModel.OpenExample(example);
     }
 
     /// <summary>
-    /// Starts an empty design, once unsaved changes are dealt with.
+    /// Starts an empty design, in a new tab (unless the open one has nothing in it yet).
     /// </summary>
-    internal async Task NewDesignAsync()
+    internal Task NewDesignAsync()
     {
-        if (ViewModel is MainViewModel viewModel && await ConfirmDiscardAsync())
+        if (ViewModel is MainViewModel viewModel)
         {
+            viewModel.UseTabForOpening();
             viewModel.NewDesign();
         }
+
+        return Task.CompletedTask;
     }
 
     private async void Open_Click(object? sender, RoutedEventArgs e)
@@ -162,11 +203,11 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Asks for a design file and opens it, once unsaved changes are dealt with.
+    /// Asks for a design file and opens it in a tab.
     /// </summary>
     internal async Task OpenDesignAsync()
     {
-        if (ViewModel is not MainViewModel viewModel || !await ConfirmDiscardAsync())
+        if (ViewModel is not MainViewModel viewModel)
         {
             return;
         }
@@ -178,18 +219,69 @@ public partial class MainWindow : Window
             SuggestedStartLocation = await StartFolderAsync(viewModel),
         });
 
-        if (files.FirstOrDefault()?.TryGetLocalPath() is not string path)
+        if (files.FirstOrDefault()?.TryGetLocalPath() is string path)
         {
+            await OpenAsync(viewModel, path);
+        }
+    }
+
+    /// <summary>
+    /// Opens the design in <paramref name="path"/> (one of the recent ones) in a tab.
+    /// </summary>
+    internal async Task OpenDesignAsync(string path)
+    {
+        if (ViewModel is MainViewModel viewModel)
+        {
+            await OpenAsync(viewModel, path);
+        }
+    }
+
+    // Its tab if it is open already, else a tab of its own (unless the open one has nothing in it yet).
+    private async Task OpenAsync(MainViewModel viewModel, string path)
+    {
+        if (viewModel.TabOf(path) is DesignTab open)
+        {
+            viewModel.ActivateTab(open);
             return;
         }
 
         try
         {
+            viewModel.UseTabForOpening();
             viewModel.OpenDesign(path);
         }
         catch (Exception error) when (MainViewModel.IsFileError(error))
         {
             _ = await MessageDialog.ShowAsync(this, "Can't open the design", $"{Path.GetFileName(path)} couldn't be opened.\n\n{error.Message}", "OK");
+        }
+    }
+
+    // The File menu's shortcuts: its items are in the ☰ menu, whose own hot keys only work while it is open.
+    protected override async void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.Handled || !e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+        {
+            return;
+        }
+
+        bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        Func<Task>? action = e.Key switch
+        {
+            Key.N when !shift => NewDesignAsync,
+            Key.O when !shift => OpenDesignAsync,
+            Key.S when shift => () => SaveAsAsync(),
+            Key.S => () => SaveAsync(),
+            Key.B when !shift => () => { ViewModel?.ToggleSidebar.Execute(null); return Task.CompletedTask; },
+            Key.T when !shift => NewDesignAsync,
+            Key.W when !shift && ViewModel is MainViewModel open => () => CloseTabAsync(open.ActiveTab),
+            _ => null,
+        };
+
+        if (action is not null)
+        {
+            e.Handled = true;
+            await action();
         }
     }
 
@@ -213,17 +305,174 @@ public partial class MainWindow : Window
         base.OnClosing(e);
 
         // Autosaving leaves nothing to ask about, unless it can't save.
-        if (_closeConfirmed || ViewModel?.AutoSaveNow() != false)
+        if (_closeConfirmed || ViewModel is not MainViewModel viewModel || viewModel.TabsToAskAboutOnClosing() is not { Count: > 0 } unsaved)
         {
             return;
         }
 
-        // Closing can't wait for the question, so stop it, ask, and close again if allowed.
+        // Closing can't wait for the questions, so stop it, ask about each tab, and close again if allowed.
         e.Cancel = true;
-        if (await ConfirmDiscardAsync())
+        foreach (DesignTab tab in unsaved)
         {
-            _closeConfirmed = true;
-            Close();
+            viewModel.ActivateTab(tab);
+            if (!await ConfirmDiscardAsync())
+            {
+                return;
+            }
+
+            if (viewModel.IsDirty)
+            {
+                viewModel.DiscardActiveTab();
+            }
+        }
+
+        _closeConfirmed = true;
+        Close();
+    }
+
+    /// <summary>
+    /// Closes <paramref name="tab"/>, asking first about work that isn't saved.
+    /// </summary>
+    internal async Task CloseTabAsync(DesignTab tab)
+    {
+        if (ViewModel is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        if (viewModel.TabHasUnsavedWork(tab))
+        {
+            viewModel.ActivateTab(tab);
+            string? answer = await MessageDialog.ShowAsync(this, "Unsaved changes", $"Save changes to {tab.Name}?", "Save", "Don't save", "Cancel");
+            if (answer is not ("Save" or "Don't save") || (answer == "Save" && !await SaveAsync()))
+            {
+                return;
+            }
+        }
+
+        viewModel.CloseTab(tab);
+    }
+
+    /// <summary>
+    /// Opens <paramref name="tab"/>'s design in a new window of its own, and closes the tab here: its file saved, or,
+    /// never saved, kept for that window to open.
+    /// </summary>
+    internal async Task OpenInNewWindowAsync(DesignTab tab)
+    {
+        if (ViewModel is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        viewModel.ActivateTab(tab);
+        if (viewModel.HandOverActiveTab() is not string[] arguments)
+        {
+            _ = await MessageDialog.ShowAsync(this, "Can't open a new window", $"{tab.Name} couldn't be kept for the new window: see the output.", "OK");
+            return;
+        }
+
+        try
+        {
+            StartNewWindow(arguments);
+            viewModel.CloseTab(tab);
+        }
+        catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException or IOException)
+        {
+            _ = await MessageDialog.ShowAsync(this, "Can't open a new window", error.Message, "OK");
+        }
+    }
+
+    // Another JuliaSynth, with these arguments: run as this one is (the program, or dotnet with the program's dll).
+    private static void StartNewWindow(string[] arguments)
+    {
+        string program = Environment.ProcessPath ?? throw new InvalidOperationException("JuliaSynth's program isn't known.");
+        System.Diagnostics.ProcessStartInfo start = new(program) { UseShellExecute = false };
+        if (Path.GetFileNameWithoutExtension(program).Equals("dotnet", StringComparison.OrdinalIgnoreCase)
+            && System.Reflection.Assembly.GetEntryAssembly()?.Location is string dll)
+        {
+            start.ArgumentList.Add(dll);
+        }
+
+        foreach (string argument in arguments)
+        {
+            start.ArgumentList.Add(argument);
+        }
+
+        _ = System.Diagnostics.Process.Start(start);
+    }
+
+    // A tab clicked opens it; middle-clicked, closes it.
+    private async void Tab_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (ViewModel is not MainViewModel viewModel || (sender as Control)?.DataContext is not DesignTab tab)
+        {
+            return;
+        }
+
+        PointerPointProperties pointer = e.GetCurrentPoint(sender as Control).Properties;
+        if (pointer.IsMiddleButtonPressed)
+        {
+            e.Handled = true;
+            await CloseTabAsync(tab);
+        }
+        else if (pointer.IsLeftButtonPressed)
+        {
+            viewModel.ActivateTab(tab);
+        }
+    }
+
+    private async void TabClose_Click(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is DesignTab tab)
+        {
+            await CloseTabAsync(tab);
+        }
+    }
+
+    private async void TabCloseOthers_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel is MainViewModel viewModel && (sender as Control)?.DataContext is DesignTab keep)
+        {
+            foreach (DesignTab tab in viewModel.Tabs.Where(t => t != keep).ToList())
+            {
+                await CloseTabAsync(tab);
+            }
+
+            viewModel.ActivateTab(keep);
+        }
+    }
+
+    private async void TabNewWindow_Click(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is DesignTab tab)
+        {
+            await OpenInNewWindowAsync(tab);
+        }
+    }
+
+    private async void CloseActiveTab_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel is MainViewModel viewModel)
+        {
+            await CloseTabAsync(viewModel.ActiveTab);
+        }
+    }
+
+    private async void ActiveTabNewWindow_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel is MainViewModel viewModel)
+        {
+            await OpenInNewWindowAsync(viewModel.ActiveTab);
+        }
+    }
+
+    // Ctrl+Tab and Ctrl+Shift+Tab: the next tab, or the one before, round.
+    private void NextTab(int step)
+    {
+        if (ViewModel is MainViewModel viewModel && viewModel.Tabs.Count > 1)
+        {
+            int index = viewModel.Tabs.IndexOf(viewModel.ActiveTab);
+            viewModel.ActivateTab(viewModel.Tabs[(index + step + viewModel.Tabs.Count) % viewModel.Tabs.Count]);
         }
     }
 

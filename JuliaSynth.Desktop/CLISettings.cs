@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 
 namespace JuliaSynth.Desktop
 {
@@ -22,6 +22,18 @@ namespace JuliaSynth.Desktop
         public bool EnableVNCServer { get; set; }
         public string? VNCHost { get; set; } = null;
         public int VNCPort { get; set; } = 5901;
+
+        /// <summary>
+        /// A design file to open, alone, in this window: a tab opened in a new window.
+        /// </summary>
+        public string? OpenFile { get; set; }
+
+        /// <summary>
+        /// A design never saved, kept here, to open alone in this window; named <see cref="DesignName"/>.
+        /// </summary>
+        public string? UntitledFile { get; set; }
+
+        public string? DesignName { get; set; }
 
         private readonly JsonSerializerOptions _serializerOptions = new()
         {

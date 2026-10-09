@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:jsModel="clr-namespace:JuliaSynth.Model"
+             xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
              x:Class="JuliaSynth.Controls.ResultBadge"
              x:DataType="jsModel:Node"
              IsVisible="{Binding Path=HasResult}"
@@ -23,10 +24,12 @@
     <Style Selector="Border.badge.error">
       <Setter Property="Background" Value="{StaticResource BadgeErrorBrush}"/>
     </Style>
-    <Style Selector="Border.badge > TextBlock">
+    <!-- Drawn, not typed: a symbol from a fallback font sits off the circle's middle. -->
+    <Style Selector="Border.badge jsControls|Icon">
       <Setter Property="Foreground" Value="{StaticResource BadgeForegroundBrush}"/>
-      <Setter Property="FontSize" Value="11"/>
-      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Width" Value="12"/>
+      <Setter Property="Height" Value="12"/>
+      <Setter Property="StrokeThickness" Value="3.2"/>
       <Setter Property="HorizontalAlignment" Value="Center"/>
       <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
@@ -45,16 +48,16 @@
             ToolTip.ShowDelay="200"
             >
       <ToolTip.Tip>
-        <SelectableTextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+        <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
                              FontSize="12"
                              MaxWidth="520"
                              TextWrapping="Wrap"
                              Text="{Binding Path=ResultTip}"/>
       </ToolTip.Tip>
       <Panel>
-        <TextBlock Text="✓" IsVisible="{Binding Path=IsResultOk}"/>
-        <TextBlock Text="✗" IsVisible="{Binding Path=IsResultError}"/>
-        <TextBlock Text="–" IsVisible="{Binding Path=IsResultSkipped}"/>
+        <jsControls:Icon Data="{StaticResource IconCheck}" IsVisible="{Binding Path=IsResultOk}"/>
+        <jsControls:Icon Data="{StaticResource IconClose}" IsVisible="{Binding Path=IsResultError}"/>
+        <jsControls:Icon Data="{StaticResource IconDash}" IsVisible="{Binding Path=IsResultSkipped}"/>
       </Panel>
     </Border>
   </StackPanel>

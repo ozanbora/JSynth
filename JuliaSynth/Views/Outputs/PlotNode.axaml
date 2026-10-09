@@ -117,7 +117,7 @@
                              IsVisible="{Binding Path=Plot, Converter={x:Static ObjectConverters.IsNotNull}}"
                              />
           <TextBlock Margin="8 6"
-                     FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                     FontFamily="{StaticResource CodeFont}"
                      FontSize="11"
                      TextWrapping="Wrap"
                      Opacity="0.8"

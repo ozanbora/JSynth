@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Dialogs;
 using Avalonia.Headless;
@@ -36,6 +36,7 @@ internal class Program
 
     private static void StartApp(CLISettings settings, string[] args)
     {
+        App.StartDesign = (settings.OpenFile, settings.UntitledFile, settings.DesignName);
         AppBuilder builder = BuildAvaloniaApp();
 
         if (settings.UseSkia)

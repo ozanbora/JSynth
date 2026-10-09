@@ -100,7 +100,7 @@ public partial class MainViewModel
             return !IsDirty;
         }
 
-        string target = FilePath ?? UntitledFile;
+        string target = FilePath ?? _activeTab.UntitledFile;
         try
         {
             if (FilePath is string path)
@@ -139,12 +139,18 @@ public partial class MainViewModel
     private void KeepUntitled()
     {
         History.Commit();
-        _ = Directory.CreateDirectory(Path.GetDirectoryName(UntitledFile)!);
-        File.WriteAllText(UntitledFile, CaptureDesign());
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(_activeTab.UntitledFile)!);
+        File.WriteAllText(_activeTab.UntitledFile, CaptureDesign());
         History.MarkSaved();
+        if (!RemembersSession)
+        {
+            return;
+        }
+
         AppSettings settings = AppSettings.Load();
-        settings.LastFile = UntitledFile;
+        settings.LastFile = _activeTab.UntitledFile;
         settings.LastUntitled = true;
+        RememberTabs(settings);
         settings.Save();
     }
 }
