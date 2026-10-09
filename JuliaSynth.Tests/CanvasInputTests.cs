@@ -83,6 +83,16 @@ namespace JuliaSynth.Tests
                 window.MouseMove(new Point(750, 140), RawInputModifiers.Control | RawInputModifiers.LeftMouseButton);
                 window.MouseUp(new Point(750, 140), MouseButton.Left, RawInputModifiers.Control);
                 Assert.Equal(new Vector(350, 360), viewModel.ScrollViewerOffset);
+
+                // Past the top left edge: the view stops there, and dragging back moves it straight away.
+                window.MouseDown(new Point(300, 150), MouseButton.Left);
+                window.MouseMove(new Point(800, 600), RawInputModifiers.LeftMouseButton);
+                window.MouseUp(new Point(800, 600), MouseButton.Left);
+                Assert.Equal(new Vector(0, 0), viewModel.ScrollViewerOffset);
+                window.MouseDown(new Point(800, 200), MouseButton.Left);
+                window.MouseMove(new Point(750, 140), RawInputModifiers.LeftMouseButton);
+                window.MouseUp(new Point(750, 140), MouseButton.Left);
+                Assert.Equal(new Vector(50, 60), viewModel.ScrollViewerOffset);
                 window.Close();
             });
         }

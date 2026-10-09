@@ -597,6 +597,7 @@
                         IsChecked="{Binding Path=ShowMinimap}"
                         Height="26"
                         Padding="8 0"
+                        VerticalContentAlignment="Center"
                         Margin="0 0 8 0"
                         Background="Transparent"
                         BorderThickness="0"

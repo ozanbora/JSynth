@@ -118,7 +118,7 @@ public partial class MainView : UserControl
 
             _panMoved = true;
             CanvasScroll.Cursor = new Cursor(StandardCursorType.SizeAll);
-            _viewModel?.PanBy(point - last);
+            _viewModel?.PanBy(point - last, CanvasScroll.ScrollBarMaximum);
             _panPoint = point;
         }
     }

@@ -774,11 +774,13 @@ public partial class MainViewModel : ReactiveObject
     public ReactiveCommand<RxVoid, RxVoid> Duplicate { get; }
 
     /// <summary>
-    /// Moves the view with the pointer: dragging the canvas by <paramref name="offset"/> (a drag on the empty canvas).
+    /// Moves the view with the pointer: dragging the canvas by <paramref name="offset"/> (a drag on the empty canvas),
+    /// as far as the canvas goes: up to <paramref name="maximum"/>, the furthest the view can scroll.
     /// </summary>
-    public void PanBy(Vector offset)
+    public void PanBy(Vector offset, Vector maximum)
     {
-        ScrollViewerOffset -= offset;
+        Vector wanted = ScrollViewerOffset - offset;
+        ScrollViewerOffset = new Vector(Math.Clamp(wanted.X, 0, Math.Max(0, maximum.X)), Math.Clamp(wanted.Y, 0, Math.Max(0, maximum.Y)));
     }
 
     /// <summary>
