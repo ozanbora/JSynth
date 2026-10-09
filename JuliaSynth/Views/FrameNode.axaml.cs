@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using JuliaSynth.ViewModels;
 using System;
 using System.ComponentModel;
@@ -73,6 +74,24 @@ public partial class FrameNode : Controls.Node
 
     // The nodes in the frame made one, named after it.
     private void Group_Click(object? sender, RoutedEventArgs e)
+    {
+        Group();
+    }
+
+    // The title double-clicked, but on its buttons: the same. (The frame has the pointer while it is pressed: what was
+    // double-clicked is what is under it.)
+    private void Frame_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        Point point = e.GetPosition(TitleBar);
+        bool onTitle = point.X >= 0 && point.Y >= 0 && point.X < TitleBar.Bounds.Width && point.Y < TitleBar.Bounds.Height;
+        if (onTitle && (TitleBar.InputHitTest(point) as Visual)?.FindAncestorOfType<Button>(includeSelf: true) is null)
+        {
+            Group();
+            e.Handled = true;
+        }
+    }
+
+    private void Group()
     {
         if (_frame is not null)
         {

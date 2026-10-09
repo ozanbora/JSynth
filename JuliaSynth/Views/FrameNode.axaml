@@ -7,6 +7,7 @@
 
              x:DataType="jsModel:FrameNode"
              HorizontalAlignment="Left"
+             DoubleTapped="Frame_DoubleTapped"
              VerticalAlignment="Top"
              >
   <Design.DataContext>
@@ -39,9 +40,11 @@
             IsHitTestVisible="False"
             />
 
-    <!-- Title bar: drags the frame and the nodes in it. -->
-    <Grid VerticalAlignment="Top"
+    <!-- Title bar: drags the frame and the nodes in it; double-clicked, makes them one group. -->
+    <Grid x:Name="TitleBar"
+          VerticalAlignment="Top"
           Height="34"
+          Background="Transparent"
           TextElement.Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}">
       <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
               Opacity="0.85"
@@ -54,7 +57,7 @@
           <Button x:Name="GroupButton"
                   Classes="nodeAction wide"
                   Content="⧉ Group"
-                  ToolTip.Tip="Make the nodes in this frame one node, named after it (Ctrl+G with the frame selected). Double-click the group to open it again."
+                  ToolTip.Tip="Make the nodes in this frame one node, named after it (or double-click the title, or Ctrl+G with the frame selected). The group's ⧉ button opens it again."
                   Click="Group_Click"
                   />
           <Button Classes="nodeAction"

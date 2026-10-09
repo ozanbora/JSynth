@@ -14,30 +14,38 @@
 
   <jsControls:NodeBody Glyph="⧉"
                        Title="{Binding Path=Name}"
-                       Info="Group: nodes made one. The wires that came into them are its inputs, those that went out its outputs: the first its value, the others on rows of their own. What it works out is what its nodes do. Double-click it (or Ctrl+Shift+G) to open it: its nodes come back out on the canvas, in a frame named after it; select the frame and press Ctrl+G to group them again."
+                       Info="Group: nodes made one. The wires that came into them are its inputs, those that went out its outputs: the first its value, the others on rows of their own. What it works out is what its nodes do. Open it with its ⧉ button (or double-click it, or Ctrl+Shift+G): its nodes come back out on the canvas, in a frame named after it; double-click the frame's title (or its ⧉ Group button) to make them one again."
                        >
     <jsControls:NodeBody.Actions>
-      <Button Classes="nodeAction"
-              Content="Ξ"
-              ToolTip.Tip="Edit"
-              >
-        <Button.Flyout>
-          <Flyout Placement="Top"
-                  ShowMode="Transient"
-                  >
-            <StackPanel Spacing="8">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Label VerticalAlignment="Center" Content="Name"/>
-                <TextBox Width="200" Text="{Binding Path=Name}"/>
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <Button x:Name="OpenButton"
+                Classes="nodeAction"
+                Content="⧉"
+                ToolTip.Tip="Open: its nodes back on the canvas, in a frame named after it (or double-click the group, or Ctrl+Shift+G). Double-click the frame's title to make them one again."
+                Click="Open_Click"
+                />
+        <Button Classes="nodeAction"
+                Content="Ξ"
+                ToolTip.Tip="Edit"
+                >
+          <Button.Flyout>
+            <Flyout Placement="Top"
+                    ShowMode="Transient"
+                    >
+              <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Label VerticalAlignment="Center" Content="Name"/>
+                  <TextBox Width="200" Text="{Binding Path=Name}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock VerticalAlignment="Center" Opacity="0.7" Text="{Binding Path=Summary}"/>
+                  <Button Content="Open" Click="Open_Click" ToolTip.Tip="Its nodes back on the canvas (Ctrl+Shift+G)"/>
+                </StackPanel>
               </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock VerticalAlignment="Center" Opacity="0.7" Text="{Binding Path=Summary}"/>
-                <Button Content="Open" Click="Open_Click" ToolTip.Tip="Its nodes back on the canvas (Ctrl+Shift+G)"/>
-              </StackPanel>
-            </StackPanel>
-          </Flyout>
-        </Button.Flyout>
-      </Button>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+      </StackPanel>
     </jsControls:NodeBody.Actions>
 
     <!-- The outputs after its value, a row each -->

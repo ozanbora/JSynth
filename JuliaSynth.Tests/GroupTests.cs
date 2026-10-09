@@ -180,6 +180,24 @@ namespace JuliaSynth.Tests
                 GroupNode again = Assert.Single(MainViewModel.Nodes.OfType<GroupNode>());
                 Assert.Equal(group.Name, again.Name);
                 Assert.Empty(MainViewModel.Nodes.OfType<FrameNode>());
+
+                // The group's Open button: its frame again.
+                Button open = window.GetVisualDescendants().OfType<Views.GroupNode>().Single()
+                    .GetVisualDescendants().OfType<Button>().Single(b => b.Name == "OpenButton");
+                open.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+                Dispatcher.UIThread.RunJobs();
+                Assert.Empty(MainViewModel.Nodes.OfType<GroupNode>());
+
+                // The frame's title double-clicked (left of its buttons): one node again.
+                Views.FrameNode frameView = window.GetVisualDescendants().OfType<Views.FrameNode>().Single();
+                Point frameTitle = frameView.TranslatePoint(new Point(40, 17), window)!.Value;
+                window.MouseDown(frameTitle, MouseButton.Left);
+                window.MouseUp(frameTitle, MouseButton.Left);
+                window.MouseDown(frameTitle, MouseButton.Left);
+                window.MouseUp(frameTitle, MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                Assert.Equal(group.Name, Assert.Single(MainViewModel.Nodes.OfType<GroupNode>()).Name);
+                Assert.Empty(MainViewModel.Nodes.OfType<FrameNode>());
                 window.Close();
             });
         }
