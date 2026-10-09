@@ -412,7 +412,7 @@ public partial class MainViewModel
 
                 if (streaming)
                 {
-                    if (node is WatchNode && report.Status == ReportStatus.Ok)
+                    if (node is WatchNode or TickNode && report.Status == ReportStatus.Ok)
                     {
                         if (report.Text == WatchNode.WatchingText)
                         {
@@ -421,7 +421,7 @@ public partial class MainViewModel
                         }
 
                         StreamStatus = report.Text;
-                        ((WatchNode)node).Recount();
+                        (node as WatchNode)?.Recount();
                     }
 
                     if (!LogsInStream(report))
@@ -456,6 +456,12 @@ public partial class MainViewModel
             {
                 Log($"Watching {watched.Folder} for {(watched.Pattern.Length == 0 ? "*" : watched.Pattern)} files: the values from {script.Variables[watched.ID]} on are worked out again for each, until you stop.", OutputKind.Info);
                 BeginStream(watched, stopFile);
+            }
+            else if (streaming && script.Clock is TickNode clock)
+            {
+                string how = clock is ButtonNode ? "Waiting for presses of the button" : clock is EveryNode { Limit: > 0 } every ? $"Ticking {every.Label}, {every.LimitText}" : $"Ticking {clock.Label}";
+                Log($"{how}: the values from {script.Variables[clock.ID]} on are worked out again at each {clock.TickName}, {(clock.Ends ? "then it stops" : "until you stop")}.", OutputKind.Info);
+                BeginStream(clock, stopFile);
             }
 
             RunResult result = await session.RunAsync(

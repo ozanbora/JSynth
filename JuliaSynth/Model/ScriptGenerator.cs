@@ -13,14 +13,19 @@ namespace JuliaSynth.Model
     public sealed record JuliaScript(string Text, IReadOnlyDictionary<string, string> Variables, IReadOnlyList<string> Packages)
     {
         /// <summary>
-        /// Whether it runs as a stream (the design watches a folder): until stopped, rather than once.
+        /// Whether it runs as a stream (the design watches a folder, or has a clock): until stopped, rather than once.
         /// </summary>
-        public bool Streams => Watched is not null;
+        public bool Streams => Watched is not null || Clock is not null;
 
         /// <summary>
-        /// The watched folder a stream goes through, when it <see cref="Streams"/>.
+        /// The watched folder a stream goes through, when it <see cref="Streams"/> from one.
         /// </summary>
         public WatchNode? Watched { get; init; }
+
+        /// <summary>
+        /// The clock or button a stream ticks with, when it <see cref="Streams"/> from one.
+        /// </summary>
+        public TickNode? Clock { get; init; }
 
         /// <summary>
         /// The ids of the nodes whose values change from file to file, when the design goes through files one
@@ -128,6 +133,10 @@ namespace JuliaSynth.Model
                 case FilesNode files when loop?.ReadsFrame(files) == true:
                     // The file the loop is at (zipped, its own of that name), read as each of the folder's files is.
                     return (files.FrameJulia(loop!.PathOf(files)), null);
+                case TickNode ticks:
+                    // The tick's number; a design has one stream.
+                    return loop?.Root == ticks ? ("_n", null)
+                        : (null, "A design has one stream: a clock, a button or a watched folder. This one isn't it.");
                 case Node together when together is ZipNode or MergeNode:
                 {
                     (List<FilesNode> streams, string? problem) = FolderStreams(together, inputs, byID);

@@ -12,7 +12,7 @@ namespace JuliaSynth.Model
         /// design. Zipped or merged, the loop is led by a watched one (else the first one): zipped, the others' files of
         /// the same names go with its; merged, their files are gone through too.
         /// </summary>
-        /// <param name="Root">The folder leading the loop; null when the design goes through no files one at a time.</param>
+        /// <param name="Root">The folder, or the clock, leading the loop; null when the design goes through no files one at a time and has no clock.</param>
         /// <param name="Twins">The folders zipped with it: their files of the same names go with its.</param>
         /// <param name="Merged">The folders merged, it among them, numbered from 1 in this order.</param>
         /// <param name="Streams">The Zip or Merge node the folders are wired to, if any.</param>
@@ -23,7 +23,7 @@ namespace JuliaSynth.Model
         /// merged, the folders before it (not through the merge) that may have no file yet.
         /// </param>
         private sealed record LoopPlan(
-            FilesNode? Root,
+            Node? Root,
             List<FilesNode> Twins,
             List<FilesNode> Merged,
             Node? Streams,
@@ -35,8 +35,9 @@ namespace JuliaSynth.Model
             {
                 Node? streams = order.Where(n => n is ZipNode or MergeNode).FirstOrDefault(s => FolderStreams(s, connections, byID).Problem is null);
                 List<FilesNode> folders = streams is null ? [] : FolderStreams(streams, connections, byID).Streams;
-                FilesNode? root = folders.OfType<WatchNode>().FirstOrDefault() ?? folders.FirstOrDefault()
+                Node? root = folders.OfType<WatchNode>().FirstOrDefault() ?? folders.FirstOrDefault()
                     ?? order.OfType<WatchNode>().FirstOrDefault(w => w.Error is null)
+                    ?? (Node?)order.OfType<TickNode>().FirstOrDefault()
                     ?? order.OfType<FilesNode>().FirstOrDefault(f => f.EachFile && f.Error is null);
                 List<FilesNode> twins = streams is ZipNode ? folders.Where(f => f != root).ToList() : [];
                 List<FilesNode> merged = streams is MergeNode ? folders : [];

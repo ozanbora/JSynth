@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JuliaSynth.Views.ButtonNode"
+
+             xmlns:jsModel ="clr-namespace:JuliaSynth.Model;assembly=JuliaSynth"
+             xmlns:jsControls="clr-namespace:JuliaSynth.Controls"
+
+             x:DataType="jsModel:ButtonNode"
+             >
+  <Design.DataContext>
+    <jsModel:ButtonNode />
+  </Design.DataContext>
+
+  <jsControls:NodeBody Glyph="●"
+                       Title="press"
+                       Info="Button: the design runs as a stream, the nodes after this again each time you press it, until you stop it. Pressed while nothing runs, it runs the design, that press the first. Its value is the press's number, from 1; its seconds output the seconds since the start. Inputs with a next value wired carry a state from press to press: e.g. take a step of a simulation at each press, or a new sample."
+                       >
+    <!-- The button to press, and the second output: the seconds since the start -->
+    <jsControls:NodeBody.Extra>
+      <Grid RowDefinitions="20,20"
+            VerticalAlignment="Top"
+            >
+        <Button x:Name="PressButton"
+                Grid.Row="1"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                VerticalAlignment="Stretch"
+                Margin="8 1 8 0"
+                Padding="0"
+                MinHeight="0"
+                FontSize="11"
+                Content="Press"
+                ToolTip.Tip="Work out the nodes after this again; with nothing running, run the design"
+                Click="Press_Click"
+                />
+        <TextBlock HorizontalAlignment="Right"
+                   VerticalAlignment="Center"
+                   Margin="0 0 16 0"
+                   Classes="caption"
+                   Text="seconds: Float64"
+                   ToolTip.Tip="The seconds since the stream started, at this press."
+                   />
+        <jsControls:Connector HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
+                              ZIndex="3"
+                              Margin="0 0 -8 0"
+                              Output="seconds"
+                              />
+      </Grid>
+    </jsControls:NodeBody.Extra>
+  </jsControls:NodeBody>
+
+</UserControl>

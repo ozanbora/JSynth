@@ -66,11 +66,11 @@ namespace JuliaSynth.ViewModels
             public static readonly IReadOnlyList<Example> All = [
                 new("Loan payment",
                     "Finance: the monthly payment on a 250,000 loan at 4.5% a year over 30 years, and the interest paid in total. "
-                    + "Change the amount, the rate or the years and run again (F5).",
+                    + "Move the sliders in the Parameters panel on the left: it runs again as you change them.",
                     LoanPayment),
                 new("Projectile",
                     "Physics: how far and how high a ball thrown at 20 m/s and 45° flies, and for how long (no air resistance). "
-                    + "Try other angles: which one throws furthest?",
+                    + "Try other angles with the slider on the left: which one throws furthest?",
                     Projectile),
                 new("Line fit",
                     "Statistics: the straight line best fitting test scores against hours studied (least squares), and the score "
@@ -88,6 +88,19 @@ namespace JuliaSynth.ViewModels
                     "Simulation: π estimated from 100,000 random points in a square, by counting those inside the quarter circle. "
                     + "The plot shows the points. More samples give a better estimate; run it a few times to see it vary.",
                     MonteCarloPi),
+                new("Live Monte Carlo π",
+                    "Simulation: π estimated live, from batches of random darts thrown ten times a second. The Every node ticks "
+                    + "100 times: at each tick darts throws a new batch (darts a tick, in the Parameters panel), hits keeps the "
+                    + "count inside the quarter circle from tick to tick (it takes total as its next value), and estimate is 4 × "
+                    + "hits over all the darts so far. A Window keeps the last 100 estimates, and the plot shows them closing in "
+                    + "on π; error says how far off it is, about 0.001 after the 2 million darts. Stop ends it early.",
+                    LiveMonteCarloPi),
+                new("Random walk",
+                    "Probability: a random walk, at the press of a button. Press the Button node's Press (or run the design and "
+                    + "press it): each press adds 1,000 steps of ±1 (steps a press, in the Parameters panel) to the path, which "
+                    + "keeps its value from press to press, and the plot shows the whole walk so far. farthest says how far from "
+                    + "the start it has been: after n steps, typically about √n. Stop, and press again to start anew from 0.",
+                    RandomWalk),
                 new("Weather station week",
                     "Weather: a week of hourly temperatures, one CSV file a day, read one at a time. Map applies daily_mean "
                     + "(which uses mean from Statistics) and daily_swing to every file; the plot shows the mean of each day "
@@ -251,6 +264,16 @@ namespace JuliaSynth.ViewModels
         private static DisplayNode Shown(int row, int column)
         {
             return new DisplayNode { Row = row, Column = column };
+        }
+
+        /// <summary>
+        /// <paramref name="node"/> put in the parameters panel: named <paramref name="name"/> (null: after the input it
+        /// is wired into), its slider from <paramref name="from"/> to <paramref name="to"/>.
+        /// </summary>
+        private static T InPanel<T>(T node, string? name, double from, double to) where T : Node
+        {
+            (node.InPanel, node.PanelName, node.PanelFrom, node.PanelTo) = (true, name ?? string.Empty, from, to);
+            return node;
         }
 
         private static Integer Whole(long value, int row)

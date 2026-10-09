@@ -71,6 +71,7 @@ namespace JuliaSynth.Model
                 return new JuliaScript(_script.ToString().ReplaceLineEndings("\n"), _variables, packages)
                 {
                     Watched = _loop.Root as WatchNode,
+                    Clock = _loop.Root as TickNode,
                     Looped = _loop.Looped.Concat(_loop.Carried.Select(c => c.ID)).ToHashSet(),
                 };
             }
@@ -110,7 +111,12 @@ namespace JuliaSynth.Model
                     _ = _script.AppendLine().AppendLine(WatchNode.Prelude.TrimEnd());
                 }
 
-                if (_instrumented && _nodes.OfType<FilesNode>().Any(f => f.EachFile))
+                foreach (string prelude in _nodes.OfType<TickNode>().Select(t => t.PreludeCode).Distinct())
+                {
+                    _ = _script.AppendLine().AppendLine(prelude.TrimEnd());
+                }
+
+                if (_instrumented && (_nodes.OfType<FilesNode>().Any(f => f.EachFile) || _nodes.OfType<TickNode>().Any()))
                 {
                     _ = _script.AppendLine(WatchNode.RunPrelude.TrimEnd());
                 }
@@ -203,7 +209,7 @@ namespace JuliaSynth.Model
 
             private void WriteLoop()
             {
-                if (_loop.Root is not FilesNode root)
+                if (_loop.Root is not Node root)
                 {
                     // Without files to go through one at a time, there is no next file to take a value for.
                     if (_nextWires.Count > 0)
@@ -222,16 +228,21 @@ namespace JuliaSynth.Model
                     + string.Concat(_order.Where(n => _loop.Looped.Contains(n.ID)).Select(NodeCode)) + Reassignments();
                 string frame = _variables[root.ID];
                 List<string> inStep = _loop.Twins.Select(t => t.Folder).ToList();
-                string files = inStep.Count > 0 ? $"_jsynth_in_step({root.Julia}, {FilesNode.FoldersJulia(inStep)})"
+                string files = root is not FilesNode folder ? string.Empty
+                    : inStep.Count > 0 ? $"_jsynth_in_step({folder.Julia}, {FilesNode.FoldersJulia(inStep)})"
                     : merged.Count > 0 ? $"_jsynth_merged([{string.Join(", ", merged.Select(m => m.Julia))}])"
-                    : root.Julia;
-                string start = root is WatchNode watched
+                    : folder.Julia;
+
+                // A clock gives each tick the seconds since the start, where a folder gives the file's path.
+                string start = root is TickNode ticks ? ticks.Start(_instrumented ? _stopFile : null)
+                    : root is WatchNode watched
                     ? $"{watched.Watch(_instrumented ? _stopFile : null, inStep, merged.Where(m => m != root).ToList())} do _path, _n, _show"
                     : _instrumented
                         ? $"_jsynth_each({StringLiteral(root.ID)}, () -> {files}) do _path, _n, _show"
                         : $"for _path in {files}.paths";
                 string until = _instrumented ? "until stopped" : "until stopped (Ctrl+C)";
-                string what = root is WatchNode ? $"again for every file written to the folder, {until}" : "again for each file of the folder, in name order";
+                string what = root is TickNode ticking ? $"again {ticking.Label}{(ticking.Ends ? string.Empty : $", {until}")}"
+                    : root is WatchNode ? $"again for every file written to the folder, {until}" : "again for each file of the folder, in name order";
                 if (inStep.Count > 0)
                 {
                     what += $", with the files of the same name in {string.Join(", ", _loop.Twins.Select(t => _variables[t.ID]))}";
@@ -362,12 +373,19 @@ namespace JuliaSynth.Model
                     return $"{(inLoop ? "global " : string.Empty)}{variable}_{MergeNode.FolderOutput} = ({string.Join(", ", _loop.Merged.Select(m => StringLiteral(m.FolderName)))},)[_stream]\n";
                 }
 
+                bool Wired(string output) => _connections.Concat(_nextWires).Any(c => c.SourceID == node.ID && c.Output == output);
+
+                // The seconds since the start, at this tick.
+                if (node is TickNode && node == _loop.Root)
+                {
+                    return Wired(TickNode.SecondsOutput) ? $"global {variable}_{TickNode.SecondsOutput} = _path\n" : string.Empty;
+                }
+
                 if (node is not FilesNode folder || !_loop.ReadsFrame(node))
                 {
                     return string.Empty;
                 }
 
-                bool Wired(string output) => _connections.Concat(_nextWires).Any(c => c.SourceID == node.ID && c.Output == output);
                 string path = _loop.PathOf(folder);
                 return (Wired(FilesNode.NameOutput) ? $"global {variable}_{FilesNode.NameOutput} = basename({path})\n" : string.Empty)
                     + (Wired(FilesNode.PathOutput) ? $"global {variable}_{FilesNode.PathOutput} = abspath({path})\n" : string.Empty);
@@ -474,10 +492,12 @@ namespace JuliaSynth.Model
                     conditions.Add(($"(_why = _jsynth_package_problem({string.Join(", ", needed)})) !== nothing", $"_jsynth_skip({id}, _why)"));
                 }
 
-                // The files say which file the loop is at, rather than showing the file.
+                // The leader of the loop says how far it got, rather than showing its value: the file, or the tick.
+                string progress = node is TickNode tick ? $"_jsynth_tick({id}, _n, _path, \"{tick.TickName}\")" : $"_jsynth_frame({id}, _n, _path, {variable})";
+
                 // An Only when node passes its value, or holds back the nodes after it.
                 string compute = _loop.ReadsFrame(node)
-                    ? $"try\n{(outputs.Length > 0 ? Indented(outputs) : string.Empty)}{Indent}global {variable} = {expression}\n{Indent}_jsynth_frame({id}, _n, _path, {variable})\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
+                    ? $"try\n{(outputs.Length > 0 ? Indented(outputs) : string.Empty)}{Indent}global {variable} = {expression}\n{Indent}{progress}\ncatch e\n{Indent}_jsynth_error({id}, e)\nend\n"
                     : node is WhenNode
                         ? $"try\n{Indent}if {ConditionOf(parts)}\n{Indent}{Indent}global {variable} = {expression}\n{Indent}{Indent}_jsynth_ok({id}, {variable})\n{Indent}else\n{Indent}{Indent}_jsynth_hold({id})\n"
                             + (inLoop ? $"{Indent}{Indent}{kept}\n" : $"{Indent}{Indent}_jsynth_report({id}, \"skipped\", \"\", \"The condition is false: nothing passes.\")\n")

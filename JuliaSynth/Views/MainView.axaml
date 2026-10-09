@@ -74,6 +74,8 @@
                   <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Watch folder: a stream of new files (◉)" Tag="WatchNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Every: a stream ticking every few seconds (◷)" Tag="EveryNode" Click="AddAtPointer_Click"/>
+                  <MenuItem Header="Button: a stream going at each press (●)" Tag="ButtonNode" Click="AddAtPointer_Click"/>
                   <Separator/>
                   <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtPointer_Click"/>
                   <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtPointer_Click"/>
@@ -187,6 +189,12 @@
               </DataTemplate>
               <DataTemplate DataType="jsModel:WindowNode">
                 <jsViews:WindowNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:ButtonNode">
+                <jsViews:ButtonNode DataContext="{Binding}"/>
+              </DataTemplate>
+              <DataTemplate DataType="jsModel:EveryNode">
+                <jsViews:EveryNode DataContext="{Binding}"/>
               </DataTemplate>
               <DataTemplate DataType="jsModel:FrameNode">
                 <jsViews:FrameNode DataContext="{Binding}"/>
@@ -485,6 +493,8 @@
                 <MenuItem Header="Load from file (CSV, .mtx, JLD2, PNG)" Tag="ArrayFile" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Files in a folder (∀)" Tag="FilesNode" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Watch folder: a stream of new files (◉)" Tag="WatchNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Every: a stream ticking every few seconds (◷)" Tag="EveryNode" Click="AddAtCenter_Click"/>
+                <MenuItem Header="Button: a stream going at each press (●)" Tag="ButtonNode" Click="AddAtCenter_Click"/>
                 <Separator/>
                 <MenuItem Header="Display (=)" Tag="DisplayNode" Click="AddAtCenter_Click"/>
                 <MenuItem Header="Save to file (↧)" Tag="SaveFile" Click="AddAtCenter_Click"/>

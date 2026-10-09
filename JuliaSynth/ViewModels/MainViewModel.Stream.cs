@@ -21,7 +21,8 @@ public partial class MainViewModel
 
     private bool _isStreaming;
     private string _streamStatus = string.Empty;
-    private string? _streamFolder;
+    private string? _streamSource;
+    private string _streamWaitsFor = "the first file";
     private string? _stopFile;
     private CancellationTokenSource? _sources;
     private (List<FileInfo> Files, string Into, double Rate)? _pendingReplay;
@@ -44,7 +45,7 @@ public partial class MainViewModel
     /// <summary>
     /// For the banner while streaming: where from, how far, and that edits wait for the next run.
     /// </summary>
-    public string StreamText => $"Streaming from {_streamFolder}: {(_streamStatus.Length == 0 ? "waiting for the first file" : _streamStatus)}. "
+    public string StreamText => $"Streaming {_streamSource}: {(_streamStatus.Length == 0 ? $"waiting for {_streamWaitsFor}" : _streamStatus)}. "
         + "Changes to the design apply when you stop and run again.";
 
     private string StreamStatus
@@ -125,16 +126,72 @@ public partial class MainViewModel
             }
         }
 
-        _stopFile = stopFile;
-        _streamFolder = watched.Folder;
-        _streamStatus = string.Empty;
-        _streamLogged.Clear();
-        _streamFailures.Clear();
-        IsStreaming = true;
+        StartStream($"from {watched.Folder}", "the first file", stopFile);
         _pendingReplay = watched.Replays && PrepareReplay(watched.ReplayFolder, watched.Folder, watched.Pattern) is List<FileInfo> files
             ? (files, watched.Folder, watched.ReplayRate)
             : null;
         _pendingFetch = watched.Fetches ? watched : null;
+    }
+
+    /// <summary>
+    /// A run of <paramref name="clock"/>'s stream is starting: show it. A button pressed to start it has that press
+    /// count as its first.
+    /// </summary>
+    private void BeginStream(TickNode clock, string stopFile)
+    {
+        StartStream(clock.Label, $"the first {clock.TickName}", stopFile);
+        _streamButton = clock as ButtonNode;
+        if (_streamButton is ButtonNode button && _pressWhenStarted)
+        {
+            Press(button);
+        }
+
+        _pressWhenStarted = false;
+    }
+
+    // The button whose presses the stream going on waits for.
+    private ButtonNode? _streamButton;
+
+    // Set when a button is pressed with nothing running: the run starting is that press.
+    private bool _pressWhenStarted;
+
+    /// <summary>
+    /// Presses <paramref name="button"/>: in its stream, the nodes after it are worked out again; with nothing running,
+    /// the design runs, this press its first.
+    /// </summary>
+    public void Press(ButtonNode button)
+    {
+        if (IsStreaming && _streamButton == button && _stopFile is string stop)
+        {
+            try
+            {
+                File.AppendAllText(ButtonNode.PressesFile(stop), "press\n");
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                Log($"The press couldn't be passed on: {e.Message}", OutputKind.Error);
+            }
+        }
+        else if (!IsRunning && ((System.Windows.Input.ICommand)Run).CanExecute(null))
+        {
+            _pressWhenStarted = true;
+            ((System.Windows.Input.ICommand)Run).Execute(null);
+        }
+    }
+
+    /// <summary>
+    /// Shows a stream starting: where its values come from (<paramref name="source"/>, e.g. "from C:\data" or "every
+    /// 2 s"), and what it waits for before the first.
+    /// </summary>
+    private void StartStream(string source, string waitsFor, string stopFile)
+    {
+        _stopFile = stopFile;
+        _streamSource = source;
+        _streamWaitsFor = waitsFor;
+        _streamStatus = string.Empty;
+        _streamLogged.Clear();
+        _streamFailures.Clear();
+        IsStreaming = true;
     }
 
     /// <summary>
@@ -158,6 +215,7 @@ public partial class MainViewModel
 
     private void EndStream()
     {
+        _pressWhenStarted = false;
         _pendingReplay = null;
         _pendingFetch = null;
         _sources?.Cancel();
@@ -167,6 +225,7 @@ public partial class MainViewModel
             try
             {
                 File.Delete(stop);
+                File.Delete(ButtonNode.PressesFile(stop));
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
@@ -175,6 +234,7 @@ public partial class MainViewModel
         }
 
         _stopFile = null;
+        _streamButton = null;
         IsStreaming = false;
     }
 

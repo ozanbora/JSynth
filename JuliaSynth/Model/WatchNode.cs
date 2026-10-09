@@ -106,6 +106,8 @@ namespace JuliaSynth.Model
             _jsynth_frame(id, n, path, value) = _jsynth_report(id, "ok", string(typeof(value)),
                 _jsynth_total[] > 0 ? string("file ", n, " of ", _jsynth_total[], ": ", basename(path))
                 : string(n, n == 1 ? " file" : " files", " so far; the latest: ", basename(path)))
+            # A tick of a clock, or a press of a button: its number, and the seconds since the start.
+            _jsynth_tick(id, n, t, what) = _jsynth_report(id, "ok", "Int64", string(what, " ", n, ", ", round(t; digits = 1), " s in"))
             # The files of a Files node going one at a time: body(path, n, show) for each, in name order.
             function _jsynth_each(body, id, files)
                 paths = try

@@ -353,6 +353,8 @@ public partial class MainViewModel : ReactiveObject
             nameof(WhenNode) => new WhenNode(),
             nameof(ZipNode) => new ZipNode(),
             nameof(MergeNode) => new MergeNode(),
+            nameof(EveryNode) => new EveryNode(),
+            nameof(ButtonNode) => new ButtonNode(),
             nameof(FrameNode) => new FrameNode(),
             _ => new Function() { Name = FreeFunctionName(), Parameters = { new Parameter("x", Function.AnyType) } },
         };

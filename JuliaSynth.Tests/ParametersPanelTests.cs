@@ -34,6 +34,33 @@ namespace JuliaSynth.Tests
 
         private static Example Loan => Examples.All.Single(e => e.Name == "Loan payment");
 
+        /// <summary>
+        /// The Loan payment example with nothing in the panel, and the panel closed.
+        /// </summary>
+        private static void OpenBareLoan(MainViewModel viewModel)
+        {
+            viewModel.OpenExample(Loan);
+            foreach (Node node in MainViewModel.Nodes)
+            {
+                (node.InPanel, node.PanelName, node.PanelFrom, node.PanelTo) = (false, string.Empty, null, null);
+            }
+
+            viewModel.IsParametersOpen = false;
+        }
+
+        [Fact]
+        public void The_loan_example_opens_with_its_amount_rate_and_years_in_the_panel()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                viewModel.OpenExample(Loan);
+                Assert.True(viewModel.IsParametersOpen);
+                Assert.Equal(["loan", "rate", "years"], viewModel.Parameters.Select(p => p.Name));
+                Assert.Equal([(10_000.0, 1_000_000.0), (0, 0.15), (1, 40)], viewModel.Parameters.Select(p => (p.From, p.To)));
+            });
+        }
+
         [Fact]
         public void A_slider_starts_from_zero_to_a_round_number_past_twice_the_value()
         {
@@ -50,7 +77,7 @@ namespace JuliaSynth.Tests
             Ui.Run(() =>
             {
                 MainViewModel viewModel = new();
-                viewModel.OpenExample(Loan);
+                OpenBareLoan(viewModel);
                 Float loan = MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).First();
                 Integer years = MainViewModel.Nodes.OfType<Integer>().Single();
                 loan.Result = new Report(loan.ID, ReportStatus.Ok, "Float64", "250000.0");
@@ -94,7 +121,7 @@ namespace JuliaSynth.Tests
             Ui.Run(() =>
             {
                 MainViewModel viewModel = new();
-                viewModel.OpenExample(Loan);
+                OpenBareLoan(viewModel);
                 Float loan = MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).First();
                 loan.InPanel = true;
                 loan.PanelName = "loan";
@@ -145,7 +172,7 @@ namespace JuliaSynth.Tests
                 try
                 {
                     MainViewModel viewModel = new() { Julia = julia };
-                    viewModel.OpenExample(Loan);
+                    OpenBareLoan(viewModel);
                     Integer years = MainViewModel.Nodes.OfType<Integer>().Single();
                     years.InPanel = true;
                     Assert.True(viewModel.RunOnChange);
