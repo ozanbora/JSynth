@@ -5,7 +5,7 @@
 *.sh text eol=lf
 
 # Example data is bundled byte for byte: no line-ending changes on checkout.
-JuliaSynth/ExampleData/** -text
+JSynth/ExampleData/** -text
 
 *.png binary
 *.ico binary

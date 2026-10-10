@@ -1,0 +1,176 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+             x:Class="JSynth.Views.Details.ArrayFile"
+             Classes="details"
+
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+
+             x:DataType="jsModel:ArrayFile"
+             Width="460"
+
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             >
+
+  <Design.DataContext>
+    <jsModel:ArrayFile />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto,auto"
+        ColumnDefinitions="auto,*"
+        >
+
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="File"
+           />
+    <Grid Grid.Row="0"
+          Grid.Column="1"
+          ColumnDefinitions="*,auto"
+          >
+      <TextBox Grid.Column="0"
+               Text="{Binding Path=Path}"
+               PlaceholderText="{x:Static jsModel:FileFormats.ExampleFile}"
+               ToolTip.Tip="Where Julia finds the file. A relative path is relative to the folder Julia runs in."
+               />
+      <Button Grid.Column="1"
+              Margin="4 0 0 0"
+              Content="Browse…"
+              Click="Browse_Click"
+              />
+    </Grid>
+
+    <Label Grid.Row="1"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Format"
+           />
+    <StackPanel Grid.Row="1"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                >
+      <ComboBox Width="150"
+                SelectedValue="{Binding Path=Format}"
+                ItemsSource="{x:Static jsModel:ArrayFile.Formats}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="CSV and TSV: values separated by commas or tabs. Matrix Market (.mtx): the usual format for sparse matrices. JLD2: arrays saved from Julia. PNG: an image, as a matrix of grey levels (lossless). JSON: objects, lists, numbers and text, as a web service answers (with the JSON package)."
+                />
+
+      <Label Content="Color" VerticalAlignment="Center"/>
+      <ColorPicker Color="{Binding Path=Color}"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"
+                   ToolTip.Tip="Select the color you want to display this node."
+                   />
+    </StackPanel>
+
+    <Label Grid.Row="2"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           IsVisible="{Binding Path=HoldsArrays}"
+           Content="Makes"
+           />
+    <StackPanel Grid.Row="2"
+                Grid.Column="1"
+                IsVisible="{Binding Path=HoldsArrays}"
+                Orientation="Horizontal"
+                Spacing="4"
+                >
+      <ComboBox Width="150"
+                SelectedValue="{Binding Path=Shape}"
+                ItemsSource="{Binding Path=PossibleShapes}"
+                IsEnabled="{Binding Path=CanPickShape}"
+                ToolTip.Tip="What the file holds. A vector read from a CSV or TSV file takes the values column by column."
+                />
+      <ComboBox Width="100"
+                SelectedValue="{Binding Path=ElementType}"
+                ItemsSource="{x:Static jsModel:JuliaTypes.Numeric}"
+                ToolTip.Tip="Julia type of every element; the values are converted to it."
+                />
+    </StackPanel>
+
+    <StackPanel Grid.Row="3"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="12"
+                IsVisible="{Binding Path=IsDelimited}"
+                >
+      <CheckBox Content="First line is a header"
+                IsChecked="{Binding Path=HasHeader}"
+                ToolTip.Tip="Skip a first line that names the columns instead of holding values. With comments, the first line that isn't one."
+                />
+      <CheckBox Content="Lines starting with # are comments"
+                IsChecked="{Binding Path=HasComments}"
+                ToolTip.Tip="Skip lines starting with #, which describe the data rather than hold it: a GeoCSV file's from a seismometer, say."
+                />
+    </StackPanel>
+
+    <TextBlock Grid.Row="3"
+               Grid.Column="1"
+               MaxWidth="320"
+               HorizontalAlignment="Left"
+               FontSize="12"
+               Opacity="0.7"
+               TextWrapping="Wrap"
+               IsVisible="{Binding Path=IsImage}"
+               Text="Grey levels, row 1 at the top (colour is turned to grey). A float type gives intensities from 0 to 1; an integer type the values stored: 0 to 255, or 0 to 65535 for a 16-bit image."
+               />
+
+    <Label Grid.Row="3"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Name"
+           IsVisible="{Binding Path=IsJld2}"
+           />
+    <TextBox Grid.Row="3"
+             Grid.Column="1"
+             FontFamily="{StaticResource CodeFont}"
+             Text="{Binding Path=Variable}"
+             IsVisible="{Binding Path=IsJld2}"
+             ToolTip.Tip="The name the array was saved under, e.g. A for jldsave(&quot;data.jld2&quot;; A)."
+             />
+
+    <TextBlock Grid.Row="4"
+               Grid.Column="1"
+               Margin="0 4 0 0"
+               FontSize="12"
+               Opacity="0.7"
+               Text="{Binding Path=Summary, StringFormat=The file holds {0}.}"
+               IsVisible="{Binding Path=Summary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               />
+
+    <TextBlock Grid.Row="5"
+               Grid.Column="1"
+               Margin="0 4"
+               Foreground="{DynamicResource ConsoleErrorBrush}"
+               TextWrapping="Wrap"
+               Text="{Binding Path=Error}"
+               IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+               />
+
+    <Label Grid.Row="6"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Julia"
+           />
+    <Border Grid.Row="6"
+            Grid.Column="1"
+            Padding="6"
+            CornerRadius="4"
+            Background="{DynamicResource CanvasBackgroundBrush}"
+            >
+      <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
+                           TextWrapping="Wrap"
+                           Text="{Binding Path=Code}"
+                           />
+    </Border>
+  </Grid>
+
+</UserControl>

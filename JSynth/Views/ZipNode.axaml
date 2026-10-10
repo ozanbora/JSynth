@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JSynth.Views.ZipNode"
+
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+             xmlns:jsControls="clr-namespace:JSynth.Controls"
+
+             x:DataType="jsModel:ZipNode"
+             >
+  <Design.DataContext>
+    <jsModel:ZipNode />
+  </Design.DataContext>
+
+  <!-- Inputs: the folders, a port each; wiring the last adds another -->
+  <jsControls:NodeBody Glyph="⋈"
+                       Title="zip"
+                       Info="Zip: several streams at once, in step. Wire in folders going through their files one at a time (Files nodes or Watch folders); their files are matched by name, e.g. the same minute of several stations. For each name every folder has, it gives their contents as a vector, in the order of the ports. A name not in every folder is passed over, and a watched file waits until every folder has it. Wiring the last port adds another."
+                       />
+
+</UserControl>

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# JuliaSynth in WSL: a Linux clone kept in step with the Windows repository, built, run or tested there.
+# JSynth in WSL: a Linux clone kept in step with the Windows repository, built, run or tested there.
 #
 #   wsl.sh sync [patch]   update the clone to the Windows branch, plus the uncommitted work in the patch file
 #   wsl.sh build          sync must come first
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 WIN_REPO=${WIN_REPO:-$(cd "$(dirname "$0")/../../.." && pwd)}
-CLONE=${CLONE:-$HOME/juliasynth-wsl}
+CLONE=${CLONE:-$HOME/jsynth-wsl}
 
 # The SDK in ~/.dotnet comes first: Ubuntu's /usr/bin/dotnet is older than global.json allows.
 export DOTNET_ROOT=$HOME/.dotnet
@@ -70,13 +70,13 @@ cmd=${1:-build}
 shift || true
 case "$cmd" in
     sync) sync "$@" ;;
-    build) cd "$CLONE"; ensure_sdk; dotnet build JuliaSynth.Desktop -v q -nologo ;;
-    run) cd "$CLONE"; ensure_sdk; ensure_fontconfig; dotnet run --project JuliaSynth.Desktop -- "$@" ;;
+    build) cd "$CLONE"; ensure_sdk; dotnet build JSynth.Desktop -v q -nologo ;;
+    run) cd "$CLONE"; ensure_sdk; ensure_fontconfig; dotnet run --project JSynth.Desktop -- "$@" ;;
     test)
         cd "$CLONE"; ensure_sdk
-        if [ $# -gt 0 ]; then dotnet test JuliaSynth.Tests --filter "$1"; else dotnet test JuliaSynth.Tests; fi ;;
+        if [ $# -gt 0 ]; then dotnet test JSynth.Tests --filter "$1"; else dotnet test JSynth.Tests; fi ;;
     publish)
         cd "$CLONE"; ensure_sdk
-        dotnet publish JuliaSynth.Desktop -c Release -r linux-x64 --self-contained -o publish/linux-x64 ;;
+        dotnet publish JSynth.Desktop -c Release -r linux-x64 --self-contained -o publish/linux-x64 ;;
     *) echo "Unknown command: $cmd (sync, build, run, test or publish)" >&2; exit 2 ;;
 esac

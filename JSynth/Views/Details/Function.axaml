@@ -1,0 +1,237 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+             x:Class="JSynth.Views.Details.Function"
+             Classes="details"
+
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+             xmlns:jsControls="clr-namespace:JSynth.Controls"
+             xmlns:aeEditing="clr-namespace:AvaloniaEdit.Editing;assembly=AvaloniaEdit"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+
+             x:DataType="jsModel:Function"
+             Width="580"
+
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             >
+
+  <Design.DataContext>
+    <jsModel:Function />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <!-- More room for the code in the function panel than in a flyout. -->
+    <Style Selector=":is(ae|TextEditor)#BodyEditor">
+      <Setter Property="Height" Value="140"/>
+    </Style>
+    <Style Selector=":is(UserControl).docked :is(ae|TextEditor)#BodyEditor">
+      <Setter Property="Height" Value="360"/>
+    </Style>
+
+    <!-- Room between the line numbers and the code. -->
+    <Style Selector="aeEditing|LineNumberMargin">
+      <Setter Property="Margin" Value="0 0 8 0"/>
+      <Setter Property="Opacity" Value="0.6"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto,auto,auto"
+        ColumnDefinitions="auto,*"
+        >
+
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Name"
+           />
+    <StackPanel Grid.Row="0"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                >
+      <TextBox Text="{Binding Path=Name}"
+               Width="160"
+               VerticalAlignment="Center"
+               ToolTip.Tip="Name of the Julia function."
+               />
+
+      <Label Content="Color" VerticalAlignment="Center"/>
+      <ColorPicker Color="{Binding Path=Color}"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"
+                   ToolTip.Tip="Select the color you want to display this node."
+                   />
+    </StackPanel>
+
+    <Label Grid.Row="1"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Returns"
+           />
+    <StackPanel Grid.Row="1"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="4"
+                >
+      <ComboBox Width="150"
+                SelectedValue="{Binding Path=ReturnShape}"
+                ItemsSource="{x:Static jsModel:JuliaTypes.Shapes}"
+                ToolTip.Tip="Whether the function returns a single value, a vector or a matrix (dense, sparse, or Abstract: either)."
+                />
+      <ComboBox Width="100"
+                SelectedValue="{Binding Path=ReturnElementType}"
+                ItemsSource="{x:Static jsModel:JuliaTypes.ElementTypes}"
+                ToolTip.Tip="Type of the returned value (or of its elements). Any leaves it unannotated."
+                />
+    </StackPanel>
+
+    <Label Grid.Row="2"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Parameters"
+           />
+    <StackPanel Grid.Row="2"
+                Grid.Column="1"
+                Spacing="2"
+                >
+      <ItemsControl x:Name="ParameterList"
+                    ItemsSource="{Binding Path=Parameters}"
+                    >
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="jsModel:Parameter">
+            <Grid ColumnDefinitions="*,auto,auto,auto"
+                  Margin="0 0 0 2"
+                  >
+              <TextBox Grid.Column="0"
+                       Text="{Binding Path=Name}"
+                       ToolTip.Tip="Name of the parameter."
+                       />
+              <ComboBox Grid.Column="1"
+                        Width="150"
+                        Margin="4 0 0 0"
+                        ItemsSource="{x:Static jsModel:JuliaTypes.Shapes}"
+                        SelectedValue="{Binding Path=Shape}"
+                        ToolTip.Tip="Whether the parameter takes a single value, a vector or a matrix. AbstractVector and AbstractMatrix take dense and sparse ones."
+                        />
+              <ComboBox Grid.Column="2"
+                        Width="100"
+                        Margin="4 0"
+                        ItemsSource="{x:Static jsModel:JuliaTypes.ElementTypes}"
+                        SelectedValue="{Binding Path=ElementType}"
+                        ToolTip.Tip="Type of the value (or of its elements). Any leaves the parameter unannotated."
+                        />
+              <Button Grid.Column="3"
+                      Content="−"
+                      Click="RemoveParameter_Click"
+                      ToolTip.Tip="Remove this parameter."
+                      />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Button Content="+ Add parameter"
+              Click="AddParameter_Click"
+              />
+    </StackPanel>
+
+    <Label Grid.Row="3"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Packages"
+           />
+    <TextBox Grid.Row="3"
+             Grid.Column="1"
+             Margin="0 2"
+             FontFamily="{StaticResource CodeFont}"
+             Text="{Binding Path=Packages}"
+             PlaceholderText="e.g. LinearAlgebra, Statistics"
+             ToolTip.Tip="Packages the body uses, loaded with using before the function. A using or import line typed in the body works too."
+             />
+
+    <Label Grid.Row="4"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Body"
+           />
+    <Border Grid.Row="4"
+            Grid.Column="1"
+            BorderThickness="1"
+            CornerRadius="4"
+            ClipToBounds="True"
+            BorderBrush="{DynamicResource TextControlBorderBrush}"
+            ToolTip.Tip="Julia code of the function body. The value of the last expression is returned. Ctrl+Space suggests names."
+            >
+      <jsControls:JuliaCodeEditor x:Name="BodyEditor"
+                                  Padding="4 2"
+                                  ShowLineNumbers="True"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  FontFamily="{StaticResource CodeFont}"
+                                  Code="{Binding Path=Body}"
+                                  />
+    </Border>
+
+    <!-- Names from standard libraries the function doesn't load yet. -->
+    <ItemsControl Grid.Row="5"
+                  Grid.Column="1"
+                  x:Name="HintList"
+                  ItemsSource="{Binding Path=PackageHints}"
+                  >
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="jsModel:PackageHint">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="6"
+                      Margin="0 4 0 0"
+                      >
+            <TextBlock VerticalAlignment="Center"
+                       Foreground="{DynamicResource WarningTextBrush}"
+                       Text="⚠"
+                       />
+            <TextBlock VerticalAlignment="Center">
+              <Run FontFamily="{StaticResource CodeFont}" Text="{Binding Path=Uses}"/>
+              <Run Text="{Binding Path=Verb}"/>
+              <Run FontFamily="{StaticResource CodeFont}" Text="{Binding Path=Package}"/>
+            </TextBlock>
+            <Button Content="{Binding Path=Package, StringFormat=Add \{0\}}"
+                    Click="AddPackage_Click"
+                    ToolTip.Tip="Add it to Packages, so the function can use it."
+                    />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <TextBlock Grid.Row="6"
+               Grid.Column="1"
+               Margin="0 4"
+               Foreground="{DynamicResource ConsoleErrorBrush}"
+               TextWrapping="Wrap"
+               Text="{Binding Path=Error}"
+               IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+               />
+
+    <Label Grid.Row="7"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Julia"
+           />
+    <Border Grid.Row="7"
+            Grid.Column="1"
+            Padding="6"
+            CornerRadius="4"
+            Background="{DynamicResource CanvasBackgroundBrush}"
+            >
+      <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
+                           TextWrapping="Wrap"
+                           Text="{Binding Path=Code}"
+                           />
+    </Border>
+  </Grid>
+
+</UserControl>

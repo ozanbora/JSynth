@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+             x:Class="JSynth.Views.Details.PlotNode"
+             Classes="details"
+
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+
+             x:DataType="jsModel:PlotNode"
+             Width="420"
+
+             mc:Ignorable="d"
+             d:DesignHeight="200"
+             >
+
+  <Design.DataContext>
+    <jsModel:PlotNode />
+  </Design.DataContext>
+
+  <Grid RowDefinitions="auto,auto,auto"
+        ColumnDefinitions="auto,*"
+        >
+
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Kind"
+           />
+    <StackPanel Grid.Row="0"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                >
+      <ComboBox Width="130"
+                SelectedValue="{Binding Path=Kind}"
+                ItemsSource="{x:Static jsModel:PlotNode.Kinds}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="Auto: a line for a vector, dots for a sparse matrix, a heatmap for another matrix."
+                />
+
+      <Label Content="Color" VerticalAlignment="Center"/>
+      <ColorPicker Color="{Binding Path=Color}"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"
+                   ToolTip.Tip="Select the color you want to display this node."
+                   />
+    </StackPanel>
+
+    <Label Grid.Row="1"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Title"
+           />
+    <TextBox Grid.Row="1"
+             Grid.Column="1"
+             Text="{Binding Path=Title}"
+             PlaceholderText="(none)"
+             ToolTip.Tip="Shown above the plot."
+             />
+
+    <TextBlock Grid.Row="2"
+               Grid.Column="1"
+               Margin="0 6 0 0"
+               FontSize="12"
+               Opacity="0.7"
+               TextWrapping="Wrap"
+               Text="Wire a vector into y for a line or points, against x if you wire one in (otherwise 1, 2, 3, …); a matrix for a heatmap, or dots where a sparse matrix has values. Big matrices are averaged down to 1000 × 1000 for the heatmap."
+               />
+  </Grid>
+
+</UserControl>

@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             x:Class="JSynth.Views.Inputs.ArrayInput"
+
+             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+             xmlns:jsControls="clr-namespace:JSynth.Controls"
+             xmlns:jsDetails="clr-namespace:JSynth.Views.Details"
+
+             x:DataType="jsModel:ArrayInput"
+             Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
+             >
+  <Design.DataContext>
+    <jsModel:MatrixNode/>
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
+  </UserControl.Resources>
+
+  <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+          Classes="node"
+          Classes.selected="{Binding Path=IsSelected}"
+          Classes.running="{Binding Path=IsRunning}"
+          >
+    <Grid RowDefinitions="30,28,*"
+          ColumnDefinitions="40,*">
+
+      <TextBlock Grid.Column="0"
+                 Grid.Row="0"
+                 Grid.RowSpan="2"
+                 Classes="glyph"
+                 Text="{Binding Path=Symbol}"
+                 />
+
+      <StackPanel Grid.Row="0"
+                  Grid.Column="1"
+                  Classes="nodeActions">
+
+        <TextBlock Text="◆"
+                   FontSize="10"
+                   Opacity="0.7"
+                   Margin="0 0 4 0"
+                   VerticalAlignment="Center"
+                   IsVisible="{Binding Path=InPanel}"
+                   ToolTip.Tip="In the parameters panel"/>
+        <jsControls:ResultBadge/>
+
+        <TextBlock Text="⚠"
+                   VerticalAlignment="Center"
+                   Margin="0 0 4 0"
+                   Foreground="{StaticResource NodeWarningBrush}"
+                   IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                   ToolTip.Tip="{Binding Path=Error}"
+                   />
+
+        <Button Classes="nodeAction"
+                Content="Ξ"
+                ToolTip.Tip="Edit"
+              >
+          <Button.Flyout>
+            <Flyout Placement="Top"
+                    ShowMode="Transient"
+                    >
+              <jsDetails:ArrayInput/>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+
+        <TextBlock Classes="nodeInfo"
+                   Text="𝑖"
+                   >
+          <ToolTip.Tip>
+            <TextBlock FontFamily="{StaticResource CodeFont}"
+                       TextAlignment="Left"
+                       TextWrapping="Wrap"
+                       MaxWidth="480"
+                       Text="{Binding Path=Julia}"/>
+          </ToolTip.Tip>
+        </TextBlock>
+
+        <Button Classes="nodeAction danger"
+                Content="✕"
+                ToolTip.Tip="Delete"
+                Click="Delete_Click"
+                />
+
+      </StackPanel>
+
+      <jsControls:Connector Grid.Row="1"
+                     Grid.Column="1"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Top"
+                     ZIndex="3"
+                     Margin="0 0 -8 0"/>
+
+      <!-- Next: the value it takes for the next file, when files are gone through one at a time -->
+      <jsControls:Connector Grid.Row="1"
+                     Grid.Column="0"
+                     HorizontalAlignment="Left"
+                     VerticalAlignment="Top"
+                     ZIndex="3"
+                     Margin="-8 0 0 0"
+                     Classes="next"
+                     DataContext="{Binding Path=Next}"
+                     ToolTip.Tip="next: going through files one at a time, this takes the value wired here after each file, as C = update(C, X) in a loop. It starts with its own."/>
+
+      <!-- Size and element type, e.g. "2×2 Float64" -->
+      <StackPanel Grid.Row="1"
+                  Grid.Column="1"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="4 0 8 0"
+                  ToolTip.Tip="{Binding Path=OutputType}"
+                  >
+        <TextBlock Classes="nodeTitle"
+                   Text="{Binding Path=Size}"
+                   />
+        <TextBlock Classes="caption"
+                   VerticalAlignment="Bottom"
+                   Margin="4 0 0 2"
+                   Text="{Binding Path=ElementType}"
+                   />
+      </StackPanel>
+
+      <!-- Its name, when given (its variable in the script), and the first values -->
+      <StackPanel Grid.Row="2"
+                  Grid.Column="0"
+                  Grid.ColumnSpan="2"
+                  Margin="10 3 10 4"
+                  Spacing="2">
+        <jsControls:InputLabel/>
+        <TextBlock FontFamily="{StaticResource CodeFont}"
+                   FontSize="11"
+                   Opacity="0.9"
+                   TextTrimming="CharacterEllipsis"
+                   Text="{Binding Path=Preview}"
+                   />
+      </StackPanel>
+
+    </Grid>
+  </Border>
+</UserControl>

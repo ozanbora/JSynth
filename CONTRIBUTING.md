@@ -1,4 +1,4 @@
-# Contributing to JuliaSynth
+# Contributing to JSynth
 
 Thanks for helping. Bug reports, ideas and pull requests are all welcome.
 
@@ -16,12 +16,12 @@ Open an issue with:
 You need the [.NET SDK 10](https://dotnet.microsoft.com/download) or newer and, to run designs, [Julia](https://julialang.org/downloads/). The README's [Build and run](README.md#build-and-run) and [Linux and WSL](README.md#linux-and-wsl) sections have the details.
 
 ```sh
-dotnet run --project JuliaSynth.Desktop
+dotnet run --project JSynth.Desktop
 ```
 
 ## Tests
 
-The tests are in `JuliaSynth.Tests`, one folder per area. Each folder is a namespace, so you can run just the areas your change touches:
+The tests are in `JSynth.Tests`, one folder per area. Each folder is a namespace, so you can run just the areas your change touches:
 
 | Area | What it covers |
 |---|---|
@@ -34,9 +34,9 @@ The tests are in `JuliaSynth.Tests`, one folder per area. Each folder is a names
 | `Interface` | What is drawn and clicked: the canvas, panels, node views, plots, the start page, the theme |
 
 ```sh
-dotnet test JuliaSynth.Tests --filter "FullyQualifiedName~JuliaSynth.Tests.Editing."
-dotnet test JuliaSynth.Tests --filter "FullyQualifiedName~.GroupTests"
-dotnet test JuliaSynth.Tests
+dotnet test JSynth.Tests --filter "FullyQualifiedName~JSynth.Tests.Editing."
+dotnet test JSynth.Tests --filter "FullyQualifiedName~.GroupTests"
+dotnet test JSynth.Tests
 ```
 
 Things to know:
@@ -45,7 +45,7 @@ Things to know:
 - Tests run one at a time: the design is shared state.
 - The whole suite takes about 6 minutes on Windows. CI runs it on Windows and Ubuntu for every pull request.
 
-A new test goes in the folder of its area, as a class `<Topic>Tests` in the namespace `JuliaSynth.Tests.<Area>`. Test names are sentences saying what should happen: `A_group_opened_in_a_frame_makes_room_for_its_nodes_instead_of_lying_on_its_neighbours`.
+A new test goes in the folder of its area, as a class `<Topic>Tests` in the namespace `JSynth.Tests.<Area>`. Test names are sentences saying what should happen: `A_group_opened_in_a_frame_makes_room_for_its_nodes_instead_of_lying_on_its_neighbours`.
 
 ## Pull requests
 

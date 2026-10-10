@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JSynth.Views.EveryNode"
+
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+             xmlns:jsControls="clr-namespace:JSynth.Controls"
+             xmlns:jsConverters="clr-namespace:JSynth.Converters"
+
+             x:DataType="jsModel:EveryNode"
+             >
+  <Design.DataContext>
+    <jsModel:EveryNode />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <jsConverters:DecimalToLongConverter x:Key="DecimalConverter"/>
+  </UserControl.Resources>
+
+  <jsControls:NodeBody Glyph="◷"
+                       Title="{Binding Path=Label}"
+                       Info="Every: a clock. The design runs as a stream, the nodes after this again at each tick, until you stop it, or for so many ticks. Its value is the tick's number, from 1; its seconds output the seconds since the start. Inputs with a next value wired carry a state from tick to tick: e.g. poll a sensor's file every 2 seconds, or step a simulation and plot it as it goes."
+                       >
+    <jsControls:NodeBody.Actions>
+      <Button Classes="nodeAction"
+              Content="Ξ"
+              ToolTip.Tip="Edit"
+              >
+        <Button.Flyout>
+          <Flyout Placement="Top"
+                  ShowMode="Transient"
+                  >
+            <Grid ColumnDefinitions="Auto,Auto,Auto" RowDefinitions="Auto,Auto" RowSpacing="6" ColumnSpacing="8">
+              <Label VerticalAlignment="Center" Content="Every"/>
+              <NumericUpDown Grid.Column="1"
+                             Width="130"
+                             Minimum="0.01"
+                             Maximum="86400"
+                             Increment="1"
+                             FormatString="0.##"
+                             Value="{Binding Path=Seconds}"
+                             ToolTip.Tip="The time between ticks: from a hundredth of a second to a day."
+                             />
+              <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="seconds"/>
+
+              <Label Grid.Row="1" VerticalAlignment="Center" Content="Stop after"/>
+              <NumericUpDown Grid.Row="1"
+                             Grid.Column="1"
+                             Width="130"
+                             Minimum="0"
+                             Maximum="1000000000"
+                             Increment="10"
+                             FormatString="0"
+                             Value="{Binding Path=Limit, Converter={StaticResource DecimalConverter}}"
+                             ToolTip.Tip="How many ticks before the stream ends by itself; 0 to go on until you stop it."
+                             />
+              <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" Text="ticks (0: never)"/>
+            </Grid>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+    </jsControls:NodeBody.Actions>
+
+    <!-- Second output: the seconds since the start -->
+    <jsControls:NodeBody.Extra>
+      <Grid RowDefinitions="20,20"
+            VerticalAlignment="Top"
+            >
+        <TextBlock Grid.Row="1"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Center"
+                   Margin="0 0 16 0"
+                   Classes="caption"
+                   Text="{Binding Path=LimitText}"
+                   ToolTip.Tip="How many ticks before the stream ends by itself: set in Ξ"
+                   />
+        <TextBlock HorizontalAlignment="Right"
+                   VerticalAlignment="Center"
+                   Margin="0 0 16 0"
+                   Classes="caption"
+                   Text="seconds: Float64"
+                   ToolTip.Tip="The seconds since the stream started, at this tick."
+                   />
+        <jsControls:Connector HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
+                              ZIndex="3"
+                              Margin="0 0 -8 0"
+                              Output="seconds"
+                              />
+      </Grid>
+    </jsControls:NodeBody.Extra>
+  </jsControls:NodeBody>
+
+</UserControl>

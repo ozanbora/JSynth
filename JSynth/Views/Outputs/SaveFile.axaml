@@ -1,0 +1,132 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JSynth.Views.Outputs.SaveFile"
+
+             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+             xmlns:jsControls="clr-namespace:JSynth.Controls"
+             xmlns:jsDetails="clr-namespace:JSynth.Views.Details"
+
+             x:DataType="jsModel:SaveFile"
+             Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
+             >
+  <Design.DataContext>
+    <jsModel:SaveFile/>
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
+  </UserControl.Resources>
+
+  <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+          Classes="node"
+          Classes.selected="{Binding Path=IsSelected}"
+          Classes.running="{Binding Path=IsRunning}"
+          >
+    <Grid RowDefinitions="30,28,*"
+          ColumnDefinitions="40,*">
+
+      <TextBlock Grid.Column="0"
+                 Grid.Row="0"
+                 Grid.RowSpan="2"
+                 Classes="glyph"
+                 Text="↧"
+                 ToolTip.Tip="Save to file: writes the value wired in"
+                 />
+
+      <StackPanel Grid.Row="0"
+                  Grid.Column="1"
+                  Classes="nodeActions">
+
+        <jsControls:ResultBadge/>
+
+        <TextBlock Text="⚠"
+                   VerticalAlignment="Center"
+                   Margin="0 0 4 0"
+                   Foreground="{StaticResource NodeWarningBrush}"
+                   IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                   ToolTip.Tip="{Binding Path=Error}"
+                   />
+
+        <Button Classes="nodeAction"
+                Content="Ξ"
+                ToolTip.Tip="Edit"
+              >
+          <Button.Flyout>
+            <Flyout Placement="Top"
+                    ShowMode="Transient"
+                    >
+              <jsDetails:SaveFile/>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+
+        <TextBlock Classes="nodeInfo"
+                   Text="𝑖"
+                   >
+          <ToolTip.Tip>
+            <TextBlock FontFamily="{StaticResource CodeFont}"
+                       TextAlignment="Left"
+                       TextWrapping="Wrap"
+                       MaxWidth="480"
+                       Text="{Binding Path=Code}"/>
+          </ToolTip.Tip>
+        </TextBlock>
+
+        <Button Classes="nodeAction danger"
+                Content="✕"
+                ToolTip.Tip="Delete"
+                Click="Delete_Click"
+                />
+
+      </StackPanel>
+
+      <!-- File name and format, e.g. "result.csv CSV" -->
+      <StackPanel Grid.Row="1"
+                  Grid.Column="1"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="4 0 8 0"
+                  ToolTip.Tip="{Binding Path=Path}"
+                  >
+        <TextBlock Classes="nodeTitle"
+                   MaxWidth="96"
+                   TextTrimming="CharacterEllipsis"
+                   Text="{Binding Path=FileName}"
+                   />
+        <TextBlock Classes="caption"
+                   VerticalAlignment="Bottom"
+                   Margin="4 0 0 2"
+                   Text="{Binding Path=Format}"
+                   />
+      </StackPanel>
+
+      <!-- The input -->
+      <ItemsControl Grid.Row="2"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    Margin="0 6 0 0"
+                    ItemsSource="{Binding Path=Inputs}"
+                    ClipToBounds="False"
+                    >
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="jsModel:Parameter">
+            <Grid Height="20">
+              <jsControls:Connector HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    ZIndex="3"
+                                    Margin="-8 0 0 0"/>
+              <TextBlock HorizontalAlignment="Left"
+                         Margin="16 0 8 0"
+                         Classes="caption"
+                         Text="{Binding Path=Signature}"
+                         />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </Grid>
+  </Border>
+</UserControl>

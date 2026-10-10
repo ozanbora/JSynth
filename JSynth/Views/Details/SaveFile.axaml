@@ -1,0 +1,123 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+             x:Class="JSynth.Views.Details.SaveFile"
+             Classes="details"
+
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+
+             x:DataType="jsModel:SaveFile"
+             Width="460"
+
+             mc:Ignorable="d"
+             d:DesignHeight="260"
+             >
+
+  <Design.DataContext>
+    <jsModel:SaveFile />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="auto,auto,auto,auto,auto"
+        ColumnDefinitions="auto,*"
+        >
+
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="File"
+           />
+    <Grid Grid.Row="0"
+          Grid.Column="1"
+          ColumnDefinitions="*,auto"
+          >
+      <TextBox Grid.Column="0"
+               Text="{Binding Path=Path}"
+               PlaceholderText="result.csv"
+               ToolTip.Tip="Where to write. A relative path is relative to the design's folder. The file is replaced on every run."
+               />
+      <Button Grid.Column="1"
+              Margin="4 0 0 0"
+              Content="Browse…"
+              Click="Browse_Click"
+              />
+    </Grid>
+
+    <Label Grid.Row="1"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Format"
+           />
+    <StackPanel Grid.Row="1"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                >
+      <ComboBox Width="150"
+                SelectedValue="{Binding Path=Format}"
+                ItemsSource="{x:Static jsModel:ArrayFile.Formats}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="CSV and TSV: vectors and matrices as text. Matrix Market (.mtx): sparse matrices. JLD2: any Julia value."
+                />
+
+      <Label Content="Color" VerticalAlignment="Center"/>
+      <ColorPicker Color="{Binding Path=Color}"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"
+                   ToolTip.Tip="Select the color you want to display this node."
+                   />
+    </StackPanel>
+
+    <Label Grid.Row="2"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Name"
+           IsVisible="{Binding Path=IsJld2}"
+           />
+    <TextBox Grid.Row="2"
+             Grid.Column="1"
+             FontFamily="{StaticResource CodeFont}"
+             Text="{Binding Path=Variable}"
+             IsVisible="{Binding Path=IsJld2}"
+             ToolTip.Tip="The name to store the value under; Load from file reads it back by this name."
+             />
+
+    <CheckBox Grid.Row="2"
+              Grid.Column="1"
+              Content="{Binding Path=PerFileLabel}"
+              IsChecked="{Binding Path=PerFile}"
+              IsVisible="{Binding Path=CanSavePerFile}"
+              ToolTip.Tip="Going through files one at a time. CSV or TSV: each file's value is added as a row, after the file's name, to a file each run starts anew. PNG: each file's value (a matrix from 0 to 1) is saved as a grey picture of its own, named after the file: mask.png makes mask-in000001.png, ..."
+              />
+
+    <TextBlock Grid.Row="3"
+               Grid.Column="1"
+               Margin="0 4"
+               Foreground="{DynamicResource ConsoleErrorBrush}"
+               TextWrapping="Wrap"
+               Text="{Binding Path=Error}"
+               IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+               />
+
+    <Label Grid.Row="4"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Julia"
+           />
+    <Border Grid.Row="4"
+            Grid.Column="1"
+            Padding="6"
+            CornerRadius="4"
+            Background="{DynamicResource CanvasBackgroundBrush}"
+            >
+      <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
+                           TextWrapping="Wrap"
+                           Text="{Binding Path=Code}"
+                           />
+    </Border>
+  </Grid>
+
+</UserControl>

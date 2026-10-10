@@ -1,0 +1,171 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+             x:Class="JSynth.Views.Details.ArrayBuilder"
+             Classes="details"
+
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+
+             x:DataType="jsModel:ArrayBuilder"
+             Width="440"
+
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             >
+
+  <Design.DataContext>
+    <jsModel:ArrayBuilder />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto"
+        ColumnDefinitions="auto,*"
+        >
+
+    <Label Grid.Row="0"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Function"
+           />
+    <StackPanel Grid.Row="0"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                >
+      <ComboBox Width="130"
+                SelectedValue="{Binding Path=Kind}"
+                ItemsSource="{x:Static jsModel:ArrayBuilder.Kinds}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="The Julia function making the array. Those starting with sp make sparse arrays, which only store the values that aren't zero."
+                />
+
+      <Label Content="Color" VerticalAlignment="Center"/>
+      <ColorPicker Color="{Binding Path=Color}"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"
+                   ToolTip.Tip="Select the color you want to display this node."
+                   />
+    </StackPanel>
+
+    <TextBlock Grid.Row="1"
+               Grid.Column="1"
+               Margin="0 0 0 6"
+               FontSize="12"
+               Opacity="0.7"
+               TextWrapping="Wrap"
+               Text="{Binding Path=Description}"
+               />
+
+    <Label Grid.Row="2"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Makes"
+           />
+    <StackPanel Grid.Row="2"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="4"
+                >
+      <ComboBox Width="100"
+                SelectedValue="{Binding Path=Shape}"
+                ItemsSource="{x:Static jsModel:ArrayBuilder.Shapes}"
+                IsEnabled="{Binding Path=CanPickShape}"
+                ToolTip.Tip="A vector or a matrix; some functions only make one of them."
+                />
+      <ComboBox Width="100"
+                SelectedValue="{Binding Path=ElementType}"
+                ItemsSource="{Binding Path=PossibleTypes}"
+                ToolTip.Tip="Julia type of every element."
+                />
+    </StackPanel>
+
+    <Label Grid.Row="3"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Arguments"
+           />
+    <ItemsControl Grid.Row="3"
+                  Grid.Column="1"
+                  Margin="0 4 0 0"
+                  ItemsSource="{Binding Path=Parameters}"
+                  >
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="jsModel:Argument">
+          <Grid ColumnDefinitions="70,*"
+                Margin="0 0 0 2"
+                MinHeight="32"
+                >
+            <TextBlock Grid.Column="0"
+                       VerticalAlignment="Center"
+                       FontFamily="{StaticResource CodeFont}"
+                       Text="{Binding Path=Name}"
+                       ToolTip.Tip="{Binding Path=Signature}"
+                       />
+            <TextBox Grid.Column="1"
+                     FontFamily="{StaticResource CodeFont}"
+                     Text="{Binding Path=Value}"
+                     ToolTip.Tip="{Binding Path=Signature}"
+                     >
+              <TextBox.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="HasValue"/>
+                  <Binding Path="!IsWired"/>
+                </MultiBinding>
+              </TextBox.IsVisible>
+            </TextBox>
+            <TextBlock Grid.Column="1"
+                       VerticalAlignment="Center"
+                       FontSize="12"
+                       Opacity="0.7"
+                       Text="Wired"
+                       IsVisible="{Binding Path=IsWired}"
+                       />
+            <TextBlock Grid.Column="1"
+                       VerticalAlignment="Center"
+                       FontSize="12"
+                       Opacity="0.7"
+                       Text="{Binding Path=Type, StringFormat=Wire a \{0\} here.}"
+                       >
+              <TextBlock.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="!HasValue"/>
+                  <Binding Path="!IsWired"/>
+                </MultiBinding>
+              </TextBlock.IsVisible>
+            </TextBlock>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <TextBlock Grid.Row="4"
+               Grid.Column="1"
+               Margin="0 4"
+               Foreground="{DynamicResource ConsoleErrorBrush}"
+               TextWrapping="Wrap"
+               Text="{Binding Path=Error}"
+               IsVisible="{Binding Path=Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+               />
+
+    <Label Grid.Row="5"
+           Grid.Column="0"
+           VerticalAlignment="Top"
+           Content="Julia"
+           />
+    <Border Grid.Row="5"
+            Grid.Column="1"
+            Padding="6"
+            CornerRadius="4"
+            Background="{DynamicResource CanvasBackgroundBrush}"
+            >
+      <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
+                           TextWrapping="Wrap"
+                           Text="{Binding Path=Code}"
+                           />
+    </Border>
+  </Grid>
+
+</UserControl>

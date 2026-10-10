@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JSynth.Controls.NodeBody"
+
+             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+             xmlns:jsControls="clr-namespace:JSynth.Controls"
+
+             x:DataType="jsModel:Node"
+             Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
+             >
+
+  <UserControl.Resources>
+    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
+  </UserControl.Resources>
+
+  <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
+          Classes="node"
+          Classes.selected="{Binding Path=IsSelected}"
+          Classes.running="{Binding Path=IsRunning}"
+          >
+    <Grid RowDefinitions="30,48,*"
+          ColumnDefinitions="40,*">
+
+      <TextBlock Grid.Column="0"
+                 Grid.Row="0"
+                 Grid.RowSpan="2"
+                 Classes="glyph"
+                 Text="{Binding $parent[jsControls:NodeBody].Glyph}"
+                 />
+
+      <StackPanel Grid.Row="0"
+                  Grid.Column="1"
+                  Classes="nodeActions">
+
+        <jsControls:ResultBadge/>
+
+        <ContentControl Content="{Binding $parent[jsControls:NodeBody].Actions}"
+                        IsVisible="{Binding $parent[jsControls:NodeBody].Actions, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        />
+
+        <TextBlock Classes="nodeInfo"
+                   Text="𝑖"
+                   >
+          <ToolTip.Tip>
+            <TextBlock TextWrapping="Wrap"
+                       MaxWidth="360"
+                       Text="{Binding $parent[jsControls:NodeBody].Info}"/>
+          </ToolTip.Tip>
+        </TextBlock>
+
+        <Button Classes="nodeAction danger"
+                Content="✕"
+                ToolTip.Tip="Delete"
+                Click="Delete_Click"
+                />
+
+      </StackPanel>
+
+      <!-- Output -->
+      <jsControls:Connector Grid.Row="1"
+                            Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            ZIndex="3"
+                            Margin="0 0 -8 0"/>
+
+      <DockPanel Grid.Row="1"
+                 Grid.Column="1"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Bottom"
+                 Margin="4 0 8 0"
+                 >
+        <TextBlock DockPanel.Dock="Left"
+                   Classes="nodeTitle"
+                   Text="{Binding $parent[jsControls:NodeBody].Title}"
+                   />
+        <TextBlock Classes="caption"
+                   VerticalAlignment="Bottom"
+                   Margin="4 0 0 2"
+                   Text="{Binding Path=OutputType}"
+                   />
+      </DockPanel>
+
+      <!-- Inputs, a row each -->
+      <ItemsControl Grid.Row="2"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    ItemsSource="{Binding Path=Inputs}"
+                    ClipToBounds="False"
+                    >
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="jsModel:Parameter">
+            <Grid Height="20">
+              <jsControls:Connector HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    ZIndex="3"
+                                    Margin="-8 0 0 0"
+                                    Classes.function="{Binding Path=IsFunctionPort}"
+                                    />
+              <TextBlock HorizontalAlignment="Left"
+                         Margin="16 0 8 0"
+                         Classes="caption"
+                         TextTrimming="CharacterEllipsis"
+                         Text="{Binding Path=Signature}"
+                         />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- More on the inputs' side: another output, say -->
+      <ContentControl Grid.Row="2"
+                      Grid.Column="1"
+                      ClipToBounds="False"
+                      Content="{Binding $parent[jsControls:NodeBody].Extra}"
+                      />
+
+    </Grid>
+  </Border>
+
+</UserControl>

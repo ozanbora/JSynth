@@ -1,4 +1,4 @@
-# Runs JuliaSynth's tests: whole areas (folders of JuliaSynth.Tests), single classes or single tests, or all of them.
+# Runs JSynth's tests: whole areas (folders of JSynth.Tests), single classes or single tests, or all of them.
 #
 #   test.ps1 -Area Streams, Runs
 #   test.ps1 -Test ZipTests, LoopTests.Values_go_on_after_a_file
@@ -12,7 +12,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repo = Resolve-Path "$PSScriptRoot/../../.."
-$areas = Get-ChildItem -Directory "$repo/JuliaSynth.Tests" |
+$areas = Get-ChildItem -Directory "$repo/JSynth.Tests" |
     Where-Object { $_.Name -notin 'bin', 'obj' } | ForEach-Object Name
 
 foreach ($a in $Area) {
@@ -20,7 +20,7 @@ foreach ($a in $Area) {
 }
 
 # A leading dot keeps LoopTests from matching LoopFeatureTests.
-$parts = @($Area | ForEach-Object { "FullyQualifiedName~JuliaSynth.Tests.$_." }) +
+$parts = @($Area | ForEach-Object { "FullyQualifiedName~JSynth.Tests.$_." }) +
          @($Test | ForEach-Object { "FullyQualifiedName~.$_" })
 $filter = $parts -join '|'
 
@@ -29,9 +29,9 @@ if ($Wsl) {
     if ($filter) { wsl -e bash $script test $filter } else { wsl -e bash $script test }
 }
 elseif ($filter) {
-    dotnet test "$repo/JuliaSynth.Tests" --filter $filter
+    dotnet test "$repo/JSynth.Tests" --filter $filter
 }
 else {
-    dotnet test "$repo/JuliaSynth.Tests"
+    dotnet test "$repo/JSynth.Tests"
 }
 exit $LASTEXITCODE

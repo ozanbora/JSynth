@@ -1,0 +1,233 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:jsControls="clr-namespace:JSynth.Controls">
+
+  <!-- The application's look over Fluent: its type, its rounded corners, the sidebar, and the floating tools. -->
+
+  <!-- Windows and popups (menus, flyouts, tooltips): Inter, at a calm size. -->
+  <Style Selector="TopLevel">
+    <Setter Property="FontFamily" Value="{DynamicResource UiFont}"/>
+    <Setter Property="FontSize" Value="13"/>
+  </Style>
+  <Style Selector="ToolTip">
+    <Setter Property="FontFamily" Value="{DynamicResource UiFont}"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="CornerRadius" Value="6"/>
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="FontSize" Value="13"/>
+  </Style>
+  <Style Selector="MenuFlyoutPresenter, ContextMenu">
+    <Setter Property="CornerRadius" Value="10"/>
+    <Setter Property="Padding" Value="4"/>
+  </Style>
+  <Style Selector="FlyoutPresenter">
+    <Setter Property="CornerRadius" Value="10"/>
+  </Style>
+
+  <!-- Controls: softly rounded. -->
+  <Style Selector="Button, ToggleButton, DropDownButton, SplitButton">
+    <Setter Property="CornerRadius" Value="8"/>
+  </Style>
+  <Style Selector="TextBox, ComboBox, NumericUpDown">
+    <Setter Property="CornerRadius" Value="6"/>
+  </Style>
+
+  <!-- Type -->
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="22"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="TextBlock.heading">
+    <Setter Property="FontSize" Value="15"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="TextBlock.panelTitle">
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="TextBlock.sectionHeader">
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+  </Style>
+  <Style Selector="TextBlock.secondary">
+    <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+  </Style>
+  <Style Selector="TextBlock.error">
+    <Setter Property="Foreground" Value="{DynamicResource ConsoleErrorBrush}"/>
+  </Style>
+  <Style Selector="TextBlock.warning">
+    <Setter Property="Foreground" Value="{DynamicResource WarningTextBrush}"/>
+  </Style>
+
+  <!-- A quiet button: no fill until the pointer is on it. -->
+  <Style Selector="Button.quiet, ToggleButton.quiet, DropDownButton.quiet">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+  <Style Selector="Button.quiet:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+
+  <!-- The sidebar: rows that light up under the pointer, and stay lit while on. -->
+  <Style Selector="Button.sidebarItem, ToggleButton.sidebarItem">
+    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="10 0"/>
+    <Setter Property="Height" Value="34"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Button.sidebarItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.sidebarItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+  </Style>
+  <Style Selector="ToggleButton.sidebarItem:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.sidebarItem:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSubtleBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+  </Style>
+  <Style Selector="Button.sidebarItem.recent">
+    <Setter Property="Height" Value="30"/>
+  </Style>
+  <!-- A row's icon, in a column of its own. -->
+  <Style Selector="TextBlock.icon">
+    <Setter Property="FontFamily" Value="{DynamicResource NotoSansMath}"/>
+    <Setter Property="FontSize" Value="15"/>
+    <Setter Property="Width" Value="22"/>
+    <Setter Property="TextAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <!-- A row's line icon, in a column of its own. -->
+  <Style Selector="jsControls|Icon.row">
+    <Setter Property="Width" Value="22"/>
+    <Setter Property="Height" Value="18"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+
+  <!-- The sidebar closed: square icon buttons in a narrow bar. -->
+  <Style Selector="Button.railItem, ToggleButton.railItem">
+    <Setter Property="Width" Value="38"/>
+    <Setter Property="Height" Value="38"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="ToolTip.Placement" Value="Right"/>
+  </Style>
+  <Style Selector="Button.railItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.railItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+  </Style>
+  <Style Selector="ToggleButton.railItem:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.railItem:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSubtleBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+  </Style>
+
+  <!-- Tabs in the title bar, all one width (a long name trimmed): the open one joined to the canvas below it. -->
+  <Style Selector="Border.tab">
+    <Setter Property="Height" Value="32"/>
+    <Setter Property="Width" Value="180"/>
+    <Setter Property="Margin" Value="0 8 2 0"/>
+    <Setter Property="Padding" Value="12 0 4 0"/>
+    <Setter Property="CornerRadius" Value="8 8 0 0"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+  <Style Selector="Border.tab:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}"/>
+  </Style>
+  <Style Selector="Border.tab.active">
+    <Setter Property="Background" Value="{DynamicResource CanvasBackgroundBrush}"/>
+  </Style>
+  <Style Selector="Border.tab Button.tabAction">
+    <Setter Property="Width" Value="22"/>
+    <Setter Property="Height" Value="22"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="CornerRadius" Value="5"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="Opacity" Value="0"/>
+  </Style>
+  <Style Selector="Border.tab:pointerover Button.tabAction, Border.tab.active Button.tabAction">
+    <Setter Property="Opacity" Value="1"/>
+  </Style>
+  <Style Selector="Border.tab Button.tabAction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}"/>
+  </Style>
+
+  <!-- New design: a round purple badge for its plus, as a sidebar's first row. -->
+  <Style Selector="Border.newBadge">
+    <Setter Property="Width" Value="22"/>
+    <Setter Property="Height" Value="22"/>
+    <Setter Property="CornerRadius" Value="11"/>
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+  </Style>
+
+  <!-- Floating tools over the canvas: a rounded bar with a soft shadow. -->
+  <Style Selector="Border.floating">
+    <Setter Property="Background" Value="{DynamicResource StatusBarBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource StatusBarBorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="14"/>
+    <Setter Property="Padding" Value="6"/>
+    <Setter Property="BoxShadow" Value="0 6 24 0 #26000000"/>
+  </Style>
+  <Style Selector="Border.floating Rectangle.divider">
+    <Setter Property="Width" Value="1"/>
+    <Setter Property="Margin" Value="4 6"/>
+    <Setter Property="Fill" Value="{DynamicResource StatusBarBorderBrush}"/>
+  </Style>
+  <Style Selector="Border.floating :is(Button).tool, Border.floating ToggleButton.tool">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Height" Value="32"/>
+    <Setter Property="MinWidth" Value="32"/>
+    <Setter Property="Padding" Value="8 0"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="Border.floating :is(Button).tool:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="Border.floating ToggleButton.tool:checked /template/ ContentPresenter#PART_ContentPresenter, Border.floating ToggleButton.tool:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSubtleBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+  </Style>
+
+  <!-- Run in Julia's green, Stop in its red. -->
+  <Style Selector="Button.run, Button.stop">
+    <Setter Property="Height" Value="32"/>
+    <Setter Property="Padding" Value="14 0"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="Button.run">
+    <Setter Property="Background" Value="{DynamicResource RunBrush}"/>
+  </Style>
+  <Style Selector="Button.run:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.run:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource RunHoverBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="Button.stop">
+    <Setter Property="Background" Value="{DynamicResource StopBrush}"/>
+  </Style>
+  <Style Selector="Button.stop:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.stop:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StopHoverBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="Button.run:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource RunBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="Opacity" Value="0.5"/>
+  </Style>
+</Styles>

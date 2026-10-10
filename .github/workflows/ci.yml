@@ -38,7 +38,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libfontconfig1
 
       - name: Build
-        run: dotnet build JuliaSynth.sln -c Release
+        run: dotnet build JSynth.sln -c Release
 
       - name: Test
-        run: dotnet test JuliaSynth.Tests -c Release --no-build --logger "console;verbosity=normal"
+        run: dotnet test JSynth.Tests -c Release --no-build --logger "console;verbosity=normal"

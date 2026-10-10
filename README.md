@@ -1,8 +1,8 @@
-# JuliaSynth
+# JSynth
 
 A visual editor for [Julia](https://julialang.org/). Wire inputs, functions and plots together on a canvas, run the design with Julia, and see every value on its node. Any design can be exported as a plain Julia script.
 
-JuliaSynth runs on Windows and Linux, including WSL.
+JSynth runs on Windows and Linux, including WSL.
 
 ![The Heat in a rod example after a run: the parameters on the left, the nodes with their results and a plot on the canvas, and the output below](docs/screenshot-light.png)
 
@@ -14,7 +14,7 @@ A design is a graph of nodes:
 - **Functions:** Julia code you write, with typed parameters. Each parameter is an input port, and the function's value is its output.
 - **Outputs:** Display (a value), Plot (line, scatter or heatmap) and Save to file.
 
-Wiring an output into an input passes the value along. Press **F5**, and JuliaSynth turns the design into a Julia script and runs it in a Julia session it keeps open. Each node then shows its value, a ✓ or ✗ badge and how long it took. The output panel lists every value by its variable name.
+Wiring an output into an input passes the value along. Press **F5**, and JSynth turns the design into a Julia script and runs it in a Julia session it keeps open. Each node then shows its value, a ✓ or ✗ badge and how long it took. The output panel lists every value by its variable name.
 
 Designs can also work through data as it comes:
 
@@ -91,28 +91,28 @@ On the canvas, a drag pans, Ctrl+drag selects with a box, and right-click adds n
 ## Requirements
 
 - [.NET SDK 10](https://dotnet.microsoft.com/download) or newer (the projects target `net10.0`). `global.json` enforces this.
-- [Julia](https://julialang.org/downloads/), preferably through juliaup. JuliaSynth looks for it on the `PATH` and in the usual install folders. You can also choose the Julia program from the sidebar, or with Run → Choose Julia….
+- [Julia](https://julialang.org/downloads/), preferably through juliaup. JSynth looks for it on the `PATH` and in the usual install folders. You can also choose the Julia program from the sidebar, or with Run → Choose Julia….
 
 ## Build and run
 
 ```sh
-dotnet run --project JuliaSynth.Desktop
-dotnet test JuliaSynth.Tests
+dotnet run --project JSynth.Desktop
+dotnet test JSynth.Tests
 ```
 
 Some tests run real Julia, and skip themselves when Julia isn't found. Tests using an example's downloaded data skip themselves when the data isn't there.
 
-Run `dotnet run --project JuliaSynth.Desktop -- --help` for the command-line options:
+Run `dotnet run --project JSynth.Desktop -- --help` for the command-line options:
 
 - Rendering and headless options.
 - `--open <file>`: open one design file, alone in the window.
 - `--untitled <file> --name <name>`: open a design that was never saved, alone in the window. This is what a tab opened in a new window uses.
 
-Settings, the library and a design never saved are kept in `%AppData%\JuliaSynth` on Windows and `~/.config/JuliaSynth` on Linux.
+Settings, the library and a design never saved are kept in `%AppData%\JSynth` on Windows and `~/.config/JSynth` on Linux.
 
 ## Linux and WSL
 
-JuliaSynth runs on Linux, including Ubuntu under WSL 2 with WSLg (Windows 11 shows the window on the Windows desktop).
+JSynth runs on Linux, including Ubuntu under WSL 2 with WSLg (Windows 11 shows the window on the Windows desktop).
 
 1. Install the native library Skia needs:
 
@@ -130,17 +130,17 @@ JuliaSynth runs on Linux, including Ubuntu under WSL 2 with WSLg (Windows 11 sho
 
 3. Install Julia with `curl -fsSL https://install.julialang.org | sh`.
 
-Under WSL, clone the repository into the Linux file system (for example `~/JuliaSynth`) rather than building from `/mnt/c`, so Linux and Windows builds don't share `bin` and `obj` folders.
+Under WSL, clone the repository into the Linux file system (for example `~/JSynth`) rather than building from `/mnt/c`, so Linux and Windows builds don't share `bin` and `obj` folders.
 
 Alternatively, publish a self-contained build from Windows and run it in WSL with only `libfontconfig1` installed:
 
 ```sh
-dotnet publish JuliaSynth.Desktop -c Release -r linux-x64 --self-contained -o publish/linux-x64
+dotnet publish JSynth.Desktop -c Release -r linux-x64 --self-contained -o publish/linux-x64
 ```
 
 ### Troubleshooting
 
-- **The window has a taskbar icon but nothing shows, and its title starts with `[WARN:COPY MODE]`.** WSLg couldn't set up the shared memory it uses to send windows to Windows; `/mnt/wslg/weston.log` shows `rdp_allocate_shared_memory: Failed to open ...`. This affects every Linux app, not only JuliaSynth. Restart WSL from Windows with `wsl --shutdown` (this stops all running distros), then start JuliaSynth again.
+- **The window has a taskbar icon but nothing shows, and its title starts with `[WARN:COPY MODE]`.** WSLg couldn't set up the shared memory it uses to send windows to Windows; `/mnt/wslg/weston.log` shows `rdp_allocate_shared_memory: Failed to open ...`. This affects every Linux app, not only JSynth. Restart WSL from Windows with `wsl --shutdown` (this stops all running distros), then start JSynth again.
 - **The app exits at startup with `Unable to load shared library 'libSkiaSharp'`.** Install `libfontconfig1` (step 1 above).
 - **The build fails with `A compatible .NET SDK was not found`.** The .NET SDK is older than 10; check with `dotnet --version` and install a newer one (step 2 above).
 
@@ -148,10 +148,10 @@ dotnet publish JuliaSynth.Desktop -c Release -r linux-x64 --self-contained -o pu
 
 | Folder | Holds |
 |---|---|
-| `JuliaSynth` | The app: the node model and script generator (`Model`), view models and the examples (`ViewModels`), views and styles (`Views`, `Controls`, `Styles`), fonts and icons (`Assets`) |
-| `JuliaSynth.Runtime` | The Julia side: finding Julia, the session that runs scripts, and the reports of values |
-| `JuliaSynth.Desktop` | The program: command-line options and platform setup |
-| `JuliaSynth.Tests` | xUnit tests, run headless with Avalonia's headless platform |
+| `JSynth` | The app: the node model and script generator (`Model`), view models and the examples (`ViewModels`), views and styles (`Views`, `Controls`, `Styles`), fonts and icons (`Assets`) |
+| `JSynth.Runtime` | The Julia side: finding Julia, the session that runs scripts, and the reports of values |
+| `JSynth.Desktop` | The program: command-line options and platform setup |
+| `JSynth.Tests` | xUnit tests, run headless with Avalonia's headless platform |
 
 It is built with [Avalonia](https://avaloniaui.net/) 12, [ReactiveUI](https://www.reactiveui.net/), [AvaloniaEdit](https://github.com/AvaloniaUI/AvaloniaEdit) for the code editor, and [ScottPlot](https://scottplot.net/) for plots.
 
@@ -178,6 +178,6 @@ Bug reports and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md
 
 ## License
 
-JuliaSynth is under the [MIT License](LICENSE). The fonts and the example data keep their own licenses, listed above.
+JSynth is under the [MIT License](LICENSE). The fonts and the example data keep their own licenses, listed above.
 
-JuliaSynth is not affiliated with or endorsed by the Julia project. Julia is a trademark of JuliaHub, Inc.
+JSynth is not affiliated with or endorsed by the Julia project. Julia is a trademark of JuliaHub, Inc.

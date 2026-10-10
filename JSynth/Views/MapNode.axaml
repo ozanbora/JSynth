@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="JSynth.Views.MapNode"
+
+             xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
+             xmlns:jsControls="clr-namespace:JSynth.Controls"
+
+             x:DataType="jsModel:MapNode"
+             >
+  <Design.DataContext>
+    <jsModel:MapNode />
+  </Design.DataContext>
+
+  <!-- Inputs: the values, and the function to apply to each -->
+  <jsControls:NodeBody Glyph="↦"
+                       Title="{Binding Path=Label}"
+                       Info="Map: applies the function wired into f to every value wired into items (a vector, a range, or the files of a Files node, read one at a time) and gives a vector of the results."
+                       >
+    <jsControls:NodeBody.Actions>
+      <Button Classes="nodeAction"
+              Content="∥"
+              Click="Parallel_Click"
+              ToolTip.Tip="map: the values one after the other. map ∥: in parallel, shared out among all of Julia's threads (a thread a core), for many files or slow work on each, when the work on one doesn't depend on another's. Click to switch."
+              />
+    </jsControls:NodeBody.Actions>
+  </jsControls:NodeBody>
+
+</UserControl>

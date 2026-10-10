@@ -1,0 +1,229 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:jsConverters="clr-namespace:JSynth.Converters">
+
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <!-- Quiet neutrals, a touch of violet: the canvas a shade deeper than the panels around it. -->
+          <SolidColorBrush x:Key="CanvasBackgroundBrush" Color="#F3F2F6"/>
+          <SolidColorBrush x:Key="CanvasGridLineBrush" Color="#DEDCE5"/>
+          <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#FFFFFF"/>
+          <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#E4E2EA"/>
+          <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#F8F7FA"/>
+          <SolidColorBrush x:Key="SidebarItemHoverBrush" Color="#EDEBF2"/>
+          <SolidColorBrush x:Key="SecondaryTextBrush" Color="#6E6A78"/>
+
+          <!-- Julia's colours: purple for what is chosen, green to run, red to stop, blue for the ports. -->
+          <SolidColorBrush x:Key="AccentBrush" Color="#9558B2"/>
+          <SolidColorBrush x:Key="AccentSubtleBrush" Color="#1F9558B2"/>
+          <SolidColorBrush x:Key="RunBrush" Color="#389826"/>
+          <SolidColorBrush x:Key="RunHoverBrush" Color="#2F8320"/>
+          <SolidColorBrush x:Key="StopBrush" Color="#CB3C33"/>
+          <SolidColorBrush x:Key="StopHoverBrush" Color="#B0322A"/>
+          <SolidColorBrush x:Key="PortBrush" Color="#4063D8"/>
+          <SolidColorBrush x:Key="PortHoverBrush" Color="#6A86E3"/>
+          <SolidColorBrush x:Key="FunctionPortBrush" Color="#9558B2"/>
+          <SolidColorBrush x:Key="AcceptBrush" Color="#389826"/>
+          <SolidColorBrush x:Key="RejectBrush" Color="#CB3C33"/>
+          <SolidColorBrush x:Key="ConsoleErrorBrush" Color="#B3332B"/>
+          <SolidColorBrush x:Key="ConsoleValueBrush" Color="#2E7D20"/>
+          <SolidColorBrush x:Key="WarningTextBrush" Color="#9A5B00"/>
+
+          <!-- Selected code: one ink on a muted purple, never the syntax colours on accent. -->
+          <SolidColorBrush x:Key="CodeSelectionBrush" Color="#E2D3EC"/>
+          <SolidColorBrush x:Key="CodeSelectionInkBrush" Color="#1E1B24"/>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="CanvasBackgroundBrush" Color="#141317"/>
+          <SolidColorBrush x:Key="CanvasGridLineBrush" Color="#2B2930"/>
+          <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#1E1D22"/>
+          <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#302E36"/>
+          <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#19181C"/>
+          <SolidColorBrush x:Key="SidebarItemHoverBrush" Color="#28262D"/>
+          <SolidColorBrush x:Key="SecondaryTextBrush" Color="#9A96A3"/>
+
+          <SolidColorBrush x:Key="AccentBrush" Color="#B47FD0"/>
+          <SolidColorBrush x:Key="AccentSubtleBrush" Color="#33B47FD0"/>
+          <SolidColorBrush x:Key="RunBrush" Color="#389826"/>
+          <SolidColorBrush x:Key="RunHoverBrush" Color="#45AD31"/>
+          <SolidColorBrush x:Key="StopBrush" Color="#CB3C33"/>
+          <SolidColorBrush x:Key="StopHoverBrush" Color="#DE5249"/>
+          <SolidColorBrush x:Key="PortBrush" Color="#6E8BEA"/>
+          <SolidColorBrush x:Key="PortHoverBrush" Color="#93A9F0"/>
+          <SolidColorBrush x:Key="FunctionPortBrush" Color="#B47FD0"/>
+          <SolidColorBrush x:Key="AcceptBrush" Color="#5CC04A"/>
+          <SolidColorBrush x:Key="RejectBrush" Color="#E2625A"/>
+          <SolidColorBrush x:Key="ConsoleErrorBrush" Color="#F08A83"/>
+          <SolidColorBrush x:Key="ConsoleValueBrush" Color="#8BD67C"/>
+          <SolidColorBrush x:Key="WarningTextBrush" Color="#E8B04A"/>
+
+          <SolidColorBrush x:Key="CodeSelectionBrush" Color="#5B4470"/>
+          <SolidColorBrush x:Key="CodeSelectionInkBrush" Color="#ECEAF0"/>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+
+      <!-- Fluent caps flyouts at 456; the node edit panels are wider. -->
+      <x:Double x:Key="FlyoutThemeMaxWidth">640</x:Double>
+      <jsConverters:ContrastBrushConverter x:Key="ContrastBrushConverter"/>
+      <jsConverters:CompactIntegerConverter x:Key="CompactIntegerConverter"/>
+      <SolidColorBrush x:Key="NodeBorderBrush" Color="#59000000"/>
+      <SolidColorBrush x:Key="NodeActionHoverBrush" Color="#33808080"/>
+      <SolidColorBrush x:Key="NodeActionPressedBrush" Color="#59808080"/>
+      <SolidColorBrush x:Key="DangerBrush" Color="#CB3C33"/>
+
+      <!-- On the pastel nodes: a warning dark enough to read, and a light panel for shown values and plots. -->
+      <SolidColorBrush x:Key="NodeWarningBrush" Color="#9A5B00"/>
+      <SolidColorBrush x:Key="NodeInsetBrush" Color="#66FFFFFF"/>
+
+      <!-- Result badges: pastel, with dark symbols. -->
+      <SolidColorBrush x:Key="BadgeOkBrush" Color="#A8DDB5"/>
+      <SolidColorBrush x:Key="BadgeErrorBrush" Color="#F4B0B0"/>
+      <SolidColorBrush x:Key="BadgeSkippedBrush" Color="#D3D7DC"/>
+      <SolidColorBrush x:Key="BadgeForegroundBrush" Color="#1F2328"/>
+    </ResourceDictionary>
+  </Styles.Resources>
+
+  <!-- Node body -->
+  <Style Selector="Border.node">
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="BorderBrush" Value="{StaticResource NodeBorderBrush}"/>
+  </Style>
+
+  <!-- Large type glyph in the node's left column (x, z, n, f) -->
+  <Style Selector="TextBlock.glyph">
+    <Setter Property="FontFamily" Value="{DynamicResource NotoSansMath}"/>
+    <Setter Property="FontSize" Value="42"/>
+    <Setter Property="HorizontalAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment" Value="Top"/>
+    <Setter Property="Margin" Value="0 8 0 0"/>
+    <!-- Big symbols can reach below their rows (∿); Avalonia 12 would cut them off there. -->
+    <Setter Property="ClipToBounds" Value="False"/>
+  </Style>
+
+  <!-- Small labels such as Min / Max / parameter signatures -->
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontFamily" Value="{DynamicResource CodeFont}"/>
+    <Setter Property="FontStyle" Value="Italic"/>
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="Opacity" Value="0.8"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+
+  <!-- The node's main value -->
+  <Style Selector="TextBlock.value">
+    <Setter Property="FontSize" Value="15"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    <Setter Property="HorizontalAlignment" Value="Right"/>
+    <Setter Property="VerticalAlignment" Value="Bottom"/>
+    <Setter Property="Margin" Value="4 0 8 0"/>
+  </Style>
+
+  <!-- The node's name, or what it holds (a file, a folder, a size) -->
+  <Style Selector="TextBlock.nodeTitle">
+    <Setter Property="FontSize" Value="15"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+  </Style>
+
+  <!-- A frame's title -->
+  <Style Selector="TextBlock.frameTitle">
+        <Setter Property="FontSize" Value="15"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+
+  <!-- What an input is for (its name in the panel, or where its value goes), above its value -->
+  <Style Selector="TextBlock.purpose">
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    <Setter Property="HorizontalAlignment" Value="Left"/>
+    <Setter Property="VerticalAlignment" Value="Top"/>
+    <Setter Property="Margin" Value="6 4 8 0"/>
+  </Style>
+
+  <!-- Secondary values such as the range limits -->
+  <Style Selector="TextBlock.limit">
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    <Setter Property="HorizontalAlignment" Value="Right"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Margin" Value="4 0 8 0"/>
+  </Style>
+
+  <!-- Header actions: small borderless buttons that use the node's text color -->
+  <Style Selector="StackPanel.nodeActions">
+    <Setter Property="Orientation" Value="Horizontal"/>
+    <Setter Property="HorizontalAlignment" Value="Right"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Spacing" Value="2"/>
+    <Setter Property="Margin" Value="0 0 4 0"/>
+  </Style>
+
+  <Style Selector="Button.nodeAction">
+    <Setter Property="Width" Value="24"/>
+    <Setter Property="Height" Value="22"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="FontFamily" Value="{DynamicResource NotoSansMath}"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{Binding $parent[UserControl].Foreground}"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}"
+                CornerRadius="4">
+          <ContentPresenter Name="Presenter"
+                            Content="{TemplateBinding Content}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <!-- A node action with a word on it, as wide as it needs. -->
+  <Style Selector="Button.nodeAction.wide">
+    <Setter Property="Width" Value="NaN"/>
+    <Setter Property="Padding" Value="6 0"/>
+    <Setter Property="FontSize" Value="12"/>
+  </Style>
+  <Style Selector="Button.nodeAction:pointerover">
+    <Setter Property="Background" Value="{StaticResource NodeActionHoverBrush}"/>
+  </Style>
+  <Style Selector="Button.nodeAction:pressed">
+    <Setter Property="Background" Value="{StaticResource NodeActionPressedBrush}"/>
+  </Style>
+  <Style Selector="Button.nodeAction.danger:pointerover">
+    <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+
+  <!-- Info glyph: shows a description on hover, it is not clickable -->
+  <Style Selector="TextBlock.nodeInfo">
+    <Setter Property="Width" Value="24"/>
+    <Setter Property="FontFamily" Value="{DynamicResource NotoSansMath}"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="TextAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Opacity" Value="0.8"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="ToolTip.ShowDelay" Value="200"/>
+  </Style>
+
+  <!-- Details flyouts: theme colored text regardless of the node color, and some breathing room -->
+  <Style Selector=":is(UserControl).details">
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+  </Style>
+  <Style Selector=":is(UserControl).details > Grid > :is(Control)">
+    <Setter Property="Margin" Value="0 3"/>
+  </Style>
+  <Style Selector=":is(UserControl).details > Grid > Label">
+    <Setter Property="Margin" Value="0 3 12 3"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style Selector=":is(UserControl).details > Grid > StackPanel > Label">
+    <Setter Property="Margin" Value="12 0 6 0"/>
+  </Style>
+</Styles>

@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:jsModel="clr-namespace:JSynth.Model"
+             xmlns:jsControls="clr-namespace:JSynth.Controls"
+             x:Class="JSynth.Controls.ResultBadge"
+             x:DataType="jsModel:Node"
+             IsVisible="{Binding Path=HasResult}"
+             VerticalAlignment="Center"
+             Margin="0 0 4 0"
+             >
+  <!-- What the last run gave: ✓ a value, ✗ an error, – not run. A filled circle reads on any node color. -->
+  <UserControl.Styles>
+    <Style Selector="Border.badge">
+      <Setter Property="Width" Value="18"/>
+      <Setter Property="Height" Value="18"/>
+      <Setter Property="CornerRadius" Value="9"/>
+      <Setter Property="BorderBrush" Value="{StaticResource NodeBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Background" Value="{StaticResource BadgeSkippedBrush}"/>
+    </Style>
+    <Style Selector="Border.badge.ok">
+      <Setter Property="Background" Value="{StaticResource BadgeOkBrush}"/>
+    </Style>
+    <Style Selector="Border.badge.error">
+      <Setter Property="Background" Value="{StaticResource BadgeErrorBrush}"/>
+    </Style>
+    <!-- Drawn, not typed: a symbol from a fallback font sits off the circle's middle. -->
+    <Style Selector="Border.badge jsControls|Icon">
+      <Setter Property="Foreground" Value="{StaticResource BadgeForegroundBrush}"/>
+      <Setter Property="Width" Value="12"/>
+      <Setter Property="Height" Value="12"/>
+      <Setter Property="StrokeThickness" Value="3.2"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Orientation="Horizontal" Spacing="4">
+    <!-- How long the value took to work out, when it took a while. -->
+    <TextBlock Text="{Binding Path=TimeLabel}"
+               IsVisible="{Binding Path=TimeLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               FontSize="10"
+               Opacity="0.75"
+               VerticalAlignment="Center"/>
+    <Border Classes="badge"
+            Classes.ok="{Binding Path=IsResultOk}"
+            Classes.error="{Binding Path=IsResultError}"
+            ToolTip.ShowDelay="200"
+            >
+      <ToolTip.Tip>
+        <SelectableTextBlock FontFamily="{StaticResource CodeFont}"
+                             FontSize="12"
+                             MaxWidth="520"
+                             TextWrapping="Wrap"
+                             Text="{Binding Path=ResultTip}"/>
+      </ToolTip.Tip>
+      <Panel>
+        <jsControls:Icon Data="{StaticResource IconCheck}" IsVisible="{Binding Path=IsResultOk}"/>
+        <jsControls:Icon Data="{StaticResource IconClose}" IsVisible="{Binding Path=IsResultError}"/>
+        <jsControls:Icon Data="{StaticResource IconDash}" IsVisible="{Binding Path=IsResultSkipped}"/>
+      </Panel>
+    </Border>
+  </StackPanel>
+</UserControl>

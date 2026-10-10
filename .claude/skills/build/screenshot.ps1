@@ -1,8 +1,8 @@
 # Saves a picture of the first window whose title matches, brought to the front first.
-# A Windows build's window belongs to JuliaSynth.Desktop; a WSL build's to msrdc, its title ending "(Ubuntu)".
+# A Windows build's window belongs to JSynth.Desktop; a WSL build's to msrdc, its title ending "(Ubuntu)".
 param(
     [Parameter(Mandatory)] [string] $Out,
-    [string] $Title = '*JuliaSynth*'
+    [string] $Title = '*JSynth*'
 )
 
 Add-Type -AssemblyName System.Drawing

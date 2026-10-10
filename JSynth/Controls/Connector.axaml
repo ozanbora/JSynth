@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             x:Class="JSynth.Controls.Connector"
+             Width="16"
+             Height="16"
+             ZIndex="2"
+             Background="Transparent"
+             Cursor="Cross"
+             >
+
+  <UserControl.Styles>
+    <!-- A round port: accent fill with a ring in the canvas color so it stands out on any node color. -->
+    <Style Selector="Ellipse#Port">
+      <Setter Property="Fill" Value="{DynamicResource PortBrush}"/>
+      <Setter Property="Stroke" Value="{DynamicResource CanvasBackgroundBrush}"/>
+      <Setter Property="StrokeThickness" Value="2"/>
+    </Style>
+    <Style Selector=":is(UserControl):pointerover > Ellipse#Port">
+      <Setter Property="Fill" Value="{DynamicResource PortHoverBrush}"/>
+    </Style>
+
+    <!-- A port taking a function to apply, not a value: in the lavender of functions. -->
+    <Style Selector=":is(UserControl).function > Ellipse#Port">
+      <Setter Property="Fill" Value="{DynamicResource FunctionPortBrush}"/>
+    </Style>
+
+    <!-- A next port, taking a value for the next file: a ring, empty until wired. -->
+    <Style Selector=":is(UserControl).next > Ellipse#Port">
+      <Setter Property="Fill" Value="{DynamicResource CanvasBackgroundBrush}"/>
+      <Setter Property="Stroke" Value="{DynamicResource PortBrush}"/>
+      <Setter Property="StrokeThickness" Value="3"/>
+    </Style>
+
+    <!-- Drop target feedback while a wire is dragged over the port. -->
+    <Style Selector=":is(UserControl).accept > Ellipse#Port">
+      <Setter Property="Fill" Value="{DynamicResource AcceptBrush}"/>
+      <Setter Property="StrokeThickness" Value="3"/>
+    </Style>
+    <Style Selector=":is(UserControl).reject > Ellipse#Port">
+      <Setter Property="Fill" Value="{DynamicResource RejectBrush}"/>
+      <Setter Property="StrokeThickness" Value="3"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Ellipse x:Name="Port"/>
+</UserControl>
