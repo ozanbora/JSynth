@@ -30,6 +30,10 @@
           <SolidColorBrush x:Key="ConsoleErrorBrush" Color="#B3332B"/>
           <SolidColorBrush x:Key="ConsoleValueBrush" Color="#2E7D20"/>
           <SolidColorBrush x:Key="WarningTextBrush" Color="#9A5B00"/>
+
+          <!-- Selected code: one ink on a muted purple, never the syntax colours on accent. -->
+          <SolidColorBrush x:Key="CodeSelectionBrush" Color="#E2D3EC"/>
+          <SolidColorBrush x:Key="CodeSelectionInkBrush" Color="#1E1B24"/>
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="CanvasBackgroundBrush" Color="#141317"/>
@@ -54,6 +58,9 @@
           <SolidColorBrush x:Key="ConsoleErrorBrush" Color="#F08A83"/>
           <SolidColorBrush x:Key="ConsoleValueBrush" Color="#8BD67C"/>
           <SolidColorBrush x:Key="WarningTextBrush" Color="#E8B04A"/>
+
+          <SolidColorBrush x:Key="CodeSelectionBrush" Color="#5B4470"/>
+          <SolidColorBrush x:Key="CodeSelectionInkBrush" Color="#ECEAF0"/>
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
 

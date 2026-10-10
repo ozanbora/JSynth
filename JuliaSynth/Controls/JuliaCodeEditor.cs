@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -34,7 +35,7 @@ public class JuliaCodeEditor : TextEditor
     public JuliaCodeEditor()
     {
         TextArea.TextEntered += TextEntered;
-        ActualThemeVariantChanged += (_, _) => _colours?.SetTheme(_grammars.LoadTheme(ColourTheme));
+        ActualThemeVariantChanged += (_, _) => ApplyColours();
         TextArea.AddHandler(KeyDownEvent, CompletionKeyDown, RoutingStrategies.Tunnel);
     }
 
@@ -138,7 +139,7 @@ public class JuliaCodeEditor : TextEditor
         base.OnAttachedToVisualTree(e);
 
         _colours = this.InstallTextMate(_grammars);
-        _colours.SetTheme(_grammars.LoadTheme(ColourTheme));
+        ApplyColours();
         _colours.SetGrammar(_grammars.GetScopeByLanguageId(_grammars.GetLanguageByExtension(".jl").Id));
     }
 
@@ -149,6 +150,31 @@ public class JuliaCodeEditor : TextEditor
         _completion?.Close();
         _colours?.Dispose();
         _colours = null;
+    }
+
+    /// <summary>
+    /// The theme's syntax colours, and a selection in one ink on a muted purple: syntax colours can't be read on a
+    /// purple selection (a comment vanishes on it in dark).
+    /// </summary>
+    private void ApplyColours()
+    {
+        if (_colours is null)
+        {
+            return;
+        }
+
+        _colours.SetTheme(_grammars.LoadTheme(ColourTheme));
+
+        // After the theme, which sets the selection from its own colours.
+        if (this.TryFindResource("CodeSelectionBrush", ActualThemeVariant, out object? fill) && fill is IBrush fillBrush)
+        {
+            TextArea.SelectionBrush = fillBrush;
+        }
+        if (this.TryFindResource("CodeSelectionInkBrush", ActualThemeVariant, out object? ink) && ink is IBrush inkBrush)
+        {
+            TextArea.SelectionForeground = inkBrush;
+        }
+        TextArea.SelectionBorder = null;
     }
 
     private ThemeName ColourTheme => ActualThemeVariant == ThemeVariant.Dark ? ThemeName.DarkPlus : ThemeName.LightPlus;
