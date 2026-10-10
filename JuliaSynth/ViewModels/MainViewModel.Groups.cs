@@ -187,6 +187,7 @@ public partial class MainViewModel
 
         FrameNode frame = new() { Title = group.Name };
         frame.Fit(members);
+        MakeRoom(group, frame, members);
 
         // Nodes it covers that weren't in the group stay out when it is grouped again.
         frame.Outside.AddRange(Nodes.Where(n => n is not FrameNode && !members.Contains(n) && frame.Holds(n)).Select(n => n.ID));
@@ -195,6 +196,86 @@ public partial class MainViewModel
         foreach (Node node in members)
         {
             node.IsSelected = true;
+        }
+    }
+
+    /// <summary>
+    /// Room for a group opened into <paramref name="frame"/>, bigger than the group was. The frame starts where the
+    /// group did; beside it, what is in the way moves right, and below it, down (pushing what is in its way in turn).
+    /// The frame that held the group grows around what it holds, and makes room among what is beside it the same way,
+    /// and so on out to the canvas. A frame moved takes what it holds along; no other frame changes size.
+    /// </summary>
+    private static void MakeRoom(GroupNode group, FrameNode frame, List<Node> members)
+    {
+        (double top, double left, double _, double _) = Layout.Footprint(group);
+        (int down, int across) = ((int)Math.Round(top) - frame.Row, (int)Math.Round(left) - frame.Column);
+        foreach (Node node in members)
+        {
+            (node.Row, node.Column) = (node.Row + down, node.Column + across);
+        }
+
+        frame.Fit(members);
+
+        // What each frame holds, as the design is before anything moves; the frames around the group, innermost first.
+        List<Node> others = [.. Nodes.Where(n => !members.Contains(n))];
+        Dictionary<FrameNode, List<Node>> held = others.OfType<FrameNode>().ToDictionary(f => f, f => others.Where(f.Holds).ToList());
+        List<FrameNode> around = [.. held.Keys.Where(f => f.Holds(group)).OrderBy(f => f.Rows * f.Columns)];
+        FrameNode? Parent(Node node) => held.Where(h => h.Value.Contains(node)).Select(h => h.Key).MinBy(f => f.Rows * f.Columns);
+
+        Node growing = frame;
+        (double Top, double Left, double Bottom, double Right) was = Layout.Footprint(group);
+        foreach (FrameNode? container in around.Append(null))
+        {
+            List<Node> beside = [.. others.Where(n => n != growing && n != container && Parent(n) == container)];
+            Push(beside, growing, was, held, across: true);
+            Push(beside, growing, was, held, across: false);
+            if (container is null)
+            {
+                break;
+            }
+
+            // Grown, never shrunk, around what it holds, the opened nodes and their frame among them.
+            was = Layout.Footprint(container);
+            List<(double Top, double Left, double Bottom, double Right)> inside =
+                [.. held[container].Append(frame).Concat(members).Select(Layout.Footprint)];
+            container.Columns = Math.Max(container.Columns, (int)Math.Ceiling(inside.Max(f => f.Right)) + FrameNode.Padding - container.Column);
+            container.Rows = Math.Max(container.Rows, (int)Math.Ceiling(inside.Max(f => f.Bottom)) + FrameNode.Padding - container.Row);
+            growing = container;
+        }
+    }
+
+    /// <summary>
+    /// Moves what is in the way of <paramref name="growing"/>, now bigger than it <paramref name="was"/>: of the nodes
+    /// <paramref name="beside"/> it, those after where it ended (right of it, or below it), nearest first, each as far
+    /// as needed to be a gap away from it and from those moved before it alongside.
+    /// </summary>
+    private static void Push(List<Node> beside, Node growing, (double Top, double Left, double Bottom, double Right) was,
+        Dictionary<FrameNode, List<Node>> held, bool across)
+    {
+        (double Start, double End) Along((double Top, double Left, double Bottom, double Right) f) => across ? (f.Left, f.Right) : (f.Top, f.Bottom);
+        (double Start, double End) Side((double Top, double Left, double Bottom, double Right) f) => across ? (f.Top, f.Bottom) : (f.Left, f.Right);
+        int gap = across ? Layout.ColumnGap : Layout.RowGap;
+        double end = Along(was).End;
+
+        List<(double Top, double Left, double Bottom, double Right)> placed = [Layout.Footprint(growing)];
+        foreach (Node node in beside.Where(n => Along(Layout.Footprint(n)).Start >= end).OrderBy(n => Along(Layout.Footprint(n)).Start))
+        {
+            (double Start, double End) along = Along(Layout.Footprint(node));
+            (double Start, double End) side = Side(Layout.Footprint(node));
+            int shift = (int)Math.Ceiling(placed
+                .Where(p => Side(p).Start < side.End && side.Start < Side(p).End)
+                .Select(p => Along(p).End + gap - along.Start)
+                .DefaultIfEmpty(0)
+                .Max());
+            if (shift > 0)
+            {
+                foreach (Node moved in node is FrameNode f ? held[f].Prepend(node) : [node])
+                {
+                    (moved.Row, moved.Column) = across ? (moved.Row, moved.Column + shift) : (moved.Row + shift, moved.Column);
+                }
+            }
+
+            placed.Add(Layout.Footprint(node));
         }
     }
 }

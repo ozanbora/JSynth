@@ -82,7 +82,8 @@ namespace JuliaSynth.Model
         public IEnumerable<Node> Grouped(IEnumerable<Node> nodes) => nodes.Where(n => n is not FrameNode && Holds(n) && !Outside.Contains(n.ID));
 
         /// <summary>
-        /// Whether <paramref name="node"/> is drawn in this frame: its middle is.
+        /// Whether <paramref name="node"/> is drawn in this frame: its middle is; a frame, all of it (a frame opened
+        /// in a bigger one can have the bigger one's middle in it, and doesn't hold it).
         /// </summary>
         public bool Holds(Node node)
         {
@@ -92,6 +93,11 @@ namespace JuliaSynth.Model
             }
 
             (double top, double left, double bottom, double right) = Layout.Footprint(node);
+            if (node is FrameNode)
+            {
+                return top >= Row && left >= Column && bottom <= Row + Rows && right <= Column + Columns;
+            }
+
             (double middleRow, double middleColumn) = ((top + bottom) / 2, (left + right) / 2);
             return middleRow > Row && middleRow < Row + Rows && middleColumn > Column && middleColumn < Column + Columns;
         }

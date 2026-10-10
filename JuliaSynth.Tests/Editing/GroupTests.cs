@@ -62,6 +62,13 @@ namespace JuliaSynth.Tests.Editing
             return (x, z, f, g);
         }
 
+        private static bool Overlap(Node a, Node b)
+        {
+            (double aTop, double aLeft, double aBottom, double aRight) = Layout.Footprint(a);
+            (double bTop, double bLeft, double bBottom, double bRight) = Layout.Footprint(b);
+            return aLeft < bRight && bLeft < aRight && aTop < bBottom && bTop < aBottom;
+        }
+
         [Fact]
         public void A_group_takes_the_wires_coming_in_as_inputs_and_going_out_as_outputs_and_works_out_the_same()
         {
@@ -87,18 +94,19 @@ namespace JuliaSynth.Tests.Editing
                 Assert.Equal(Lines(run), Lines(Script(true)));
 
                 // Opened: the nodes and wires as they were, in a frame named after it.
-                int row = z.Row + group.Row;
+                (int rows, int columns) = (f.Row - z.Row, f.Column - z.Column);
                 MainViewModel.OpenGroup(group);
                 Assert.Equal(wiresBefore, MainViewModel.Connections.Select(c => c.Key).Order());
                 Assert.DoesNotContain(MainViewModel.Nodes, n => n is GroupNode);
-                Assert.Equal(row, z.Row);
+                Assert.Equal((rows, columns), (f.Row - z.Row, f.Column - z.Column));
                 FrameNode frame = Assert.Single(MainViewModel.Nodes.OfType<FrameNode>());
                 Assert.Equal("group1", frame.Title);
                 Assert.True(frame.Holds(z) && frame.Holds(f));
 
-                // The frame is drawn over x too, which wasn't in the group.
-                Assert.True(frame.Holds(x));
-                Assert.Equal([x.ID], frame.Outside);
+                // The frame is bigger than the group was: the nodes around it made room, so it's drawn over none of them.
+                Assert.False(frame.Holds(x) || frame.Holds(g));
+                Assert.Empty(frame.Outside);
+                Assert.All([x, g], n => Assert.False(Overlap(frame, n)));
 
                 // The frame selected alone, grouped again: named after it, its nodes those it had, not x.
                 MainViewModel.SelectOnly(frame);
@@ -199,6 +207,40 @@ namespace JuliaSynth.Tests.Editing
                 Assert.Equal(group.Name, Assert.Single(MainViewModel.Nodes.OfType<GroupNode>()).Name);
                 Assert.Empty(MainViewModel.Nodes.OfType<FrameNode>());
                 window.Close();
+            });
+        }
+
+        [Fact]
+        public void A_group_opened_in_a_frame_makes_room_for_its_nodes_instead_of_lying_on_its_neighbours()
+        {
+            Ui.Run(() =>
+            {
+                // The Earthquake detector's background group, between energy and ratio in the frame "How hard each second shook".
+                MainViewModel viewModel = new();
+                viewModel.OpenExample(Examples.All.Single(e => e.Name == "Earthquake detector"));
+                GroupNode group = MainViewModel.Nodes.OfType<GroupNode>().Single(g => g.Name == "background");
+                FrameNode around = MainViewModel.Nodes.OfType<FrameNode>().Single(f => f.Holds(group));
+                Node[] neighbours = [.. MainViewModel.Nodes.Where(n => n != group && n is not FrameNode)];
+                Node[] heldBefore = [.. neighbours.Where(around.Holds)];
+                (FrameNode Frame, int Rows, int Columns)[] otherFrames = [.. MainViewModel.Nodes.OfType<FrameNode>()
+                    .Where(f => f != around).Select(f => (f, f.Rows, f.Columns))];
+                Assert.Contains(heldBefore, n => n is Function { Name: "energy" });
+
+                MainViewModel.OpenGroup(group);
+                FrameNode frame = MainViewModel.Nodes.OfType<FrameNode>().Single(f => f.Title == "background");
+
+                // Its frame lies on none of the nodes that weren't in the group; the frame around still holds them all.
+                Assert.All(neighbours, n => Assert.False(Overlap(frame, n), $"{n.Variable} is under the opened group"));
+                Assert.Empty(frame.Outside);
+                Assert.All([.. heldBefore, .. group.Members, frame], n => Assert.True(around.Holds(n), $"{n.Variable} left its frame"));
+
+                // The bigger frame's middle is in the opened one, but the opened one doesn't hold it: dragged, it goes alone.
+                Assert.False(frame.Holds(around));
+
+                // Only the frame around grew: the others are as big as they were, wherever they had to go.
+                Assert.All(otherFrames, o => Assert.Equal((o.Rows, o.Columns), (o.Frame.Rows, o.Frame.Columns)));
+                Node[] all = [.. MainViewModel.Nodes.Where(n => n is not FrameNode)];
+                Assert.All(all, a => Assert.DoesNotContain(all, b => a != b && Overlap(a, b)));
             });
         }
 

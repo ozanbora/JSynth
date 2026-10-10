@@ -10,8 +10,8 @@ namespace JuliaSynth.Model
     public static class Layout
     {
         // Cells left between nodes: room for the wires, and no more.
-        private const int RowGap = 2;
-        private const int ColumnGap = 4;
+        internal const int RowGap = 2;
+        internal const int ColumnGap = 4;
 
         /// <summary>
         /// Where a node sits, in cells: centred on its cell, 9×6 cells (a Display 13×9, a Plot 16×13); nodes with a row
