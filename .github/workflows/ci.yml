@@ -16,18 +16,18 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
       # Many tests run real Julia and pass without checking anything when it isn't found: install it, with the
       # packages the examples and tests use.
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         with:
           version: '1'
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - name: Julia packages
         shell: bash
         run: julia -e 'import Pkg; Pkg.add(["Parsers", "JLD2", "MatrixMarket", "JSON", "PNGFiles", "ColorTypes"])'
