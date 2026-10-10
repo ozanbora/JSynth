@@ -20,7 +20,7 @@ namespace JuliaSynth.ViewModels
         /// <summary>
         /// The field it is from, which its description starts with: "Finance".
         /// </summary>
-        public string Category => Description.Split(':', 2) is [string field, _] ? field : string.Empty;
+        public string Category => Description.Split(':', 2) is [string category, _] ? category : string.Empty;
 
         /// <summary>
         /// What it works out: the first sentence of its description, after the field.

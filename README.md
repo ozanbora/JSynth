@@ -90,7 +90,7 @@ On the canvas, a drag pans, Ctrl+drag selects with a box, and right-click adds n
 
 ## Requirements
 
-- [.NET SDK 9.0.300](https://dotnet.microsoft.com/download) or newer, plus the .NET 8 runtime (the projects target `net8.0`). Older SDKs can't run Avalonia 12's source generators; `global.json` enforces this.
+- [.NET SDK 10](https://dotnet.microsoft.com/download) or newer (the projects target `net10.0`). `global.json` enforces this.
 - [Julia](https://julialang.org/downloads/), preferably through juliaup. JuliaSynth looks for it on the `PATH` and in the usual install folders. You can also choose the Julia program from the sidebar, or with Run → Choose Julia….
 
 ## Build and run
@@ -120,12 +120,11 @@ JuliaSynth runs on Linux, including Ubuntu under WSL 2 with WSLg (Windows 11 sho
    sudo apt install libfontconfig1
    ```
 
-2. Install .NET. Ubuntu 22.04's apt only offers SDK 8, which is too old, so use Microsoft's install script:
+2. Install .NET. Ubuntu 22.04's apt doesn't offer SDK 10, so use Microsoft's install script:
 
    ```sh
    curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
-   bash dotnet-install.sh --channel 9.0 --install-dir ~/.dotnet
-   bash dotnet-install.sh --channel 8.0 --runtime dotnet --install-dir ~/.dotnet
+   bash dotnet-install.sh --channel 10.0 --install-dir ~/.dotnet
    export PATH=~/.dotnet:$PATH DOTNET_ROOT=~/.dotnet
    ```
 
@@ -143,7 +142,7 @@ dotnet publish JuliaSynth.Desktop -c Release -r linux-x64 --self-contained -o pu
 
 - **The window has a taskbar icon but nothing shows, and its title starts with `[WARN:COPY MODE]`.** WSLg couldn't set up the shared memory it uses to send windows to Windows; `/mnt/wslg/weston.log` shows `rdp_allocate_shared_memory: Failed to open ...`. This affects every Linux app, not only JuliaSynth. Restart WSL from Windows with `wsl --shutdown` (this stops all running distros), then start JuliaSynth again.
 - **The app exits at startup with `Unable to load shared library 'libSkiaSharp'`.** Install `libfontconfig1` (step 1 above).
-- **The build fails with `The name 'InitializeComponent' does not exist`.** The .NET SDK is older than 9.0.300; check with `dotnet --version` and install a newer one (step 2 above).
+- **The build fails with `A compatible .NET SDK was not found`.** The .NET SDK is older than 10; check with `dotnet --version` and install a newer one (step 2 above).
 
 ## Project layout
 
