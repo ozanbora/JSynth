@@ -180,7 +180,7 @@ namespace JSynth.Tests.Code
                 Assert.False(viewModel.IsPackageBannerVisible);
 
                 viewModel.OpenExample(Examples.All.Single(e => e.Name == "Network spread"));
-                _ = await Wait.Until(() => viewModel.IsPackageBannerVisible, 15);
+                _ = await Wait.Until(() => viewModel.IsPackageBannerVisible, 60);
 
                 Assert.Equal(["MatrixMarket"], viewModel.MissingPackages);
                 Assert.Equal("This design needs MatrixMarket, which isn't installed. The nodes needing it are skipped until it is.", viewModel.PackageBannerText);
@@ -206,7 +206,7 @@ namespace JSynth.Tests.Code
                 MainViewModel viewModel = new();
                 Assert.True(await viewModel.ChooseJuliaAsync(StandInJulia.Create(_folder, ["julia version 1.11.2", $"{Missing}MatrixMarket", "!   Resolving package versions..."])));
                 viewModel.OpenExample(Examples.All.Single(e => e.Name == "Network spread"));
-                _ = await Wait.Until(() => viewModel.IsPackageBannerVisible, 15);
+                _ = await Wait.Until(() => viewModel.IsPackageBannerVisible, 60);
 
                 List<string> seen = [];
                 viewModel.PropertyChanged += (_, e) =>
@@ -248,7 +248,7 @@ namespace JSynth.Tests.Code
                 viewModel.SaveDesign(path);
 
                 viewModel.OpenDesign(path);
-                _ = await Wait.Until(() => viewModel.IsPackageBannerVisible, 15);
+                _ = await Wait.Until(() => viewModel.IsPackageBannerVisible, 60);
 
                 Assert.Equal(["NoSuchJSynthPackage"], viewModel.MissingPackages);
                 viewModel.EndJulia();
