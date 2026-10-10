@@ -19,6 +19,13 @@ internal class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // A Windows app has no console of its own, so no window opens beside it; started from a terminal,
+        // it writes there (help, errors in the arguments).
+        if (OperatingSystem.IsWindows())
+        {
+            _ = AttachConsole(AttachParentProcess);
+        }
+
         Log.Logger = new LoggerConfiguration()
             .WriteTo.File("Logs/JSynth-.log", rollingInterval: RollingInterval.Day, shared: true)
             .CreateLogger();
@@ -105,6 +112,11 @@ internal class Program
 
         _ = builder.StartWithClassicDesktopLifetime(args);
     }
+
+    private const int AttachParentProcess = -1;
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool AttachConsole(int processId);
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()

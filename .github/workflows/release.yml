@@ -1,0 +1,103 @@
+name: Release
+
+# A version tag (v0.1.0) builds JSynth for each system and publishes a GitHub release with the downloads.
+# Run by hand (Actions → Release → Run workflow), it only builds and checks them.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.rid }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      # The tag without its v; a build run by hand is a development version.
+      - name: Version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then version=${GITHUB_REF_NAME#v}; else version=0.0.0-dev; fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      # Self-contained: runs without .NET installed.
+      - name: Publish
+        run: dotnet publish JSynth.Desktop -c Release -r ${{ matrix.rid }} --self-contained -p:Version=${{ env.VERSION }} -o publish/JSynth
+
+      # The program people run is JSynth. The library is JSynth.dll, so the project can't be named that; the
+      # launcher has the name of the DLL it starts built in, and works renamed.
+      - name: Name the program JSynth
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then mv publish/JSynth/JSynth.Desktop.exe publish/JSynth/JSynth.exe
+          else mv publish/JSynth/JSynth.Desktop publish/JSynth/JSynth; fi
+
+      # The build must start: --help prints the options and exits without opening a window.
+      - name: Check it starts
+        shell: bash
+        run: publish/JSynth/JSynth --help
+
+      # A zip on Windows; a tar.gz elsewhere, which keeps the program executable.
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path publish/JSynth -DestinationPath "JSynth-$env:VERSION-${{ matrix.rid }}.zip"
+      - name: Package
+        if: runner.os != 'Windows'
+        shell: bash
+        run: tar -czf "JSynth-$VERSION-${{ matrix.rid }}.tar.gz" -C publish JSynth
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: JSynth-${{ matrix.rid }}
+          path: JSynth-*
+          if-no-files-found: error
+
+  release:
+    name: Release
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: downloads
+          merge-multiple: true
+
+      # A version with a hyphen (v0.2.0-beta) is a pre-release.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=
+          case "$GITHUB_REF_NAME" in *-*) prerelease=--prerelease ;; esac
+          cat > notes.md <<'EOF'
+          ## Installing
+
+          JSynth runs designs with Julia: install it first from https://julialang.org/downloads/ (juliaup is easiest). JSynth finds it on the `PATH` and in the usual install folders, or choose it with Run → Choose Julia….
+
+          - **Windows (x64):** unzip `JSynth-…-win-x64.zip` and run `JSynth\JSynth.exe`. Windows may warn that the publisher is unknown: choose More info → Run anyway.
+          - **Linux (x64):** `tar -xzf JSynth-…-linux-x64.tar.gz`, install the library Skia needs (`sudo apt install libfontconfig1`), and run `JSynth/JSynth`.
+          - **macOS (Apple Silicon):** unpack `JSynth-…-osx-arm64.tar.gz`. The app isn't signed, so clear the download mark once: `xattr -dr com.apple.quarantine JSynth`, then run `JSynth/JSynth`.
+          EOF
+          gh release create "$GITHUB_REF_NAME" downloads/* --repo "$GITHUB_REPOSITORY" --title "JSynth ${GITHUB_REF_NAME#v}" --notes-file notes.md --generate-notes $prerelease

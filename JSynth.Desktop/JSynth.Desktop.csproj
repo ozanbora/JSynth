@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!--TODO: This is used to be WinExe, in that case Console was not responding properly. Check if we need to change it.-->
-    <!--Currently when we run the exe, there is always a console window opened.-->
-    <OutputType>Exe</OutputType>
+    <!-- A Windows app, so no console window opens beside it; Program attaches to the terminal it was started from. -->
+    <OutputType>WinExe</OutputType>
     <!--If you are willing to use Windows/MacOS native APIs you will need to create 3 projects.
     One for Windows with net10.0-windows TFM, one for MacOS with net10.0-macos and one with net10.0 TFM for Linux.-->
     <TargetFramework>net10.0</TargetFramework>

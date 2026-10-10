@@ -14,7 +14,7 @@ Builds are fine at any time. Tests: see the test skill.
 From the repository:
 
 ```sh
-dotnet build JSynth.Desktop -v q -nologo     # 0 Error(s); the 5 warnings are known
+dotnet build JSynth.Desktop -v q -nologo     # 0 Error(s), 0 Warning(s)
 dotnet run --project JSynth.Desktop --no-build   # run in the background: it keeps running
 dotnet test JSynth.Tests                     # only when asked
 ```

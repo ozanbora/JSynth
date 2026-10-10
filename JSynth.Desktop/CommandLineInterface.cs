@@ -15,8 +15,10 @@ namespace JSynth.Desktop
             CLISettingsBinder binder = new();
             CLISettings? parsedSettings = null;
 
+            // Named for the program people run, whatever its file is called.
             RootCommand rootCommand = new()
             {
+                Name = "JSynth",
                 Description = "A multi-platform Julia Visual Editor."
             };
 

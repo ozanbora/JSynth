@@ -56,4 +56,8 @@ A new test goes in the folder of its area, as a class `<Topic>Tests` in the name
 - For a change to how something looks, add a before and after screenshot, in the light and dark themes.
 - Say in the description what changes for someone using the app.
 
+## Releasing
+
+Push a version tag: `git tag v0.1.0 && git push origin v0.1.0`. The Release workflow builds self-contained downloads for Windows (x64), Linux (x64) and macOS (Apple Silicon), checks each one starts, and publishes a GitHub release with them and the install steps. A tag with a hyphen (`v0.2.0-beta`) makes a pre-release. To build and check the downloads without releasing, run the workflow by hand from the Actions tab.
+
 By contributing, you agree that your contribution is under the project's [MIT License](LICENSE).
