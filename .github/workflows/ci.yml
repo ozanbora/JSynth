@@ -30,7 +30,7 @@ jobs:
       - uses: julia-actions/cache@v2
       - name: Julia packages
         shell: bash
-        run: julia -e 'import Pkg; Pkg.add(["CSV", "JLD2", "MatrixMarket", "JSON", "PNGFiles"])'
+        run: julia -e 'import Pkg; Pkg.add(["Parsers", "JLD2", "MatrixMarket", "JSON", "PNGFiles", "ColorTypes"])'
 
       # Skia's native library needs fontconfig on Linux.
       - name: Linux libraries

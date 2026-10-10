@@ -41,7 +41,7 @@ dotnet test JSynth.Tests
 
 Things to know:
 
-- **Many tests need Julia, and pass without checking anything when it isn't found.** Install Julia, and the packages the examples use (`CSV`, `JLD2`, `MatrixMarket`, `JSON`, `PNGFiles`), before trusting a green run.
+- **Many tests need Julia, and pass without checking anything when it isn't found.** Install Julia, and the packages the examples use (`Parsers`, `JLD2`, `MatrixMarket`, `JSON`, `PNGFiles`, `ColorTypes`), before trusting a green run.
 - Tests run one at a time: the design is shared state.
 - The whole suite takes about 6 minutes on Windows. CI runs it on Windows and Ubuntu for every pull request.
 
