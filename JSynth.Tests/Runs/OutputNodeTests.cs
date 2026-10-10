@@ -107,7 +107,7 @@ namespace JSynth.Tests.Runs
         [Fact]
         public void A_jld2_value_needs_a_name()
         {
-            SaveFile save = new() { Path = "data.jld2", Variable = "2x" };
+            SaveFile save = new() { Path = "data.jld2", NameInFile = "2x" };
 
             Assert.Equal("Give the value a name to store it under.", save.Problem);
             Assert.Equal(save.Problem, save.Error);

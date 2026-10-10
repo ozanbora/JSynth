@@ -640,7 +640,7 @@ public partial class MainWindow : Window
 
             try
             {
-                picture.Save(path);
+                picture.Save(path, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException)
             {

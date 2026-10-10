@@ -101,7 +101,7 @@ namespace JSynth.Model
         #region Private Properties
         private string _path = string.Empty;
         private string _format = ArrayFile.Csv;
-        private string _variable = "A";
+        private string _nameInFile = "A";
         private bool _perFile;
         #endregion
 
@@ -150,13 +150,13 @@ namespace JSynth.Model
         /// <summary>
         /// The name to store the value under in a JLD2 file.
         /// </summary>
-        [JsonProperty(Order = 3)]
-        public string Variable
+        [JsonProperty("Variable", Order = 3)]
+        public string NameInFile
         {
-            get => _variable;
+            get => _nameInFile;
             set
             {
-                _ = this.RaiseAndSetIfChanged(ref _variable, (value ?? string.Empty).Trim());
+                _ = this.RaiseAndSetIfChanged(ref _nameInFile, (value ?? string.Empty).Trim());
                 Update();
             }
         }
@@ -240,7 +240,7 @@ namespace JSynth.Model
         public string FileName => _path.Length == 0 ? "no file" : System.IO.Path.GetFileName(_path);
 
         public override string? Problem => _path.Length == 0 ? "Pick a file to save to."
-            : IsJld2 && !IsIdentifier(Variable) ? "Give the value a name to store it under."
+            : IsJld2 && !IsIdentifier(NameInFile) ? "Give the value a name to store it under."
             : null;
 
         /// <summary>
@@ -284,7 +284,7 @@ namespace JSynth.Model
                 ArrayFile.MatrixMarket => $"MatrixMarket.mmwrite({path}, {input})",
                 ArrayFile.Png => Picture(path, input),
                 ArrayFile.Json => $"write({path}, JSON.json({input}))",
-                _ => $"JLD2.jldsave({path}; {Variable} = {input})",
+                _ => $"JLD2.jldsave({path}; {NameInFile} = {input})",
             };
         }
 

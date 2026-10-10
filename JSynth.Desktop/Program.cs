@@ -86,7 +86,8 @@ internal class Program
             });
         }
 
-        if (settings.UseManagedSystemDialogs)
+        // The managed dialogs are only for desktop systems; the analyzer needs the check spelled out.
+        if (settings.UseManagedSystemDialogs && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
         {
             _ = builder.UseManagedSystemDialogs();
         }

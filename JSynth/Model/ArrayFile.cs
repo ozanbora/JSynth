@@ -35,7 +35,7 @@ namespace JSynth.Model
         private string _elementType = "Float64";
         private bool _hasHeader;
         private bool _hasComments;
-        private string _variable = "A";
+        private string _nameInFile = "A";
         private string _summary = string.Empty;
         private string? _error;
         #endregion
@@ -147,13 +147,13 @@ namespace JSynth.Model
         /// <summary>
         /// The name the array was saved under in a JLD2 file.
         /// </summary>
-        [JsonProperty(Order = 6)]
-        public string Variable
+        [JsonProperty("Variable", Order = 6)]
+        public string NameInFile
         {
-            get => _variable;
+            get => _nameInFile;
             set
             {
-                _ = this.RaiseAndSetIfChanged(ref _variable, (value ?? string.Empty).Trim());
+                _ = this.RaiseAndSetIfChanged(ref _nameInFile, (value ?? string.Empty).Trim());
                 Update();
             }
         }
@@ -196,7 +196,7 @@ namespace JSynth.Model
         /// <summary>
         /// The Julia expression reading the file, e.g. <c>readdlm(raw"C:\data\a.csv", ',', Float64)</c>.
         /// </summary>
-        public string Julia => FileFormats.Read(Format, PathLiteral(_path), Shape, ElementType, HasHeader, Variable, HasComments);
+        public string Julia => FileFormats.Read(Format, PathLiteral(_path), Shape, ElementType, HasHeader, NameInFile, HasComments);
 
         /// <summary>
         /// <see cref="Julia"/>, after the <c>using</c> it needs.
@@ -261,7 +261,7 @@ namespace JSynth.Model
                 return (string.Empty, "Pick a file.");
             }
 
-            if (IsJld2 && !IsIdentifier(Variable))
+            if (IsJld2 && !IsIdentifier(NameInFile))
             {
                 return (string.Empty, "Name the array as it was saved in the file.");
             }

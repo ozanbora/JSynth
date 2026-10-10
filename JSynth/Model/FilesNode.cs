@@ -56,7 +56,7 @@ namespace JSynth.Model
         private string _elementType = "Float64";
         private bool _hasHeader;
         private bool _hasComments;
-        private string _variable = "A";
+        private string _nameInFile = "A";
         private string _summary = string.Empty;
         private string? _error;
         private bool _eachFile;
@@ -178,13 +178,13 @@ namespace JSynth.Model
         /// <summary>
         /// The name the array was saved under in each JLD2 file.
         /// </summary>
-        [JsonProperty(Order = 7)]
-        public string Variable
+        [JsonProperty("Variable", Order = 7)]
+        public string NameInFile
         {
-            get => _variable;
+            get => _nameInFile;
             set
             {
-                _ = this.RaiseAndSetIfChanged(ref _variable, (value ?? string.Empty).Trim());
+                _ = this.RaiseAndSetIfChanged(ref _nameInFile, (value ?? string.Empty).Trim());
                 Update();
             }
         }
@@ -276,7 +276,7 @@ namespace JSynth.Model
         /// <summary>
         /// The Julia function reading one file, e.g. <c>path -> readdlm(path, ',', Float64)</c>.
         /// </summary>
-        public string ReadFunction => $"path -> {FileFormats.Read(Format, "path", Shape, ElementType, HasHeader, Variable, HasComments)}";
+        public string ReadFunction => $"path -> {FileFormats.Read(Format, "path", Shape, ElementType, HasHeader, NameInFile, HasComments)}";
 
         /// <summary>
         /// <see cref="Julia"/>, after the <c>using</c> it needs.
@@ -375,7 +375,7 @@ namespace JSynth.Model
                 return (string.Empty, "The pattern is for file names: no quotes or folders in it.");
             }
 
-            if (IsJld2 && !IsIdentifier(Variable))
+            if (IsJld2 && !IsIdentifier(NameInFile))
             {
                 return (string.Empty, "Name the array as it was saved in the files.");
             }

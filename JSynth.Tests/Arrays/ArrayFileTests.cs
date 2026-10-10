@@ -101,12 +101,12 @@ namespace JSynth.Tests.Arrays
         [Fact]
         public void A_jld2_array_is_read_by_name_and_converted()
         {
-            ArrayFile file = new() { Path = Write("a.jld2", string.Empty), Shape = "SparseVector", Variable = "signal" };
+            ArrayFile file = new() { Path = Write("a.jld2", string.Empty), Shape = "SparseVector", NameInFile = "signal" };
 
             Assert.Null(file.Error);
             Assert.Equal($"convert(SparseVector{{Float64, Int64}}, JLD2.load(raw\"{file.Path}\", raw\"signal\"))", file.Julia);
 
-            file.Variable = "";
+            file.NameInFile = "";
             Assert.Equal("Name the array as it was saved in the file.", file.Error);
         }
 

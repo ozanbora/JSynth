@@ -80,7 +80,7 @@
     <TextBox Grid.Row="2"
              Grid.Column="1"
              FontFamily="{StaticResource CodeFont}"
-             Text="{Binding Path=Variable}"
+             Text="{Binding Path=NameInFile}"
              IsVisible="{Binding Path=IsJld2}"
              ToolTip.Tip="The name to store the value under; Load from file reads it back by this name."
              />

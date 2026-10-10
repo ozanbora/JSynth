@@ -131,7 +131,7 @@
     <TextBox Grid.Row="3"
              Grid.Column="1"
              FontFamily="{StaticResource CodeFont}"
-             Text="{Binding Path=Variable}"
+             Text="{Binding Path=NameInFile}"
              IsVisible="{Binding Path=IsJld2}"
              ToolTip.Tip="The name the array was saved under in every file, e.g. A for jldsave(&quot;run1.jld2&quot;; A)."
              />
