@@ -10,7 +10,7 @@
 # WIN_REPO and CLONE override the two folders.
 set -euo pipefail
 
-WIN_REPO=${WIN_REPO:-/mnt/c/Dev/JuliaSynth}
+WIN_REPO=${WIN_REPO:-$(cd "$(dirname "$0")/../../.." && pwd)}
 CLONE=${CLONE:-$HOME/juliasynth-wsl}
 
 # The SDK in ~/.dotnet comes first: Ubuntu's /usr/bin/dotnet is older than global.json allows.

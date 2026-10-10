@@ -25,7 +25,7 @@ $parts = @($Area | ForEach-Object { "FullyQualifiedName~JuliaSynth.Tests.$_." })
 $filter = $parts -join '|'
 
 if ($Wsl) {
-    $script = '/mnt/c/Dev/JuliaSynth/.claude/skills/build/wsl.sh'
+    $script = (wsl -e wslpath -a ("$repo" -replace '\\', '/')) + '/.claude/skills/build/wsl.sh'
     if ($filter) { wsl -e bash $script test $filter } else { wsl -e bash $script test }
 }
 elseif ($filter) {

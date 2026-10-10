@@ -172,6 +172,12 @@ Data the examples download. Each download writes the full attribution next to th
 - **Storm surge:** water levels and tide predictions from NOAA CO-OPS, and Hurricane Helene's best track from the National Hurricane Center's HURDAT2 database.
 - **Air traffic:** the [OpenSky Network](https://opensky-network.org/) live API.
 
+## Contributing
+
+Bug reports and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md) for building, running the tests and what a pull request needs.
+
 ## License
 
 JuliaSynth is under the [MIT License](LICENSE). The fonts and the example data keep their own licenses, listed above.
+
+JuliaSynth is not affiliated with or endorsed by the Julia project. Julia is a trademark of JuliaHub, Inc.

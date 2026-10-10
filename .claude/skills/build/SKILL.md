@@ -5,9 +5,9 @@ description: Build, run, test or publish JuliaSynth on Windows and on Linux unde
 
 # Building JuliaSynth on Windows and WSL
 
-The repository is `C:\Dev\JuliaSynth`. The app is `JuliaSynth.Desktop` (Avalonia 12, .NET 10; `global.json` asks for SDK 10 or newer).
+Commands run from the repository's root. The app is `JuliaSynth.Desktop` (Avalonia 12, .NET 10; `global.json` asks for SDK 10 or newer).
 
-Tests run only when the user says to push, or asks for them (see memory: tests only on push). Builds are fine at any time.
+Builds are fine at any time. Tests: see the test skill.
 
 ## Windows
 
@@ -28,14 +28,14 @@ dotnet test JuliaSynth.Tests                     # only when asked
 
 Call WSL from the **PowerShell** tool, not Git Bash: Git Bash rewrites `/mnt/c/...` arguments into Windows paths.
 
-The Linux build lives in a clone in the Linux file system, `~/juliasynth-wsl`, never in `/mnt/c` (the two systems would share `bin` and `obj`). Its `origin` is `/mnt/c/Dev/JuliaSynth`. `wsl.sh` in this folder keeps it in step and builds there:
+The Linux build lives in a clone in the Linux file system, `~/juliasynth-wsl`, never in `/mnt/c` (the two systems would share `bin` and `obj`). Its `origin` is the Windows repository, seen from WSL (`/mnt/c/...`). `wsl.sh` in this folder keeps it in step and builds there:
 
 ```powershell
 $sp = '<scratchpad>'   # any folder Windows and WSL can both reach
 git diff HEAD --binary --output="$sp\wip.patch"   # the uncommitted work; --output keeps it byte for byte
 $b = git branch --show-current; $c = git rev-parse HEAD
 $p = (wsl -e wslpath -a ($sp -replace '\\','/')) + '/wip.patch'
-$s = '/mnt/c/Dev/JuliaSynth/.claude/skills/build/wsl.sh'
+$s = (wsl -e wslpath -a ((Get-Location).Path -replace '\\','/')) + '/.claude/skills/build/wsl.sh'
 
 wsl -e env BRANCH=$b COMMIT=$c bash $s sync $p   # clone = Windows HEAD + uncommitted work
 wsl -e bash $s build

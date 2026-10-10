@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    name: Build and test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Many tests run real Julia and pass without checking anything when it isn't found: install it, with the
+      # packages the examples and tests use.
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - name: Julia packages
+        shell: bash
+        run: julia -e 'import Pkg; Pkg.add(["CSV", "JLD2", "MatrixMarket", "JSON", "PNGFiles"])'
+
+      # Skia's native library needs fontconfig on Linux.
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1
+
+      - name: Build
+        run: dotnet build JuliaSynth.sln -c Release
+
+      - name: Test
+        run: dotnet test JuliaSynth.Tests -c Release --no-build --logger "console;verbosity=normal"

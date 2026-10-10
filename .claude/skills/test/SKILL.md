@@ -5,7 +5,7 @@ description: Run JuliaSynth's tests, all of them or only the areas a change touc
 
 # Testing JuliaSynth
 
-Tests run when the user says push, or asks for them; not while working (see memory: tests only on push). The whole suite takes about 6 minutes on Windows and 3½ in WSL; one area takes a fraction of that.
+Run the tests a change touches before pushing it, and when asked; the user's own preferences on when to test come first. The whole suite takes about 6 minutes on Windows and 3½ in WSL; one area takes a fraction of that.
 
 ## The areas
 
