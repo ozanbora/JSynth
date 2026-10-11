@@ -1,5 +1,7 @@
 # JSynth
 
+[![CI](https://github.com/ozanbora/JSynth/actions/workflows/ci.yml/badge.svg)](https://github.com/ozanbora/JSynth/actions/workflows/ci.yml)
+
 A visual editor for [Julia](https://julialang.org/). Wire inputs, functions and plots together on a canvas, run the design with Julia, and see every value on its node. Any design can be exported as a plain Julia script.
 
 JSynth runs on Windows and Linux, including WSL.

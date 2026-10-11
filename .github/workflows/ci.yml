@@ -1,9 +1,12 @@
 name: CI
 
+# Not for a change to the docs alone: Markdown files and the README's screenshots build and test nothing.
 on:
   push:
     branches: [master]
+    paths-ignore: ['**/*.md', 'docs/**']
   pull_request:
+    paths-ignore: ['**/*.md', 'docs/**']
 
 jobs:
   test:
