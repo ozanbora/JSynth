@@ -18,10 +18,20 @@ namespace JSynth.Desktop
         /// default under WSL, where WSLg can leave closed menus on the screen, overlapping the next ones.
         /// </summary>
         public bool OverlayPopups { get; set; } = Wsl.IsRunningUnder;
-        public bool Headless { get; set; }
         public bool EnableVNCServer { get; set; }
+
+        /// <summary>
+        /// The address VNC is served on; null for this computer only.
+        /// </summary>
         public string? VNCHost { get; set; } = null;
-        public int VNCPort { get; set; } = 5901;
+
+        /// <summary>
+        /// The port VNC is served on; null for any free one.
+        /// </summary>
+        public int? VNCPort { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string? VNCPassword { get; set; }
 
         /// <summary>
         /// A design file to open, alone, in this window: a tab opened in a new window.

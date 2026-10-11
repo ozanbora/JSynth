@@ -104,7 +104,7 @@ Some tests run real Julia, and skip themselves when Julia isn't found. Tests usi
 
 Run `dotnet run --project JSynth.Desktop -- --help` for the command-line options:
 
-- Rendering and headless options.
+- Rendering options, and `--enableVncServer` to run without a window, shown to VNC viewers instead.
 - `--open <file>`: open one design file, alone in the window.
 - `--untitled <file> --name <name>`: open a design that was never saved, alone in the window. This is what a tab opened in a new window uses.
 

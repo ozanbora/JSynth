@@ -1,13 +1,14 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Dialogs;
-using Avalonia.Headless;
 using ReactiveUI.Avalonia;
 using Avalonia.Win32;
 using Serilog;
 using Splat;
 using Splat.Serilog;
 using System;
+using System.Net;
+using System.Net.Sockets;
 
 namespace JSynth.Desktop;
 
@@ -36,9 +37,62 @@ internal class Program
             return exitCode;
         }
 
+        if (settings.EnableVNCServer && CheckVnc(settings) is int vncError)
+        {
+            return vncError;
+        }
+
         Console.WriteLine("Running JSynth..");
         StartApp(settings, args);
         return 0;
+    }
+
+    /// <summary>
+    /// Says what's wrong before serving VNC, rather than leaving viewers waiting; null when nothing is.
+    /// </summary>
+    private static int? CheckVnc(CLISettings settings)
+    {
+        IPAddress? address = null;
+        if (!string.IsNullOrEmpty(settings.VNCHost) && !IPAddress.TryParse(settings.VNCHost, out address))
+        {
+            Console.Error.WriteLine($"'{settings.VNCHost}' isn't an IP address: give --vncHost as one, such as 127.0.0.1 or 0.0.0.0.");
+            return 1;
+        }
+
+        TurboJpeg.FindSystemLibrary();
+        if (!TurboJpeg.IsAvailable())
+        {
+            Console.Error.WriteLine($"VNC needs the turbojpeg library, which wasn't found. {TurboJpeg.InstallHint}");
+            return 1;
+        }
+
+        // No port: any free one, found by binding port 0 for a moment.
+        address ??= IPAddress.Loopback;
+        try
+        {
+            TcpListener listener = new(address, settings.VNCPort ?? 0);
+            listener.Start();
+            settings.VNCPort = ((IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+        }
+        catch (Exception error) when (error is SocketException or ArgumentOutOfRangeException)
+        {
+            Console.Error.WriteLine($"Can't serve VNC at {address}:{settings.VNCPort}: {error.Message}");
+            return 1;
+        }
+
+        string where = address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any)
+            ? $"port {settings.VNCPort} on every address of this computer"
+            : $"{address}:{settings.VNCPort}";
+        Console.WriteLine($"Serving JSynth over VNC at {where}: connect a VNC viewer there.");
+        Log.Information("Serving VNC at {Address}:{Port}", address, settings.VNCPort);
+        if (!IPAddress.IsLoopback(address) && !IPAddress.IsLoopback(address) && string.IsNullOrEmpty(settings.VNCPassword))
+        {
+            Console.Error.WriteLine("Warning: any computer that can reach this address controls JSynth and the Julia it runs, with no password. "
+                + "Serve on 127.0.0.1 and connect through an SSH tunnel, or at least give --vncPassword.");
+        }
+
+        return null;
     }
 
     private static void StartApp(CLISettings settings, string[] args)
@@ -99,14 +153,10 @@ internal class Program
             _ = builder.UseManagedSystemDialogs();
         }
 
-        if (settings.Headless)
+        // No host: this computer only. CheckVnc has picked the port.
+        if (settings.EnableVNCServer)
         {
-            _ = builder.UseHeadless(new AvaloniaHeadlessPlatformOptions());
-        }
-
-        if (settings.EnableVNCServer && !string.IsNullOrEmpty(settings.VNCHost))
-        {
-            _ = builder.StartWithHeadlessVncPlatform(settings.VNCHost, settings.VNCPort, args, ShutdownMode.OnMainWindowClose);
+            _ = builder.StartWithHeadlessVncPlatform(settings.VNCHost, settings.VNCPort!.Value, settings.VNCPassword, args, ShutdownMode.OnMainWindowClose);
             return;
         }
 

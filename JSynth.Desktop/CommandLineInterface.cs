@@ -30,10 +30,10 @@ namespace JSynth.Desktop
             rootCommand.AddOption(binder.UseDirectX11);
             rootCommand.AddOption(binder.UseManagedSystemDialogs);
             rootCommand.AddOption(binder.OverlayPopups);
-            rootCommand.AddOption(binder.Headless);
             rootCommand.AddOption(binder.EnableVNCServer);
             rootCommand.AddOption(binder.VNCHost);
             rootCommand.AddOption(binder.VNCPort);
+            rootCommand.AddOption(binder.VNCPassword);
             rootCommand.AddOption(binder.OpenFile);
             rootCommand.AddOption(binder.UntitledFile);
             rootCommand.AddOption(binder.DesignName);

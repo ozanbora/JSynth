@@ -21,13 +21,13 @@ namespace JSynth.Desktop
 
         public Option<bool> OverlayPopups { get; set; }
 
-        public Option<bool> Headless { get; set; }
-
         public Option<bool> EnableVNCServer { get; set; }
 
         public Option<string?> VNCHost { get; set; }
 
-        public Option<int> VNCPort { get; set; }
+        public Option<int?> VNCPort { get; set; }
+
+        public Option<string?> VNCPassword { get; set; }
 
         public Option<string?> OpenFile { get; set; }
 
@@ -85,28 +85,25 @@ namespace JSynth.Desktop
                 description: "Draw menus and popups inside the window (Linux; on by default under WSL)"
             );
 
-            Headless = new Option<bool>(
-                aliases: ["--headless"],
-                getDefaultValue: () => CLISettings.Default.Headless,
-                description: "Run in headless mode"
-            );
-
             EnableVNCServer = new Option<bool>(
                 aliases: ["--enableVncServer"],
                 getDefaultValue: () => CLISettings.Default.EnableVNCServer,
-                description: "Enable VNC server"
+                description: "Run without a window, shown to VNC viewers instead (on Linux and Apple Silicon Macs, it needs the turbojpeg library)"
             );
 
             VNCHost = new Option<string?>(
                 aliases: ["--vncHost"],
-                getDefaultValue: () => CLISettings.Default.VNCHost,
-                description: "VNC host"
+                description: "The address to serve VNC on [default: 127.0.0.1, this computer only]. Anyone who can reach it controls JSynth and the Julia it runs: from elsewhere, connect through an SSH tunnel"
             );
 
-            VNCPort = new Option<int>(
+            VNCPort = new Option<int?>(
                 aliases: ["--vncPort"],
-                getDefaultValue: () => CLISettings.Default.VNCPort,
-                description: "VNC port"
+                description: "The port to serve VNC on [default: any free one, printed at the start]"
+            );
+
+            VNCPassword = new Option<string?>(
+                aliases: ["--vncPassword"],
+                description: "A password VNC viewers must give (VNC uses only its first 8 characters)"
             );
 
             OpenFile = new Option<string?>(
@@ -141,10 +138,10 @@ namespace JSynth.Desktop
                 UseDirectX11 = GetOptionValue(bindingContext, UseDirectX11),
                 UseManagedSystemDialogs = GetOptionValue(bindingContext, UseManagedSystemDialogs),
                 OverlayPopups = GetOptionValue(bindingContext, OverlayPopups),
-                Headless = GetOptionValue(bindingContext, Headless),
                 EnableVNCServer = GetOptionValue(bindingContext, EnableVNCServer),
                 VNCHost = GetOptionValue(bindingContext, VNCHost),
                 VNCPort = GetOptionValue(bindingContext, VNCPort),
+                VNCPassword = GetOptionValue(bindingContext, VNCPassword),
                 OpenFile = GetOptionValue(bindingContext, OpenFile),
                 UntitledFile = GetOptionValue(bindingContext, UntitledFile),
                 DesignName = GetOptionValue(bindingContext, DesignName),
