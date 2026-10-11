@@ -10,7 +10,7 @@ namespace JSynth.ViewModels
         private static MainViewModel.DesignDocument LiveMonteCarloPi()
         {
             EveryNode clock = new() { Seconds = 0.1, Limit = 100, Row = 5, Column = Inputs };
-            Integer batch = InPanel(Whole(20_000, 13), "darts a tick", 1_000, 200_000, 1, 10_000_000);
+            Integer batch = InPanel(Whole(20_000, 13), "darts a tick", 1_000, 200_000);
             Integer hits = Whole(0, 21);
 
             Function darts = Define("darts", "Int64", 5, Stage1,
@@ -50,7 +50,7 @@ namespace JSynth.ViewModels
         private static MainViewModel.DesignDocument RandomWalk()
         {
             ButtonNode press = new() { Row = 5, Column = Inputs };
-            Integer steps = InPanel(Whole(1_000, 13), "steps a press", 10, 10_000, 1, 1_000_000);
+            Integer steps = InPanel(Whole(1_000, 13), "steps a press", 10, 10_000);
             ArrayBuilder path = Empty(JuliaTypes.Vector, "Float64", 21);
 
             Function walk = Define("walk", "Vector{Float64}", 15, Stage1,

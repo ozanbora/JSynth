@@ -17,8 +17,8 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
     // Told when the user sets the value in the panel, e.g. so the design runs again.
     private readonly Action<PanelParameter>? _edited;
 
-    // The slider's range when none was set: around the value, fixed while the parameter is shown, so moving the slider
-    // doesn't move it.
+    // The slider's range where the number has no limit of its own (still its type's, like ±1.8e308 for a float): around
+    // the value, fixed while the parameter is shown, so moving the slider doesn't move it.
     private double _from;
     private double _to;
 
@@ -120,15 +120,7 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
     /// A hundredth of the range, rounded down to 1, 2 or 5 times a power of ten: 5000 for 0 to 500000, 0.001 for 0 to
     /// 0.1. At least 1 for integers.
     /// </summary>
-    public double DefaultStep
-    {
-        get
-        {
-            double size = (To - From) / 100;
-            double step = size > 0 && double.IsFinite(size) ? RoundDown(size) : 1;
-            return IsInteger ? Math.Max(1, step) : step;
-        }
-    }
+    public double DefaultStep => SliderStep.Default(From, To, IsInteger);
 
     /// <summary>
     /// <see cref="Step"/> as typed in the panel: a number above 0, a whole one of at least 1 for integers; emptied, the
@@ -139,13 +131,9 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
         get => Step.ToString("G", CultureInfo.InvariantCulture);
         set
         {
-            if (string.IsNullOrWhiteSpace(value))
+            if (SliderStep.TryParse(value, IsInteger, out double? step))
             {
-                Node.PanelStep = null;
-            }
-            else if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double step) && step > 0 && double.IsFinite(step))
-            {
-                Node.PanelStep = IsInteger ? Math.Max(1, Math.Round(step)) : step;
+                Node.PanelStep = step;
             }
 
             this.RaisePropertyChanged();
@@ -254,21 +242,68 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Where the slider starts.
+    /// Where the slider starts: the number's Min. Set, it sets the Min, and the value moves into the range.
     /// </summary>
     public double From
     {
-        get => Node.PanelFrom ?? _from;
-        set => Node.PanelFrom = value;
+        get => Limits is { MinSet: true } limits ? limits.Min : Math.Max(_from, Limits.Min);
+        set => SetLimits(value, null);
     }
 
     /// <summary>
-    /// Where the slider ends.
+    /// Where the slider ends: the number's Max. Set, it sets the Max, and the value moves into the range.
     /// </summary>
     public double To
     {
-        get => Node.PanelTo ?? _to;
-        set => Node.PanelTo = value;
+        get => Limits is { MaxSet: true } limits ? limits.Max : Math.Min(_to, Limits.Max);
+        set => SetLimits(null, value);
+    }
+
+    /// <summary>
+    /// The number's Min and Max, and whether each is its own: not still its type's extreme.
+    /// </summary>
+    private (double Min, double Max, bool MinSet, bool MaxSet) Limits => Node switch
+    {
+        Float f => (f.Min, f.Max, f.Min != f.HardMin, f.Max != f.HardMax),
+        Integer z => (z.Min, z.Max, z.Min != z.HardMin, z.Max != z.HardMax),
+        UnsignedInteger n => ((double)n.Min, (double)n.Max, n.Min != n.HardMin, n.Max != n.HardMax),
+        _ => (0, 0, false, false),
+    };
+
+    /// <summary>
+    /// Gives a number with no limits of its own (only its type's, like ±1.8e308 for a float) limits around its value: the
+    /// range its slider would have, so the node and the panel show the same.
+    /// </summary>
+    internal static void LimitAroundValue(Node node)
+    {
+        using PanelParameter parameter = new(node, string.Empty, string.Empty);
+        if (parameter.Node is Float or Integer or UnsignedInteger && parameter.Limits is { } limits && !(limits.MinSet && limits.MaxSet))
+        {
+            parameter.SetLimits(limits.MinSet ? null : parameter.From, limits.MaxSet ? null : parameter.To);
+        }
+    }
+
+    private void SetLimits(double? min, double? max)
+    {
+        switch (Node)
+        {
+            case Float f:
+                f.Min = Math.Clamp(min ?? f.Min, f.HardMin, f.HardMax);
+                f.Max = Math.Clamp(max ?? f.Max, f.HardMin, f.HardMax);
+                f.Value = Math.Clamp(f.Value, f.Min, f.Max);
+                break;
+            case Integer z:
+                // Whole numbers inside the range typed: 1.5 to 9.5 is 2 to 9.
+                z.Min = min is double lo ? (lo <= z.HardMin ? z.HardMin : (long)Math.Ceiling(lo)) : z.Min;
+                z.Max = max is double hi ? (hi >= z.HardMax ? z.HardMax : (long)Math.Floor(hi)) : z.Max;
+                z.Value = Math.Clamp(z.Value, z.Min, z.Max);
+                break;
+            case UnsignedInteger n:
+                n.Min = min is double low ? (low <= 0 ? n.HardMin : low >= (double)n.HardMax ? n.HardMax : (UInt128)Math.Ceiling(low)) : n.Min;
+                n.Max = max is double high ? (high >= (double)n.HardMax ? n.HardMax : (UInt128)Math.Floor(Math.Max(0, high))) : n.Max;
+                n.Value = UInt128.Clamp(n.Value, n.Min, n.Max);
+                break;
+        }
     }
 
     /// <summary>
@@ -279,7 +314,7 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
         get => From.ToString("G", CultureInfo.InvariantCulture);
         set
         {
-            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double from) && from < To)
+            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double from) && from < To && double.IsFinite(from))
             {
                 From = from;
             }
@@ -296,7 +331,7 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
         get => To.ToString("G", CultureInfo.InvariantCulture);
         set
         {
-            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double to) && to > From)
+            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double to) && to > From && double.IsFinite(to))
             {
                 To = to;
             }
@@ -323,17 +358,6 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
         return value > 0 ? (0, round) : (-round, round);
     }
 
-    /// <summary>
-    /// The largest of 1, 2 or 5 times a power of ten that isn't above <paramref name="size"/>.
-    /// </summary>
-    private static double RoundDown(double size)
-    {
-        double power = Math.Pow(10, Math.Floor(Math.Log10(size)));
-        double round = new[] { 5, 2, 1 }.Select(m => m * power).First(r => r <= size * (1 + 1e-12));
-
-        // Exactly: 0.001, not 0.0010000000000000002.
-        return Math.Round(round, Math.Max(0, -(int)Math.Floor(Math.Log10(round))));
-    }
     #endregion
 
     #region Arrays and folders
@@ -396,13 +420,10 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
             case nameof(Node.PanelName):
                 this.RaisePropertyChanged(nameof(Name));
                 break;
-            case nameof(Node.PanelFrom):
+            // The limits are the slider's range; the type's change them.
+            case "Min" or "Max" or "HardMin" or "HardMax":
                 this.RaisePropertyChanged(nameof(From));
                 this.RaisePropertyChanged(nameof(FromText));
-                this.RaisePropertyChanged(nameof(SliderPosition));
-                StepChanged();
-                break;
-            case nameof(Node.PanelTo):
                 this.RaisePropertyChanged(nameof(To));
                 this.RaisePropertyChanged(nameof(ToText));
                 this.RaisePropertyChanged(nameof(SliderPosition));

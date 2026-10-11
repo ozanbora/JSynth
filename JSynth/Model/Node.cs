@@ -86,8 +86,6 @@ namespace JSynth.Model
         #region The parameters panel
         private bool _inPanel;
         private string _panelName = string.Empty;
-        private double? _panelFrom;
-        private double? _panelTo;
         private double? _panelStep;
 
         /// <summary>
@@ -117,26 +115,6 @@ namespace JSynth.Model
         }
 
         /// <summary>
-        /// Where a number's slider in the panel starts; null for a range around its value.
-        /// </summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public double? PanelFrom
-        {
-            get => _panelFrom;
-            set => this.RaiseAndSetIfChanged(ref _panelFrom, value);
-        }
-
-        /// <summary>
-        /// Where a number's slider in the panel ends; null for a range around its value.
-        /// </summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public double? PanelTo
-        {
-            get => _panelTo;
-            set => this.RaiseAndSetIfChanged(ref _panelTo, value);
-        }
-
-        /// <summary>
         /// The step a number's slider in the panel moves in; null for the default (see PanelParameter.DefaultStep).
         /// </summary>
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
@@ -149,7 +127,7 @@ namespace JSynth.Model
         /// <summary>
         /// The properties of the panel: changing them doesn't change what the design works out.
         /// </summary>
-        public static IReadOnlyList<string> PanelProperties { get; } = [nameof(InPanel), nameof(PanelName), nameof(PanelFrom), nameof(PanelTo), nameof(PanelStep)];
+        public static IReadOnlyList<string> PanelProperties { get; } = [nameof(InPanel), nameof(PanelName), nameof(PanelStep)];
         #endregion
 
         private string _purpose = string.Empty;

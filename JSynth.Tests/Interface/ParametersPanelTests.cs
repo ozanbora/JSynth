@@ -36,14 +36,24 @@ namespace JSynth.Tests.Interface
         private static Example Loan => Examples.All.Single(e => e.Name == "Loan payment");
 
         /// <summary>
-        /// The Loan payment example with nothing in the panel, and the panel closed.
+        /// The Loan payment example with nothing in the panel, its numbers with no limits but their types', and the panel
+        /// closed.
         /// </summary>
         private static void OpenBareLoan(MainViewModel viewModel)
         {
             viewModel.OpenExample(Loan);
             foreach (Node node in MainViewModel.Nodes)
             {
-                (node.InPanel, node.PanelName, node.PanelFrom, node.PanelTo, node.PanelStep) = (false, string.Empty, null, null, null);
+                (node.InPanel, node.PanelName, node.PanelStep) = (false, string.Empty, null);
+                switch (node)
+                {
+                    case Float f:
+                        (f.Min, f.Max) = (f.HardMin, f.HardMax);
+                        break;
+                    case Integer z:
+                        (z.Min, z.Max) = (z.HardMin, z.HardMax);
+                        break;
+                }
             }
 
             viewModel.IsParametersOpen = false;
@@ -93,24 +103,32 @@ namespace JSynth.Tests.Interface
                 Assert.Equal(("P", "x1 → payment(P), interest(P)"), (p.Name, p.Source));
                 Assert.Equal("years", y.Name);
 
+                // With no limits of their own, they got ones around their values: the sliders' ranges.
+                Assert.Equal((0.0, 500000.0), (loan.Min, loan.Max));
+                Assert.Equal((0L, 100L), (years.Min, years.Max));
+                Assert.Equal((loan.Min, loan.Max), (p.From, p.To));
+
                 // The slider: halfway is half the range; whole years only.
                 p.SliderPosition = PanelParameter.SliderScale / 2;
                 Assert.Equal(250000, loan.Value);
                 y.SliderPosition = PanelParameter.SliderScale * 0.333;
                 Assert.Equal(33, years.Value);
 
-                // The box: exactly; past the slider, the slider reaches it; not a number, nothing changes.
+                // The box: exactly; past the limits, held at them; not a number, nothing changes.
+                p.NumberText = "123456.5";
+                Assert.Equal(123456.5, loan.Value);
                 p.NumberText = "1234567.5";
-                Assert.Equal(1234567.5, loan.Value);
-                Assert.Equal(1234567.5, p.To);
+                Assert.Equal(500000, loan.Value);
                 p.NumberText = "lots";
-                Assert.Equal(1234567.5, loan.Value);
+                Assert.Equal(500000, loan.Value);
 
-                // Renamed, and its range set.
+                // Renamed, and its range set: the number's limits.
                 p.Name = "loan";
                 p.FromText = "50000";
                 p.ToText = "2000000";
-                Assert.Equal(("loan", 50000.0, 2000000.0), (loan.PanelName, loan.PanelFrom, loan.PanelTo));
+                Assert.Equal(("loan", 50000.0, 2000000.0), (loan.PanelName, loan.Min, loan.Max));
+                p.NumberText = "1234567.5";
+                Assert.Equal(1234567.5, loan.Value);
 
                 // Named, it is its variable in the script too; emptied, named after the parameter again, and by the script.
                 Assert.Contains("loan = Float64(1234567.5)", MainViewModel.ExportScript());
@@ -142,7 +160,7 @@ namespace JSynth.Tests.Interface
         {
             OpenBareLoan(viewModel);
             Float rate = MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).Last();
-            (rate.InPanel, rate.PanelFrom, rate.PanelTo) = (true, from, 1);
+            (rate.InPanel, rate.Min, rate.Max) = (true, from, 1);
             return (rate, viewModel.Parameters.Single());
         }
 
@@ -170,7 +188,7 @@ namespace JSynth.Tests.Interface
 
                 // Steps count from the start of the range, and stop at its end. A fifth of the way along 0.03 to 1 is
                 // 0.194 past the start; the nearest step is 0.2 past it.
-                rate.PanelFrom = 0.03;
+                rate.Min = 0.03;
                 p.SliderPosition = 0.2 * PanelParameter.SliderScale;
                 Assert.Equal(0.23, rate.Value);
                 p.SliderPosition = PanelParameter.SliderScale;
@@ -186,7 +204,7 @@ namespace JSynth.Tests.Interface
                 MainViewModel viewModel = new();
                 OpenBareLoan(viewModel);
                 Integer years = MainViewModel.Nodes.OfType<Integer>().Single();
-                (years.InPanel, years.PanelFrom, years.PanelTo) = (true, 1, 40);
+                (years.InPanel, years.Min, years.Max) = (true, 1, 40);
                 PanelParameter p = viewModel.Parameters.Single();
 
                 p.StepText = "0.5";
@@ -288,6 +306,103 @@ namespace JSynth.Tests.Interface
                 Dispatcher.UIThread.RunJobs();
                 Assert.Equal(0.45, rate.Value);
                 window.Close();
+            });
+        }
+
+        [Fact]
+        public void The_sliders_range_is_the_numbers_min_and_max_both_ways()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                viewModel.OpenExample(Loan);
+                Float loan = MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).First();
+                Integer years = MainViewModel.Nodes.OfType<Integer>().Single();
+                PanelParameter p = viewModel.Parameters[0];
+                PanelParameter y = viewModel.Parameters[2];
+
+                // The example's range on the node and in the panel alike.
+                Assert.Equal((10_000.0, 1_000_000.0), (loan.Min, loan.Max));
+                Assert.Equal((loan.Min, loan.Max), (p.From, p.To));
+
+                // Set in the panel: the node's limits; narrowed past the value: the value moves into the range.
+                p.ToText = "200000";
+                Assert.Equal((10_000.0, 200_000.0), (loan.Min, loan.Max));
+                Assert.Equal(200_000, loan.Value);
+
+                // Set on the node: the panel's range.
+                loan.Min = 50_000;
+                Assert.Equal(("50000", 50_000.0), (p.FromText, p.From));
+
+                // An integer's range is whole: 1.5 to 9.5 is 2 to 9.
+                y.FromText = "1.5";
+                y.ToText = "9.5";
+                Assert.Equal((2L, 9L), (years.Min, years.Max));
+
+                // A number with no limits but its type's: the slider goes around the value it had when put in the panel
+                // (250,000), fixed while it is shown.
+                (loan.Min, loan.Max) = (loan.HardMin, loan.HardMax);
+                Assert.Equal((0, 500_000), (p.From, p.To));
+            });
+        }
+
+        [Fact]
+        public void The_editors_step_is_the_panels_both_ways_and_keeps_the_results()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                viewModel.OpenExample(Loan);
+                Float rate = MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).Skip(1).First();
+                Integer years = MainViewModel.Nodes.OfType<Integer>().Single();
+                PanelParameter r = viewModel.Parameters[1];
+                rate.Result = new Report(rate.ID, ReportStatus.Ok, "Float64", "0.045");
+
+                // The default, from the same range: 0 to 0.15.
+                Assert.Equal(("0.001", "0.001"), (rate.StepText, r.StepText));
+
+                // Set in the editor: the panel's; set in the panel: the editor's.
+                rate.StepText = "0.005";
+                Assert.Equal((0.005, 0.005), (r.Step, rate.PanelStep));
+                r.StepText = "0.01";
+                Assert.Equal("0.01", rate.StepText);
+                Assert.NotNull(rate.Result);
+
+                // An integer's: whole, at least 1; emptied: the default again.
+                years.StepText = "0.4";
+                Assert.Equal(1, years.Step);
+                rate.StepText = "";
+                Assert.Equal((null, "0.001"), (rate.PanelStep, rate.StepText));
+            });
+        }
+
+        [Fact]
+        public void A_design_opened_with_a_number_in_the_panel_without_limits_gets_them_and_stays_unchanged()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                OpenBareLoan(viewModel);
+                Float loan = MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).First();
+                loan.InPanel = true;
+
+                // Saved with no limits but Float64's, as a bitness changed afterwards leaves it.
+                (loan.Min, loan.Max) = (loan.HardMin, loan.HardMax);
+                viewModel.SaveDesign(Path.Combine(_folder, "unlimited.jsynth"));
+
+                viewModel.NewDesign();
+                viewModel.OpenDesign(Path.Combine(_folder, "unlimited.jsynth"));
+                Float opened = MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).First();
+                PanelParameter p = viewModel.Parameters.Single();
+
+                Assert.Equal((0.0, 500000.0), (opened.Min, opened.Max));
+                Assert.Equal((opened.Min, opened.Max), (p.From, p.To));
+                Assert.False(viewModel.IsDirty);
+
+                // A new bitness resets its limits to the type's: in the panel, it gets ones around its value again.
+                opened.SelectedType = "32-bit";
+                Assert.Equal((0.0, 500000.0), (opened.Min, opened.Max));
+                Assert.Equal((opened.Min, opened.Max), (p.From, p.To));
             });
         }
 

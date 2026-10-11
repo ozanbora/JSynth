@@ -118,17 +118,18 @@
 
     <Label Grid.Row="5"
            Grid.Column="0"
-           Content="Epsilon"
+           Content="Step"
+           IsVisible="{Binding Path=InPanel}"
            />
 
     <TextBox Grid.Row="5"
              Grid.Column="1"
              HorizontalAlignment="Stretch"
              HorizontalContentAlignment="Right"
-             IsEnabled="False"
-             Text="{Binding Path=Epsilon, StringFormat=\{0:R\}}"
-             ToolTip.Tip="eps(T) in Julia: the gap between 1.0 and the next number of this type."
-                   />
+             IsVisible="{Binding Path=InPanel}"
+             Text="{Binding Path=StepText, UpdateSourceTrigger=LostFocus}"
+             ToolTip.Tip="The step its slider in the parameters panel moves in, also with the arrow keys. Empty: a hundredth of the range"
+             />
   </Grid>
 
 </UserControl>

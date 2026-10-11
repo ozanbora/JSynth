@@ -195,12 +195,23 @@ public partial class MainViewModel
         }
         else if (e.PropertyName == nameof(Node.InPanel))
         {
+            // A number put in the panel with no limits of its own gets ones around its value, its slider's range.
+            if (sender is Node { InPanel: true } added)
+            {
+                PanelParameter.LimitAroundValue(added);
+            }
+
             // Put in the panel: it opens to show it.
             RefreshParameters();
             if (sender is Node { InPanel: true })
             {
                 IsParametersOpen = true;
             }
+        }
+        else if (e.PropertyName == "SelectedType" && sender is Node { InPanel: true } retyped)
+        {
+            // A new bitness resets the limits to its own: limits around the value again, as when put in the panel.
+            PanelParameter.LimitAroundValue(retyped);
         }
         else if (e.PropertyName == nameof(Node.Result) && sender is DisplayNode)
         {

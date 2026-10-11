@@ -19,7 +19,7 @@
   <Design.DataContext>
     <jsModel:UnsignedInteger />
   </Design.DataContext>
-  <Grid RowDefinitions="auto,auto,auto,auto,auto"
+  <Grid RowDefinitions="auto,auto,auto,auto,auto,auto"
         ColumnDefinitions="auto,*"
         >
 
@@ -129,6 +129,20 @@
                    Value="{Binding Path=Max, Converter={StaticResource DecimalConverter}}"
                    ToolTip.Tip="Maximum value will be used for validation in the user interface. By default, it is set to maximum value of bitness representation."
                    />
+    <Label Grid.Row="5"
+           Grid.Column="0"
+           Content="Step"
+           IsVisible="{Binding Path=InPanel}"
+           />
+
+    <TextBox Grid.Row="5"
+             Grid.Column="1"
+             HorizontalAlignment="Stretch"
+             HorizontalContentAlignment="Right"
+             IsVisible="{Binding Path=InPanel}"
+             Text="{Binding Path=StepText, UpdateSourceTrigger=LostFocus}"
+             ToolTip.Tip="The step its slider in the parameters panel moves in, also with the arrow keys. Empty: a hundredth of the range"
+             />
   </Grid>
  
 </UserControl>
