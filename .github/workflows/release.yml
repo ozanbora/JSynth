@@ -94,6 +94,13 @@ jobs:
           cat > notes.md <<'EOF'
           ## Installing
 
+          The install scripts download the latest release, install what it needs (Julia too, if it's missing), and add it to the menu:
+
+          - **Windows**, in PowerShell: `irm https://raw.githubusercontent.com/ozanbora/JSynth/master/install/install.ps1 | iex`
+          - **Linux and macOS**, in a terminal: `curl -fsSL https://raw.githubusercontent.com/ozanbora/JSynth/master/install/install.sh | sh`
+
+          Or download the file for your system below, and:
+
           JSynth runs designs with Julia: install it first from https://julialang.org/downloads/ (juliaup is easiest). JSynth finds it on the `PATH` and in the usual install folders, or choose it with Run → Choose Julia….
 
           - **Windows (x64):** unzip `JSynth-…-win-x64.zip` and run `JSynth\JSynth.exe`. Windows may warn that the publisher is unknown: choose More info → Run anyway.

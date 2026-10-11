@@ -8,6 +8,26 @@ JSynth runs on Windows and Linux, including WSL.
 
 ![The Heat in a rod example after a run: the parameters on the left, the nodes with their results and a plot on the canvas, and the output below](docs/screenshot-light.png)
 
+## Install
+
+The install scripts download the [latest release](https://github.com/ozanbora/JSynth/releases/latest), install what it needs, and add it to the Start menu or applications menu. They install [Julia](https://julialang.org/downloads/) too, with juliaup, if it isn't there yet.
+
+**Windows** (64-bit), in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/ozanbora/JSynth/master/install/install.ps1 | iex
+```
+
+**Linux** (x64) and **macOS** (Apple Silicon), in a terminal:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ozanbora/JSynth/master/install/install.sh | sh
+```
+
+On Linux, this installs fontconfig with your package manager (asking for your password) if it's missing. JSynth goes in `%LOCALAPPDATA%\Programs\JSynth` on Windows, and in `~/.local/share/jsynth` with a `jsynth` command in `~/.local/bin` elsewhere. To serve JSynth over VNC as well, add `--vnc` (`sh -s -- --vnc`; `-Vnc` doesn't apply on Windows, where VNC needs nothing more). To remove it, run the script again with `--uninstall` (Windows: download it and run `.\install.ps1 -Uninstall`); your settings and designs stay.
+
+You can also download a release yourself and unpack it: the release page says what each system needs.
+
 ## What it does
 
 A design is a graph of nodes:
