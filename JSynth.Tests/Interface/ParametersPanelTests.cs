@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -42,7 +43,7 @@ namespace JSynth.Tests.Interface
             viewModel.OpenExample(Loan);
             foreach (Node node in MainViewModel.Nodes)
             {
-                (node.InPanel, node.PanelName, node.PanelFrom, node.PanelTo) = (false, string.Empty, null, null);
+                (node.InPanel, node.PanelName, node.PanelFrom, node.PanelTo, node.PanelStep) = (false, string.Empty, null, null, null);
             }
 
             viewModel.IsParametersOpen = false;
@@ -118,6 +119,175 @@ namespace JSynth.Tests.Interface
                 p.Name = "";
                 Assert.Equal(string.Empty, loan.PanelName);
                 Assert.Equal("P", p.Name);
+            });
+        }
+
+        [Fact]
+        public void A_slider_steps_by_a_hundredth_of_its_range_rounded_down_and_by_whole_numbers_for_integers()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                viewModel.OpenExample(Loan);
+
+                // loan 10,000 to 1,000,000; rate 0 to 0.15; years 1 to 40.
+                Assert.Equal([5000, 0.001, 1], viewModel.Parameters.Select(p => p.Step));
+            });
+        }
+
+        /// <summary>
+        /// The loan example's rate alone in the panel, its slider from <paramref name="from"/> to 1.
+        /// </summary>
+        private static (Float Rate, PanelParameter Panel) RateFrom(MainViewModel viewModel, double from)
+        {
+            OpenBareLoan(viewModel);
+            Float rate = MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).Last();
+            (rate.InPanel, rate.PanelFrom, rate.PanelTo) = (true, from, 1);
+            return (rate, viewModel.Parameters.Single());
+        }
+
+        [Fact]
+        public void The_slider_lands_on_steps_from_its_start_exactly_and_an_arrow_key_moves_one()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                (Float rate, PanelParameter p) = RateFrom(viewModel, 0);
+                p.StepText = "0.05";
+                Assert.Equal(0.05, rate.PanelStep);
+
+                p.SliderPosition = 0.3471 * PanelParameter.SliderScale;
+                Assert.Equal(0.35, rate.Value);
+
+                // 0.3, not 0.30000000000000004 (6 times 0.05 in double).
+                p.SliderPosition = 0.3 * PanelParameter.SliderScale;
+                Assert.Equal(0.3, rate.Value);
+
+                p.SliderPosition += p.SliderSmallChange;
+                Assert.Equal(0.35, rate.Value);
+                p.SliderPosition += p.SliderLargeChange;
+                Assert.Equal(0.85, rate.Value);
+
+                // Steps count from the start of the range, and stop at its end. A fifth of the way along 0.03 to 1 is
+                // 0.194 past the start; the nearest step is 0.2 past it.
+                rate.PanelFrom = 0.03;
+                p.SliderPosition = 0.2 * PanelParameter.SliderScale;
+                Assert.Equal(0.23, rate.Value);
+                p.SliderPosition = PanelParameter.SliderScale;
+                Assert.Equal(0.98, rate.Value);
+            });
+        }
+
+        [Fact]
+        public void An_integers_step_is_whole_and_at_least_one_and_emptied_is_the_default_again()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                OpenBareLoan(viewModel);
+                Integer years = MainViewModel.Nodes.OfType<Integer>().Single();
+                (years.InPanel, years.PanelFrom, years.PanelTo) = (true, 1, 40);
+                PanelParameter p = viewModel.Parameters.Single();
+
+                p.StepText = "0.5";
+                Assert.Equal(1, p.Step);
+                p.StepText = "2.6";
+                Assert.Equal(3, p.Step);
+                p.StepText = "-2";
+                Assert.Equal(3, p.Step);
+                p.StepText = "lots";
+                Assert.Equal(3, p.Step);
+
+                p.SliderPosition = PanelParameter.SliderScale / 2;
+                Assert.Equal(19, years.Value);
+
+                p.StepText = "";
+                Assert.Null(years.PanelStep);
+                Assert.Equal(1, p.Step);
+            });
+        }
+
+        [Fact]
+        public void A_typed_value_is_kept_as_typed_and_shown_cut_off_at_the_steps_decimals()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                (Float rate, PanelParameter p) = RateFrom(viewModel, 0);
+                p.StepText = "0.05";
+
+                p.NumberText = "0.379";
+                Assert.Equal(0.379, rate.Value);
+                Assert.Equal("0.37", p.NumberText);
+                Assert.Equal("0.379", p.NumberTip);
+
+                // The box gives back what it shows when it loses focus: that isn't a new value.
+                p.NumberText = "0.37";
+                Assert.Equal(0.379, rate.Value);
+
+                p.NumberText = "0.36";
+                Assert.Equal(0.36, rate.Value);
+                Assert.Null(p.NumberTip);
+            });
+        }
+
+        [Theory]
+        [InlineData(0.57, 2, "0.57")]
+        [InlineData(2.379, 2, "2.37")]
+        [InlineData(-2.379, 2, "-2.37")]
+        [InlineData(250000.0, 0, "250000")]
+        [InlineData(0.3, 1, "0.3")]
+        public void A_number_is_cut_off_not_rounded(double value, int decimals, string shown)
+        {
+            Assert.Equal(shown, PanelParameter.Truncated(value, decimals));
+        }
+
+        [Fact]
+        public void The_step_is_saved_with_the_design_and_undone_like_the_range()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                (Float rate, PanelParameter p) = RateFrom(viewModel, 0);
+                MainViewModel.History.Commit();
+                p.StepText = "0.05";
+                MainViewModel.History.Commit();
+
+                MainViewModel.History.Undo();
+                Assert.Null(MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).Last().PanelStep);
+                MainViewModel.History.Redo();
+
+                viewModel.SaveDesign(Path.Combine(_folder, "rate.jsynth"));
+                viewModel.NewDesign();
+                viewModel.OpenDesign(Path.Combine(_folder, "rate.jsynth"));
+                Assert.Equal(0.05, MainViewModel.Nodes.OfType<Float>().OrderBy(n => n.Row).Last().PanelStep);
+            });
+        }
+
+        [Fact]
+        public void In_the_window_an_arrow_key_on_a_slider_moves_the_value_one_step()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel viewModel = new();
+                (Float rate, PanelParameter p) = RateFrom(viewModel, 0);
+                p.StepText = "0.05";
+                p.NumberText = "0.5";
+
+                Window window = new() { Content = new Views.MainView(), DataContext = viewModel, Width = 1300, Height = 760 };
+                window.Show();
+                Dispatcher.UIThread.RunJobs();
+
+                Slider slider = window.GetVisualDescendants().OfType<Slider>().Single(s => s.IsEffectivelyVisible);
+                slider.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Right });
+                Dispatcher.UIThread.RunJobs();
+                Assert.Equal(0.55, rate.Value);
+
+                slider.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Left });
+                slider.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Left });
+                Dispatcher.UIThread.RunJobs();
+                Assert.Equal(0.45, rate.Value);
+                window.Close();
             });
         }
 

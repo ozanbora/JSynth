@@ -80,8 +80,8 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
     public const double SliderScale = 1000;
 
     /// <summary>
-    /// The slider's position on its scale, the number's place in the range: setting it sets the number, a whole one for
-    /// integers, within the node's limits.
+    /// The slider's position on its scale, the number's place in the range: setting it sets the number to the nearest
+    /// step from <see cref="From"/>, within the range and the node's limits.
     /// </summary>
     public double SliderPosition
     {
@@ -93,25 +93,97 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
                 return;
             }
 
-            SetNumber(From + (value / SliderScale * (To - From)));
+            double steps = Math.Round(value / SliderScale * (To - From) / Step);
+            double number = Math.Clamp(From + (steps * Step), From, To);
+
+            // 0.3, not 0.30000000000000004: as many decimals as the step and the start have.
+            SetNumber(Math.Round(number, Decimals));
             _edited?.Invoke(this);
         }
     }
 
     /// <summary>
-    /// The number as typed in its box: exactly, also for integers too large for a slider.
+    /// How far one press of an arrow key moves the slider on its scale: one step. Page Up and Down move ten.
+    /// </summary>
+    public double SliderSmallChange => To > From ? Step / (To - From) * SliderScale : 1;
+
+    public double SliderLargeChange => SliderSmallChange * 10;
+
+    /// <summary>
+    /// The step the slider moves in: the one set (<see cref="Node.PanelStep"/>), else <see cref="DefaultStep"/>.
+    /// </summary>
+    public double Step => Node.PanelStep ?? DefaultStep;
+
+    private bool IsInteger => Node is Integer or UnsignedInteger;
+
+    /// <summary>
+    /// A hundredth of the range, rounded down to 1, 2 or 5 times a power of ten: 5000 for 0 to 500000, 0.001 for 0 to
+    /// 0.1. At least 1 for integers.
+    /// </summary>
+    public double DefaultStep
+    {
+        get
+        {
+            double size = (To - From) / 100;
+            double step = size > 0 && double.IsFinite(size) ? RoundDown(size) : 1;
+            return IsInteger ? Math.Max(1, step) : step;
+        }
+    }
+
+    /// <summary>
+    /// <see cref="Step"/> as typed in the panel: a number above 0, a whole one of at least 1 for integers; emptied, the
+    /// default again.
+    /// </summary>
+    public string StepText
+    {
+        get => Step.ToString("G", CultureInfo.InvariantCulture);
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                Node.PanelStep = null;
+            }
+            else if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double step) && step > 0 && double.IsFinite(step))
+            {
+                Node.PanelStep = IsInteger ? Math.Max(1, Math.Round(step)) : step;
+            }
+
+            this.RaisePropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// The decimals numbers are shown with and the slider rounds to: as many as the step and the start of the range have.
+    /// </summary>
+    private int Decimals => Math.Max(DecimalsOf(Step), DecimalsOf(From));
+
+    private static int DecimalsOf(double value)
+    {
+        // Through decimal: 0.05 has 2, where its double is 0.05000000000000000277.
+        return double.IsFinite(value) && Math.Abs(value) < 7.9e27 ? Math.Min(15, (int)((decimal)value).Scale) : 0;
+    }
+
+    /// <summary>
+    /// The number in its box: a float cut off at the step's decimals (<see cref="NumberTip"/> has the rest), an integer
+    /// whole, also one too large for a slider. Typed in, kept exactly as typed.
     /// </summary>
     public string NumberText
     {
         get => Node switch
         {
-            Float f => f.Value.ToString("R", CultureInfo.InvariantCulture),
+            Float f => Truncated(f.Value, Decimals),
             Integer z => z.Value.ToString(CultureInfo.InvariantCulture),
             UnsignedInteger n => n.Value.ToString(CultureInfo.InvariantCulture),
             _ => string.Empty,
         };
         set
         {
+            // The box gives its text back when it loses focus: as shown, cut off, it isn't a new value.
+            if (value == NumberText)
+            {
+                return;
+            }
+
             bool parsed = Node switch
             {
                 Float f when double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double x) => Set(() => f.Value = Math.Clamp(x, f.Min, f.Max)),
@@ -134,6 +206,7 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
             this.RaisePropertyChanged(nameof(FromText));
             this.RaisePropertyChanged(nameof(ToText));
             this.RaisePropertyChanged(nameof(SliderPosition));
+            StepChanged();
             _edited?.Invoke(this);
 
             static bool Set(Action set)
@@ -142,6 +215,26 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
                 return true;
             }
         }
+    }
+
+    /// <summary>
+    /// A float's whole value, over its box when the box shows it cut off; else none.
+    /// </summary>
+    public string? NumberTip => Node is Float f && f.Value.ToString("R", CultureInfo.InvariantCulture) is string full && full != NumberText ? full : null;
+
+    /// <summary>
+    /// <paramref name="value"/> with no more than <paramref name="decimals"/> decimals, cut off rather than rounded.
+    /// </summary>
+    internal static string Truncated(double value, int decimals)
+    {
+        // Through decimal: in double, 0.57 × 100 is 56.99999999999999, which would cut off to 0.56.
+        if (double.IsFinite(value) && Math.Abs(value) < 7.9e13)
+        {
+            decimal scale = (decimal)Math.Pow(10, decimals);
+            return (decimal.Truncate((decimal)value * scale) / scale).ToString("G29", CultureInfo.InvariantCulture);
+        }
+
+        return value.ToString("R", CultureInfo.InvariantCulture);
     }
 
     private void SetNumber(double value)
@@ -229,6 +322,18 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
         double round = new[] { 1, 2, 5, 10 }.Select(m => m * power).First(r => r >= size);
         return value > 0 ? (0, round) : (-round, round);
     }
+
+    /// <summary>
+    /// The largest of 1, 2 or 5 times a power of ten that isn't above <paramref name="size"/>.
+    /// </summary>
+    private static double RoundDown(double size)
+    {
+        double power = Math.Pow(10, Math.Floor(Math.Log10(size)));
+        double round = new[] { 5, 2, 1 }.Select(m => m * power).First(r => r <= size * (1 + 1e-12));
+
+        // Exactly: 0.001, not 0.0010000000000000002.
+        return Math.Round(round, Math.Max(0, -(int)Math.Floor(Math.Log10(round))));
+    }
     #endregion
 
     #region Arrays and folders
@@ -265,6 +370,17 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
     }
     #endregion
 
+    // The step, its default following the range, and what it shapes.
+    private void StepChanged()
+    {
+        this.RaisePropertyChanged(nameof(Step));
+        this.RaisePropertyChanged(nameof(StepText));
+        this.RaisePropertyChanged(nameof(SliderSmallChange));
+        this.RaisePropertyChanged(nameof(SliderLargeChange));
+        this.RaisePropertyChanged(nameof(NumberText));
+        this.RaisePropertyChanged(nameof(NumberTip));
+    }
+
     private void NodeChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -272,6 +388,7 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
             case "Value":
                 this.RaisePropertyChanged(nameof(SliderPosition));
                 this.RaisePropertyChanged(nameof(NumberText));
+                this.RaisePropertyChanged(nameof(NumberTip));
                 break;
             case nameof(ArrayInput.Text) or nameof(FilesNode.Folder):
                 this.RaisePropertyChanged(nameof(Text));
@@ -283,11 +400,16 @@ public sealed class PanelParameter : ReactiveObject, IDisposable
                 this.RaisePropertyChanged(nameof(From));
                 this.RaisePropertyChanged(nameof(FromText));
                 this.RaisePropertyChanged(nameof(SliderPosition));
+                StepChanged();
                 break;
             case nameof(Node.PanelTo):
                 this.RaisePropertyChanged(nameof(To));
                 this.RaisePropertyChanged(nameof(ToText));
                 this.RaisePropertyChanged(nameof(SliderPosition));
+                StepChanged();
+                break;
+            case nameof(Node.PanelStep):
+                StepChanged();
                 break;
         }
     }

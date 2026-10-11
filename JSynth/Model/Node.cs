@@ -88,6 +88,7 @@ namespace JSynth.Model
         private string _panelName = string.Empty;
         private double? _panelFrom;
         private double? _panelTo;
+        private double? _panelStep;
 
         /// <summary>
         /// Whether this input can be set from the parameters panel: numbers, arrays typed in, folders.
@@ -136,9 +137,19 @@ namespace JSynth.Model
         }
 
         /// <summary>
+        /// The step a number's slider in the panel moves in; null for the default (see PanelParameter.DefaultStep).
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public double? PanelStep
+        {
+            get => _panelStep;
+            set => this.RaiseAndSetIfChanged(ref _panelStep, value);
+        }
+
+        /// <summary>
         /// The properties of the panel: changing them doesn't change what the design works out.
         /// </summary>
-        public static IReadOnlyList<string> PanelProperties { get; } = [nameof(InPanel), nameof(PanelName), nameof(PanelFrom), nameof(PanelTo)];
+        public static IReadOnlyList<string> PanelProperties { get; } = [nameof(InPanel), nameof(PanelName), nameof(PanelFrom), nameof(PanelTo), nameof(PanelStep)];
         #endregion
 
         private string _purpose = string.Empty;
