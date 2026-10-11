@@ -21,12 +21,6 @@ public partial class MainWindow : Window
         Patterns = [$"*{MainViewModel.FileExtension}"],
     };
 
-    // Designs saved before design files existed (nodes.json).
-    private static readonly FilePickerFileType JsonFileType = new("JSON")
-    {
-        Patterns = ["*.json"],
-    };
-
     // Set once unsaved changes have been dealt with, so closing doesn't ask again.
     private bool _closeConfirmed;
 
@@ -215,7 +209,7 @@ public partial class MainWindow : Window
         IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Open design",
-            FileTypeFilter = [DesignFileType, JsonFileType],
+            FileTypeFilter = [DesignFileType],
             SuggestedStartLocation = await StartFolderAsync(viewModel),
         });
 

@@ -127,7 +127,7 @@
              HorizontalContentAlignment="Right"
              IsEnabled="False"
              Text="{Binding Path=Epsilon, StringFormat=\{0:R\}}"
-             ToolTip.Tip="This is machine epsilon for this bitness, i.e. smallest representable floating point number."
+             ToolTip.Tip="eps(T) in Julia: the gap between 1.0 and the next number of this type."
                    />
   </Grid>
 

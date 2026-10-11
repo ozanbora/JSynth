@@ -125,7 +125,7 @@ namespace JSynth.Controls
 
             // Snap to the nearest grid cell by updating the models; the ItemsControl containers
             // bind Grid.Row/Grid.Column to them. Setting Grid.Row directly on a container would
-            // override that binding and the model (and nodes.json) would never see the new position.
+            // override that binding and the model (and the design file) would never see the new position.
             // The whole group moves by the same amount, so it stays in shape at the canvas edges.
             int rowDelta = Math.Clamp((int)Math.Round(offset.Y / Constants.HEIGHT),
                 -models.Min(m => m.Row), Constants.ROWS - 1 - models.Max(m => m.Row));

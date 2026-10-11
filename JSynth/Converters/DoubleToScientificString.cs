@@ -1,4 +1,5 @@
-﻿using Avalonia.Data.Converters;
+﻿using Avalonia.Data;
+using Avalonia.Data.Converters;
 using System;
 using System.Globalization;
 
@@ -14,7 +15,10 @@ namespace JSynth.Converters
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            return double.Parse((string)value!, culture);
+            // A typo is an error on the field, and the value stays as it was.
+            return double.TryParse(value as string, NumberStyles.Float, culture, out double number)
+                ? number
+                : new BindingNotification(new FormatException($"'{value}' isn't a number."), BindingErrorType.Error);
         }
 
     }

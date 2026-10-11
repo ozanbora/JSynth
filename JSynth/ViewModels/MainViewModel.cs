@@ -3,7 +3,6 @@ using Avalonia.Collections;
 using JSynth.Converters;
 using JSynth.Model;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using ReactiveUI;
 using ReactiveUI.Primitives;
 using System;
@@ -34,7 +33,7 @@ public partial class MainViewModel : ReactiveObject
         ]);
 
     /// <summary>
-    /// The nodes on the designer; the starting design until nodes.json is loaded.
+    /// The nodes on the designer; the starting design until a design is opened.
     /// </summary>
     public static AvaloniaList<Node> Nodes { get; } = [];
 
@@ -44,7 +43,7 @@ public partial class MainViewModel : ReactiveObject
     public static AvaloniaList<Connection> Connections { get; } = [];
 
     /// <summary>
-    /// Undo and redo for everything saved in nodes.json.
+    /// Undo and redo for everything saved in a design file.
     /// </summary>
     public static UndoHistory History { get; } = new(CaptureDesign, RestoreDesign);
 
@@ -862,9 +861,6 @@ public partial class MainViewModel : ReactiveObject
 
     public const string FileExtension = ".jsynth";
 
-    // Before design files existed, the design was always saved here, next to the program.
-    private const string LegacyFile = "nodes.json";
-
     private string? _filePath;
 
     /// <summary>
@@ -886,8 +882,8 @@ public partial class MainViewModel : ReactiveObject
     public string Title => $"{(FilePath is null ? "Untitled" : Path.GetFileName(FilePath))}{(IsDirty ? " •" : string.Empty)} - JSynth";
 
     /// <summary>
-    /// Opens the design open when JSynth last closed (see <see cref="RememberOpenDesign"/>), else a
-    /// nodes.json from before design files, else keeps the starting design and shows the start page.
+    /// Opens the design open when JSynth last closed (see <see cref="RememberOpenDesign"/>), else keeps the starting
+    /// design and shows the start page.
     /// </summary>
     public void StartUp()
     {
@@ -960,19 +956,16 @@ public partial class MainViewModel : ReactiveObject
             }
         }
 
-        foreach (string? path in new[] { settings.LastUntitled ? null : settings.LastFile, LegacyFile })
+        if (!settings.LastUntitled && settings.LastFile is string path && File.Exists(path))
         {
-            if (path is not null && File.Exists(path))
+            try
             {
-                try
-                {
-                    OpenDesign(path);
-                    return;
-                }
-                catch (Exception e) when (IsFileError(e))
-                {
-                    // Unreadable: try the next one, and fall back to the starting design.
-                }
+                OpenDesign(path);
+                return;
+            }
+            catch (Exception e) when (IsFileError(e))
+            {
+                // Unreadable: fall back to the starting design.
             }
         }
 
@@ -1055,10 +1048,7 @@ public partial class MainViewModel : ReactiveObject
         string json = File.ReadAllText(path);
         IsStartPageOpen = false;
 
-        // nodes.json used to hold just the node list (serialized as {"$type": ..., "$values": [...]}).
-        DesignDocument document = (JObject.Parse(json).ContainsKey("$values")
-            ? new DesignDocument { Nodes = JsonConvert.DeserializeObject<AvaloniaList<Node>>(json, settings) ?? [] }
-            : JsonConvert.DeserializeObject<DesignDocument>(json, settings))
+        DesignDocument document = JsonConvert.DeserializeObject<DesignDocument>(json, settings)
             ?? throw new JsonSerializationException("The file holds no design.");
 
         Load(document);

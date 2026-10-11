@@ -23,6 +23,10 @@ namespace JSynth.Model
             set => this.RaiseAndSetIfChanged(ref _selectedType, value);
         }
 
+        /// <summary>
+        /// Julia's eps(T): the gap between 1.0 and the next number of the selected type. Not .NET's float.Epsilon,
+        /// which is the smallest number above zero.
+        /// </summary>
         public double Epsilon
         {
             get => _epsilon;
@@ -50,7 +54,7 @@ namespace JSynth.Model
             Min = HardMin;
             Max = HardMax;
             Value = 0.0;
-            Epsilon = float.Epsilon;
+            Epsilon = Math.ScaleB(1, -23);
 
             _ = this.WhenAnyValue(x => x.SelectedType).Subscribe(SelectionChanged);
         }
@@ -62,19 +66,19 @@ namespace JSynth.Model
                 case "16-bit":
                     HardMax = (double)Half.MaxValue;
                     HardMin = (double)Half.MinValue;
-                    Epsilon = (double)Half.Epsilon;
+                    Epsilon = Math.ScaleB(1, -10);
                     break;
 
                 case "64-bit":
                     HardMax = double.MaxValue;
                     HardMin = double.MinValue;
-                    Epsilon = double.Epsilon;
+                    Epsilon = Math.ScaleB(1, -52);
                     break;
 
                 default:
                     HardMax = float.MaxValue;
                     HardMin = float.MinValue;
-                    Epsilon = float.Epsilon;
+                    Epsilon = Math.ScaleB(1, -23);
                     break;
             }
 

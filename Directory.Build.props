@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <Nullable>enable</Nullable>
+    <!-- Every Avalonia.* package; AvaloniaEdit and ReactiveUI.Avalonia have version numbers of their own. -->
     <AvaloniaVersion>12.1.3</AvaloniaVersion>
   </PropertyGroup>
 </Project>

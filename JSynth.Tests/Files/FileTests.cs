@@ -117,31 +117,6 @@ namespace JSynth.Tests.Files
             });
         }
 
-        [Fact]
-        public void An_old_nodes_json_with_just_the_node_list_still_opens()
-        {
-            // nodes.json as it was saved before connections existed.
-            const string legacy = """
-                {
-                  "$type": "Avalonia.Collections.AvaloniaList`1[[JSynth.Model.Node, JSynth]], Avalonia.Base",
-                  "$values": [
-                    { "$type": "JSynth.Model.Float, JSynth", "Column": 11, "Row": 4, "SelectedType": "32-bit", "Value": 0.0 }
-                  ]
-                }
-                """;
-            File.WriteAllText(PathOf("nodes.json"), legacy);
-
-            Run(viewModel =>
-            {
-                viewModel.OpenDesign(PathOf("nodes.json"));
-
-                Node node = Assert.Single(MainViewModel.Nodes);
-                Assert.IsType<Float>(node);
-                Assert.Equal(4, node.Row);
-                Assert.Empty(MainViewModel.Connections);
-            });
-        }
-
         [Theory]
         [InlineData("this is not json")]
         // A file naming a type that isn't part of a design must not be able to create it.

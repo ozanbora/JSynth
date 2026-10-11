@@ -1,135 +1,22 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              x:Class="JSynth.Views.Inputs.Float"
 
-             xmlns:converters="clr-namespace:Avalonia.Markup.Xaml.Converters;assembly=Avalonia.Markup.Xaml"
              xmlns:jsModel ="clr-namespace:JSynth.Model;assembly=JSynth"
              xmlns:jsControls="clr-namespace:JSynth.Controls"
              xmlns:jsDetails="clr-namespace:JSynth.Views.Details"
 
              x:DataType="jsModel:Float"
-             Foreground="{Binding Path=Color, Converter={StaticResource ContrastBrushConverter}}"
              >
   <Design.DataContext>
     <jsModel:Float/>
   </Design.DataContext>
 
-  <UserControl.Resources>
-    <converters:ColorToBrushConverter x:Key="ToBrushConverter"/>
-  </UserControl.Resources>
-
-  <Border Background="{Binding Path=Color, Converter={StaticResource ToBrushConverter}}"
-          Classes="node"
-          Classes.selected="{Binding Path=IsSelected}"
-          Classes.running="{Binding Path=IsRunning}"
-          >
-    <Grid RowDefinitions="30,46,20,20"
-          ColumnDefinitions="40,*">
-
-      <TextBlock Grid.Column="0"
-                 Grid.Row="0"
-                 Grid.RowSpan="2"
-                 Classes="glyph"
-                 Text="𝑥"
-                 />
-
-      <TextBlock Grid.Column="0"
-                 Grid.Row="2"
-                 HorizontalAlignment="Right"
-                 Classes="caption"
-                 Text="Min"
-                 />
-
-      <TextBlock Grid.Column="0"
-                 Grid.Row="3"
-                 HorizontalAlignment="Right"
-                 Classes="caption"
-                 Text="Max"
-                 />
-
-      <StackPanel Grid.Row="0"
-                  Grid.Column="1"
-                  Classes="nodeActions">
-
-        <TextBlock Text="◆"
-                   FontSize="10"
-                   Opacity="0.7"
-                   Margin="0 0 4 0"
-                   VerticalAlignment="Center"
-                   IsVisible="{Binding Path=InPanel}"
-                   ToolTip.Tip="In the parameters panel"/>
-        <jsControls:ResultBadge/>
-
-        <Button Classes="nodeAction"
-                Content="Ξ"
-                ToolTip.Tip="Edit"
-              >
-          <Button.Flyout>
-            <Flyout Placement="Top"
-                    ShowMode="Transient"
-                    >
-              <jsDetails:Float/>
-            </Flyout>
-          </Button.Flyout>
-        </Button>
-
-        <TextBlock Classes="nodeInfo"
-                   Text="𝑖"
-                   ToolTip.Tip="{Binding Path=SelectedType, StringFormat='Floating-point number, {0}'}"
-                   />
-
-        <Button Classes="nodeAction danger"
-                Content="✕"
-                ToolTip.Tip="Delete"
-                Click="Delete_Click"
-                />
-
-      </StackPanel>
-
-      <jsControls:Connector Grid.Row="1"
-                     Grid.Column="1"
-                     HorizontalAlignment="Right"
-                     VerticalAlignment="Top"
-                     ZIndex="3"
-                     Margin="0 0 -8 0"/>
-
-      <!-- Next: the value it takes for the next file, when files are gone through one at a time -->
-      <jsControls:Connector Grid.Row="1"
-                     Grid.Column="0"
-                     HorizontalAlignment="Left"
-                     VerticalAlignment="Top"
-                     ZIndex="3"
-                     Margin="-8 0 0 0"
-                     Classes="next"
-                     DataContext="{Binding Path=Next}"
-                     ToolTip.Tip="next: going through files one at a time, this takes the value wired here after each file, as C = update(C, X) in a loop. It starts with its own."/>
-
-      <!-- Its name: the one given (its variable in the script), or the parameter it is wired into. -->
-      <jsControls:InputLabel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Margin="6 4 8 0"/>
-
-      <TextBlock Grid.Row="1"
-                 Grid.Column="1"
-                 Classes="value"
-                 Text="{Binding Path=Value, StringFormat=\{0:G6\}}"
-                 ToolTip.Tip="{Binding Path=Value, StringFormat=\{0:R\}}"
-                 />
-
-      <TextBlock Grid.Row="2"
-                 Grid.Column="1"
-                 Classes="limit"
-                 Text="{Binding Path=Min, StringFormat=\{0:G6\}}"
-                 ToolTip.Tip="{Binding Path=Min, StringFormat=\{0:R\}}"
-                 />
-
-      <TextBlock Grid.Row="3"
-                 Grid.Column="1"
-                 Classes="limit"
-                 Text="{Binding Path=Max, StringFormat=\{0:G6\}}"
-                 ToolTip.Tip="{Binding Path=Max, StringFormat=\{0:R\}}"
-                 />
-
-    </Grid>
-  </Border>
+  <jsControls:NumericNodeBody Glyph="𝑥"
+                              Kind="Floating-point number"
+                              >
+    <jsControls:NumericNodeBody.Details>
+      <jsDetails:Float/>
+    </jsControls:NumericNodeBody.Details>
+  </jsControls:NumericNodeBody>
 </UserControl>

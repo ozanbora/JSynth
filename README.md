@@ -108,7 +108,7 @@ Run `dotnet run --project JSynth.Desktop -- --help` for the command-line options
 - `--open <file>`: open one design file, alone in the window.
 - `--untitled <file> --name <name>`: open a design that was never saved, alone in the window. This is what a tab opened in a new window uses.
 
-Settings, the library and a design never saved are kept in `%AppData%\JSynth` on Windows and `~/.config/JSynth` on Linux.
+Settings, the library, a design never saved and the logs (`Logs`) are kept in `%AppData%\JSynth` on Windows and `~/.config/JSynth` on Linux.
 
 ## Linux and WSL
 

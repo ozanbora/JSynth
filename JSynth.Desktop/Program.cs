@@ -7,6 +7,7 @@ using Serilog;
 using Splat;
 using Splat.Serilog;
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
@@ -27,24 +28,34 @@ internal class Program
             _ = AttachConsole(AttachParentProcess);
         }
 
+        // Beside the settings (%AppData%\JSynth, ~/.config/JSynth), not wherever JSynth was started from.
+        string logs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "JSynth", "Logs");
         Log.Logger = new LoggerConfiguration()
-            .WriteTo.File("Logs/JSynth-.log", rollingInterval: RollingInterval.Day, shared: true)
+            .WriteTo.File(Path.Combine(logs, "JSynth-.log"), rollingInterval: RollingInterval.Day, shared: true)
             .CreateLogger();
         Locator.CurrentMutable.UseSerilogFullLogger();
 
-        if (CommandLineInterface.GetCLISettings(args, out int exitCode) is not CLISettings settings)
+        try
         {
-            return exitCode;
-        }
+            if (CommandLineInterface.GetCLISettings(args, out int exitCode) is not CLISettings settings)
+            {
+                return exitCode;
+            }
 
-        if (settings.EnableVNCServer && CheckVnc(settings) is int vncError)
+            if (settings.EnableVNCServer && CheckVnc(settings) is int vncError)
+            {
+                return vncError;
+            }
+
+            Console.WriteLine("Running JSynth..");
+            StartApp(settings, args);
+            return 0;
+        }
+        finally
         {
-            return vncError;
+            // The last entries are lost unless written out before the process ends.
+            Log.CloseAndFlush();
         }
-
-        Console.WriteLine("Running JSynth..");
-        StartApp(settings, args);
-        return 0;
     }
 
     /// <summary>
