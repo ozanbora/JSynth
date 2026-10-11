@@ -1,5 +1,7 @@
 ﻿using Newtonsoft.Json;
 using ReactiveUI;
+using System;
+using System.Globalization;
 using System.Numerics;
 
 namespace JSynth.Model
@@ -52,11 +54,54 @@ namespace JSynth.Model
         }
         #endregion
 
+        /// <summary>
+        /// The step its slider in the parameters panel moves in: the one set (<see cref="Node.PanelStep"/>), else the
+        /// default for its range, its limits. Not saved: worked out.
+        /// </summary>
+        [JsonIgnore]
+        public double Step => PanelStep ?? SliderStep.Default(double.CreateSaturating(Min), double.CreateSaturating(Max), IsWhole);
+
+        /// <summary>
+        /// <see cref="Step"/> as typed in its editor; emptied, the default again.
+        /// </summary>
+        [JsonIgnore]
+        public string StepText
+        {
+            get => Step.ToString("G", CultureInfo.InvariantCulture);
+            set
+            {
+                if (SliderStep.TryParse(value, IsWhole, out double? step))
+                {
+                    PanelStep = step;
+                }
+
+                this.RaisePropertyChanged();
+            }
+        }
+
+        private static bool IsWhole => typeof(T) != typeof(double);
+
         public override bool CanBeInPanel => true;
 
         public NumericInput() : base()
         {
             Next = new Parameter("next", Function.AnyType);
+
+            // The step follows the one set, and the default the range. (WhenAnyValue can't be generated for a generic type.)
+            PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(PanelStep) or nameof(Min) or nameof(Max))
+                {
+                    this.RaisePropertyChanged(nameof(Step));
+                    this.RaisePropertyChanged(nameof(StepText));
+                }
+            };
+        }
+
+        // Worked out from what is saved: not changes of their own.
+        public override bool IsViewState(string property)
+        {
+            return base.IsViewState(property) || property is nameof(Step) or nameof(StepText);
         }
 
         /// <summary>

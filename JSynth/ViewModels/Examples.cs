@@ -272,20 +272,21 @@ namespace JSynth.ViewModels
 
         /// <summary>
         /// <paramref name="node"/> put in the parameters panel: named <paramref name="name"/> (null: after the input it
-        /// is wired into), its slider from <paramref name="from"/> to <paramref name="to"/>, and the number itself kept
-        /// from <paramref name="min"/> to <paramref name="max"/>: what makes sense for it, wider than the slider, so a
-        /// value typed in the panel's box can go past the slider but not past sense.
+        /// is wired into), the number kept from <paramref name="from"/> to <paramref name="to"/>, its slider's range.
         /// </summary>
-        private static T InPanel<T>(T node, string? name, double from, double to, double min, double max) where T : Node
+        private static T InPanel<T>(T node, string? name, double from, double to) where T : Node
         {
-            (node.InPanel, node.PanelName, node.PanelFrom, node.PanelTo) = (true, name ?? string.Empty, from, to);
+            (node.InPanel, node.PanelName) = (true, name ?? string.Empty);
             switch (node)
             {
                 case Float x:
-                    (x.Min, x.Max) = (min, max);
+                    (x.Min, x.Max) = (from, to);
                     break;
                 case Integer z:
-                    (z.Min, z.Max) = ((long)min, (long)max);
+                    (z.Min, z.Max) = ((long)from, (long)to);
+                    break;
+                case UnsignedInteger n:
+                    (n.Min, n.Max) = ((UInt128)from, (UInt128)to);
                     break;
             }
 

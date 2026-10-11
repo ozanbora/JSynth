@@ -57,7 +57,7 @@ namespace JSynth.ViewModels
                 """,
                 ("J", Function.AnyType), ("v", "Float64"));
             DisplayNode shown = Shown(42, Stage2 + 4);
-            Float faster = InPanel(Scalar(10, 52), "steep: faster than (m/s)", 2, 30, 0, 200);
+            Float faster = InPanel(Scalar(10, 52), "steep: faster than (m/s)", 2, 30);
 
             FrameNode where = Framed("Where they are", "airborne: a row an aircraft in the air; the map plots their longitude and latitude.",
                 airborne, longitude, latitude, map);

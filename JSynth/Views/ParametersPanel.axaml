@@ -92,17 +92,32 @@
                     <Slider Minimum="0"
                             Maximum="{x:Static jsViewModels:PanelParameter.SliderScale}"
                             Value="{Binding Path=SliderPosition}"
+                            SmallChange="{Binding Path=SliderSmallChange}"
+                            LargeChange="{Binding Path=SliderLargeChange}"
                             Margin="0 -6 10 -6"/>
                     <TextBox Grid.Column="1"
                              Classes="value"
                              HorizontalContentAlignment="Right"
                              VerticalAlignment="Center"
-                             Text="{Binding Path=NumberText, UpdateSourceTrigger=LostFocus}"/>
+                             Text="{Binding Path=NumberText, UpdateSourceTrigger=LostFocus}"
+                             ToolTip.Tip="{Binding Path=NumberTip}"/>
                   </Grid>
                   <Grid ColumnDefinitions="Auto,*,Auto" Margin="0 0 106 0">
                     <TextBox Classes="range"
                              Text="{Binding Path=FromText, UpdateSourceTrigger=LostFocus}"
                              ToolTip.Tip="Where the slider starts"/>
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Spacing="3">
+                      <TextBlock Text="Step"
+                                 FontSize="10"
+                                 VerticalAlignment="Center"
+                                 Foreground="{DynamicResource SecondaryTextBrush}"/>
+                      <TextBox Classes="range"
+                               Text="{Binding Path=StepText, UpdateSourceTrigger=LostFocus}"
+                               ToolTip.Tip="The step the slider moves in, also with the arrow keys. Empty: a hundredth of the range"/>
+                    </StackPanel>
                     <TextBox Grid.Column="2"
                              Classes="range"
                              HorizontalContentAlignment="Right"

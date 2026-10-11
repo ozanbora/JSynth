@@ -137,7 +137,7 @@ namespace JSynth.ViewModels
             // How much each second shook over the background, and whether the minute had a quake.
             Function ratio = Define("ratio", "Vector{Float64}", 17, Stage3 + 28, "sqrt.(e ./ B)  # each second's shaking over the background's, as amplitudes", ("e", "Vector{Float64}"), ("B", "Float64"));
             Function loudest = Define("loudest", "Float64", 17, Stage3 + 42, "maximum(r)", ("r", "Vector{Float64}"));
-            Float trigger = InPanel(Scalar(4, 29), "quake at × the background", 2, 20, 1, 1_000);
+            Float trigger = InPanel(Scalar(4, 29), "quake at × the background", 2, 20);
             trigger.Column = Stage3 + 28;
             Function quake = Define("quake", "Bool", 29, Stage3 + 42, "m > t  # t times the background's shaking", ("m", "Float64"), ("t", "Float64"));
 
@@ -234,7 +234,7 @@ namespace JSynth.ViewModels
 
             // A station hears a new quake: a second 4 times the background, the minute before it having none.
             ArrayBuilder shookBefore = Zeros(4, 30);
-            Float trigger = InPanel(Scalar(4, 30), "heard at × the background", 2, 20, 1, 1_000);
+            Float trigger = InPanel(Scalar(4, 30), "heard at × the background", 2, 20);
             trigger.Column = Stage2 - 14;
             Function shook = Define("shook", "Vector{Float64}", 30, Stage3, "Float64[maximum(r) > t for r in R]  # whether each station shook this minute, for the next", ("R", "Vector"), ("t", "Float64"));
             (Node, string) name = (stations[0], FilesNode.NameOutput);

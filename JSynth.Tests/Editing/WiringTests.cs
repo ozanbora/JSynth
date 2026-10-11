@@ -26,16 +26,6 @@ namespace JSynth.Tests.Editing
             Assert.Equal("Float32", new Function { ReturnType = "Float32" }.OutputType);
         }
 
-        // Julia's eps(Float16), eps(Float32) and eps(Float64), not .NET's smallest number above zero.
-        [Theory]
-        [InlineData("16-bit", 9.765625e-4)]
-        [InlineData("32-bit", 1.1920928955078125e-7)]
-        [InlineData("64-bit", 2.220446049250313e-16)]
-        public void A_floats_epsilon_is_the_gap_after_one_as_in_Julia(string bitness, double eps)
-        {
-            Assert.Equal(eps, new Float { SelectedType = bitness }.Epsilon);
-        }
-
         [Fact]
         public void A_mismatched_type_is_rejected_with_the_reason()
         {

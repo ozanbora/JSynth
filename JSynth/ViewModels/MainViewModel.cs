@@ -271,8 +271,10 @@ public partial class MainViewModel : ReactiveObject
             return;
         }
 
-        // Moving or recolouring a node, or changing a frame, changes the design, but not what it computes: keep the results.
-        if (e.PropertyName is nameof(Node.Row) or nameof(Node.Column) or nameof(Node.Color) || sender is FrameNode || Node.PanelProperties.Contains(e.PropertyName))
+        // Moving or recolouring a node, changing a frame, or a number's limits (only checks on what's typed; a value they
+        // move changes on its own) changes the design, but not what it computes: keep the results.
+        if (e.PropertyName is nameof(Node.Row) or nameof(Node.Column) or nameof(Node.Color) || sender is FrameNode || Node.PanelProperties.Contains(e.PropertyName)
+            || (e.PropertyName is "Min" or "Max" && sender is Float or Integer or UnsignedInteger))
         {
             History.ScheduleCommit();
             return;
@@ -309,6 +311,14 @@ public partial class MainViewModel : ReactiveObject
         try
         {
             document.ReplaceFileNameNodes();
+
+            // Numbers in the panel with no limits of their own (saved so, or before the slider's range was theirs) get
+            // ones around their values, as when put in it: the editor and the panel show the same range.
+            foreach (Node node in AllNodes(document.Nodes).Where(n => n.InPanel))
+            {
+                PanelParameter.LimitAroundValue(node);
+            }
+
             Nodes.Clear();
             Connections.Clear();
             Nodes.AddRange(document.Nodes);
