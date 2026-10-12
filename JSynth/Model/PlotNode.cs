@@ -8,14 +8,14 @@ using System.Linq;
 namespace JSynth.Model
 {
     /// <summary>
-    /// Plots a value: a vector as a line or points (against x values if wired), a matrix as a heatmap or,
+    /// Plots a value: a vector as a line, points or bars (against x values if wired), a matrix as a heatmap or,
     /// sparse, as dots where its values are. The numbers come back from the run (see <see cref="PlotData"/>).
     /// </summary>
     public class PlotNode : Node
     {
         public const string Auto = "Auto";
 
-        public static IReadOnlyList<string> Kinds { get; } = [Auto, "Line", "Scatter", "Heatmap", "Spy"];
+        public static IReadOnlyList<string> Kinds { get; } = [Auto, "Line", "Scatter", "Bar", "Heatmap", "Spy"];
 
         private static readonly string[] ShownProperties = [nameof(Plot), nameof(Message)];
 

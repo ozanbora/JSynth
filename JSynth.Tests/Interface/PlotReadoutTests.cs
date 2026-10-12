@@ -67,6 +67,36 @@ namespace JSynth.Tests.Interface
         }
 
         [Fact]
+        public void On_a_bar_chart_the_bar_under_the_mouse_is_given_from_zero_to_its_top()
+        {
+            // Bars at 1, 2, 3 of heights 3, -1, 2: 0.8 wide.
+            PlotReadout readout = new(Written(PlotKind.Bar, 3, 0, 3, 1, [1, 2, 3, 3, -1, 2]));
+
+            (string text, (double X, double Y)? point) = readout.Describe(2.3, -0.5, 4, 5);
+            Assert.Equal("x 2.3   y -0.5      bar 2: x 2, value -1", text);
+            Assert.Equal((2.0, -1.0), point);
+
+            Assert.Equal(0, readout.Bar(0.7, 2.9));
+            Assert.Null(readout.Bar(1.5, 1));   // between bars
+            Assert.Null(readout.Bar(3, 2.5));   // above the third bar's top
+            Assert.Null(readout.Bar(2, 0.5));   // above the zero line, the second bar going down
+        }
+
+        [Fact]
+        public void Bars_are_as_wide_as_fits_the_closest_two_with_a_gap_and_drawn_so()
+        {
+            Assert.Equal(0.4, PlotRenderer.BarWidth([0, 1, 1.5]), 12);
+            Assert.Equal(0.8, PlotRenderer.BarWidth([5]), 12);
+            Assert.Equal(8, PlotRenderer.BarWidth([1990, 2000, 2020]), 12);
+
+            ScottPlot.Plot plot = new();
+            PlotRenderer.Draw(plot, Written(PlotKind.Bar, 3, 0, 3, 1, [0, 1, 1.5, 3, -1, 2]), "bars", ScottPlot.Colors.Black, compact: false);
+            ScottPlot.Plottables.BarPlot bars = Assert.Single(plot.GetPlottables().OfType<ScottPlot.Plottables.BarPlot>());
+            Assert.Equal([3.0, -1.0, 2.0], bars.Bars.Select(b => b.Value));
+            Assert.All(bars.Bars, b => Assert.Equal(0.4, b.Size, 12));
+        }
+
+        [Fact]
         public void On_a_heatmap_the_row_column_and_value_under_the_mouse_are_given()
         {
             // [1 2 3; 4 5 6], written column by column.

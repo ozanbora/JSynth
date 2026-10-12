@@ -227,7 +227,7 @@ namespace JSynth.ViewModels
 
             Function balance = Define("balance", "Float64", 18, Inputs, "10_000 * 1.05^t  # 10,000 saved at 5% a year, after t years", ("t", "Float64"));
             MapNode growth = new() { Row = 12, Column = Stage1 };
-            PlotNode curve = new() { Title = "Balance by year", Row = 10, Column = Stage2 + 3 };
+            PlotNode curve = new() { Title = "Balance by year", Kind = "Bar", Row = 10, Column = Stage2 + 3 };
             Function final = Define("final", "Float64", 24, Stage2, "last(balances)", ("balances", "Vector{Float64}"));
             DisplayNode showFinal = Shown(24, Stage3);
 
