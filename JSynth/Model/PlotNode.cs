@@ -2,25 +2,35 @@ using Avalonia.Media;
 using JSynth.Runtime;
 using Newtonsoft.Json;
 using ReactiveUI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace JSynth.Model
 {
     /// <summary>
-    /// Plots a value: a vector as a line, points or bars (against x values if wired), a matrix as a heatmap or,
+    /// Plots a value: a vector as a line, points or bars (against x values if wired) or its values counted in a
+    /// histogram, a matrix as a heatmap or,
     /// sparse, as dots where its values are. The numbers come back from the run (see <see cref="PlotData"/>).
     /// </summary>
     public class PlotNode : Node
     {
         public const string Auto = "Auto";
 
-        public static IReadOnlyList<string> Kinds { get; } = [Auto, "Line", "Scatter", "Bar", "Heatmap", "Spy"];
+        public const string Histogram = "Histogram";
 
-        private static readonly string[] ShownProperties = [nameof(Plot), nameof(Message)];
+        /// <summary>
+        /// The most bins a histogram may have.
+        /// </summary>
+        public const long MaxBins = 10_000;
+
+        public static IReadOnlyList<string> Kinds { get; } = [Auto, "Line", "Scatter", "Bar", Histogram, "Heatmap", "Spy"];
+
+        private static readonly string[] ShownProperties = [nameof(Plot), nameof(Message), nameof(IsHistogram)];
 
         private string _kind = Auto;
         private string _title = string.Empty;
+        private long _bins;
         private PlotData? _plot;
 
         /// <summary>
@@ -44,8 +54,21 @@ namespace JSynth.Model
                 if (value is not null && Kinds.Contains(value))
                 {
                     _ = this.RaiseAndSetIfChanged(ref _kind, value);
+                    this.RaisePropertyChanged(nameof(IsHistogram));
                 }
             }
+        }
+
+        public bool IsHistogram => Kind == Histogram;
+
+        /// <summary>
+        /// How many equal bins a histogram counts the values into; 0 to choose: √n, at most 200.
+        /// </summary>
+        [JsonProperty]
+        public long Bins
+        {
+            get => _bins;
+            set => this.RaiseAndSetIfChanged(ref _bins, Math.Clamp(value, 0, MaxBins));
         }
 
         /// <summary>
@@ -105,7 +128,8 @@ namespace JSynth.Model
         /// </summary>
         public string JuliaAt(string path, string y, string? x)
         {
-            return $"_jsynth_plot({path}, \"{Kind.ToLowerInvariant()}\", {y}{(x is null ? string.Empty : $", {x}")})";
+            string bins = IsHistogram && Bins > 0 ? $"; bins = {Bins}" : string.Empty;
+            return $"_jsynth_plot({path}, \"{Kind.ToLowerInvariant()}\", {y}{(x is null ? string.Empty : $", {x}")}{bins})";
         }
 
         public override bool IsViewState(string property)

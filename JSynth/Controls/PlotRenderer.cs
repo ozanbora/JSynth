@@ -58,6 +58,18 @@ public static class PlotRenderer
 
                 break;
 
+            case PlotKind.Histogram:
+                // Each bin's bar spans its edges, no gaps between.
+                double[] centres = [.. data.X.Zip(data.X.Skip(1), (a, b) => (a + b) / 2)];
+                ScottPlot.Plottables.BarPlot bins = plot.Add.Bars(centres, data.Y);
+                for (int i = 0; i < bins.Bars.Count; i++)
+                {
+                    bins.Bars[i].Size = data.X[i + 1] - data.X[i];
+                    bins.Bars[i].LineWidth = 0;
+                }
+
+                break;
+
             case PlotKind.Heatmap:
                 ScottPlot.Plottables.Heatmap heatmap = plot.Add.Heatmap(data.Values!);
                 heatmap.Colormap = new ScottPlot.Colormaps.Viridis();

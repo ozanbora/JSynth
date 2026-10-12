@@ -191,6 +191,36 @@ namespace JSynth.Tests.Runs
         }
 
         [Fact]
+        public void A_histogram_passes_its_bins_in_a_run_and_to_plots_jl_in_a_script()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                ArrayBuilder y = new() { Kind = "range" };
+                PlotNode plot = new() { Kind = PlotNode.Histogram };
+                MainViewModel.Nodes.AddRange([y, plot]);
+                Assert.Null(MainViewModel.Connect(y, plot, plot.Y));
+
+                // Auto bins: none passed.
+                Assert.Contains("\"histogram\", B1)", ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true).Text);
+                Assert.Contains("using Plots; histogram(B1)", MainViewModel.ExportScript());
+
+                plot.Bins = 12;
+                Assert.Contains("\"histogram\", B1; bins = 12)", ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true).Text);
+                Assert.Contains("using Plots; histogram(B1; bins = 12)", MainViewModel.ExportScript());
+
+                // Bins count for a histogram only, and stay within 0 to the most.
+                plot.Kind = "Line";
+                Assert.False(plot.IsHistogram);
+                Assert.Contains("\"line\", B1)", ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true).Text);
+                plot.Bins = -3;
+                Assert.Equal(0, plot.Bins);
+                plot.Bins = 1_000_000;
+                Assert.Equal(PlotNode.MaxBins, plot.Bins);
+            });
+        }
+
+        [Fact]
         public void A_plot_takes_any_values_but_only_a_vector_for_x()
         {
             PlotNode plot = new();

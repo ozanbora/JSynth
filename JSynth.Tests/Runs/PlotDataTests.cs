@@ -98,6 +98,41 @@ namespace JSynth.Tests.Runs
         }
 
         [Fact]
+        public async Task A_histogram_counts_every_value_into_equal_bins_the_largest_in_the_last()
+        {
+            if (await RunAsync("""
+                _jsynth_plot("set.jsplot", "histogram", [0.0, 1.0, 1.5, 2.0, 3.9, 4.0, NaN]; bins = 4)
+                _jsynth_plot("auto.jsplot", "histogram", collect(1:100))
+                _jsynth_plot("empty.jsplot", "histogram", Float64[])
+                _jsynth_plot("same.jsplot", "histogram", fill(7, 5))
+                """) is null)
+            {
+                return;
+            }
+
+            // NaN isn't counted; 1.0 starts the second bin, 4.0 (the largest) counts in the last.
+            PlotData set = PlotData.Read(PathOf("set.jsplot"));
+            Assert.Equal(PlotKind.Histogram, set.Kind);
+            Assert.Equal(new double[] { 0.0, 1.0, 2.0, 3.0, 4.0 }, set.X);
+            Assert.Equal(new double[] { 1.0, 2.0, 1.0, 2.0 }, set.Y);
+            Assert.Equal((7L, 1L), (set.Rows, set.Columns));
+
+            // Auto: √100 = 10 bins, every value counted.
+            PlotData auto = PlotData.Read(PathOf("auto.jsplot"));
+            Assert.Equal(10, auto.Y.Length);
+            Assert.Equal(100.0, auto.Y.Sum());
+            Assert.Equal((1.0, 100.0), (auto.X[0], auto.X[^1]));
+
+            // Nothing or one value repeated: one bin.
+            PlotData empty = PlotData.Read(PathOf("empty.jsplot"));
+            Assert.Equal(new double[] { 0.0, 1.0 }, empty.X);
+            Assert.Equal(new double[] { 0.0 }, empty.Y);
+            PlotData same = PlotData.Read(PathOf("same.jsplot"));
+            Assert.Equal(new double[] { 6.5, 7.5 }, same.X);
+            Assert.Equal(new double[] { 5.0 }, same.Y);
+        }
+
+        [Fact]
         public async Task Matrices_become_heatmaps_averaged_down_when_big()
         {
             if (await RunAsync("""
@@ -145,7 +180,7 @@ namespace JSynth.Tests.Runs
         public async Task Plotting_the_wrong_shape_is_an_error_saying_why()
         {
             if (await RunAsync("""
-                for (kind, y, x) in (("line", [1 2; 3 4], nothing), ("heatmap", [1.0, 2.0], nothing), ("line", [1.0, 2.0], [1.0]), ("bar", [1 2; 3 4], nothing))
+                for (kind, y, x) in (("line", [1 2; 3 4], nothing), ("heatmap", [1.0, 2.0], nothing), ("line", [1.0, 2.0], [1.0]), ("bar", [1 2; 3 4], nothing), ("histogram", [1 2; 3 4], nothing), ("histogram", [1.0, 2.0], [1.0, 2.0]))
                     try
                         _jsynth_plot("wrong.jsplot", kind, y, x)
                         println(stderr, "no error")
@@ -160,6 +195,8 @@ namespace JSynth.Tests.Runs
 
             Assert.Contains("a line plot needs a vector", errors);
             Assert.Contains("a bar plot needs a vector", errors);
+            Assert.Contains("a histogram needs a vector", errors);
+            Assert.Contains("a histogram counts the values of y: it takes no x values", errors);
             Assert.Contains("a heatmap needs a matrix", errors);
             Assert.Contains("1 x values for 2 y values", errors);
             Assert.DoesNotContain("no error", errors);

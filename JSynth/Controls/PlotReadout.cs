@@ -7,7 +7,7 @@ namespace JSynth.Controls;
 
 /// <summary>
 /// What a plot shows where the mouse points: the coordinates, and the data there: the nearest point of a
-/// line or scatter plot, the bar under it, the value of a heatmap cell, whether a sparse matrix stores an entry.
+/// line or scatter plot, the bar or histogram bin under it, the value of a heatmap cell, whether a sparse matrix stores an entry.
 /// </summary>
 public sealed class PlotReadout
 {
@@ -39,6 +39,9 @@ public sealed class PlotReadout
 
             case PlotKind.Bar when Bar(x, y) is int b:
                 return ($"x {Number(x)}   y {Number(y)}      bar {b + 1}: x {Number(_data.X[b])}, value {Number(_data.Y[b])}", (_data.X[b], _data.Y[b]));
+
+            case PlotKind.Histogram when Bin(x, y) is int b:
+                return ($"x {Number(x)}   y {Number(y)}      {Number(_data.X[b])} – {Number(_data.X[b + 1])}: {Number(_data.Y[b])}", ((_data.X[b] + _data.X[b + 1]) / 2, _data.Y[b]));
 
             case PlotKind.Heatmap when Cell(x, y) is (long row, long column):
             {
@@ -92,6 +95,25 @@ public sealed class PlotReadout
         for (int i = 0; i < _data.X.Length; i++)
         {
             if (Math.Abs(x - _data.X[i]) <= half && y >= Math.Min(0, _data.Y[i]) && y <= Math.Max(0, _data.Y[i]))
+            {
+                return i;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The index of the histogram bin under (<paramref name="x"/>, <paramref name="y"/>): between its edges (the
+    /// last one's upper edge counting in it, as its values do), from 0 to its count; null over none.
+    /// </summary>
+    public int? Bin(double x, double y)
+    {
+        int count = _data.Y.Length;
+        for (int i = 0; i < count; i++)
+        {
+            bool across = x >= _data.X[i] && (x < _data.X[i + 1] || (i == count - 1 && x == _data.X[i + 1]));
+            if (across && y >= 0 && y <= _data.Y[i])
             {
                 return i;
             }

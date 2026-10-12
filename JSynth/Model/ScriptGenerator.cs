@@ -245,12 +245,14 @@ namespace JSynth.Model
             {
                 "Scatter" => "scatter",
                 "Bar" => "bar",
+                PlotNode.Histogram => "histogram",
                 "Heatmap" => "heatmap",
                 "Spy" => "spy",
                 _ => "plot",
             };
             string y = Wired(plot.Y);
-            string call = plot.X.IsWired ? $"{function}({Wired(plot.X)}, {y})" : $"{function}({y})";
+            string call = plot.IsHistogram ? $"{function}({y}{(plot.Bins > 0 ? $"; bins = {plot.Bins}" : string.Empty)})"
+                : plot.X.IsWired ? $"{function}({Wired(plot.X)}, {y})" : $"{function}({y})";
             return $"# Plotted by JSynth. With Plots.jl: using Plots; {call}";
         }
 

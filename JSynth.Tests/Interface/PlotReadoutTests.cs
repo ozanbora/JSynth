@@ -97,6 +97,32 @@ namespace JSynth.Tests.Interface
         }
 
         [Fact]
+        public void On_a_histogram_the_bin_under_the_mouse_is_given_with_its_range_and_count()
+        {
+            // Bins 0–0.5, 0.5–1, 1–1.5 counting 4, 0, 143.
+            PlotReadout readout = new(Written(PlotKind.Histogram, 3, 0, 147, 1, [0, 0.5, 1, 1.5, 4, 0, 143]));
+
+            (string text, (double X, double Y)? point) = readout.Describe(1.2, 100, 2, 150);
+            Assert.Equal("x 1.2   y 100      1 – 1.5: 143", text);
+            Assert.Equal((1.25, 143.0), point);
+
+            Assert.Equal(0, readout.Bin(0.5 - 1e-9, 3));
+            Assert.Equal(2, readout.Bin(1.5, 1));      // the largest value's edge is the last bin's
+            Assert.Null(readout.Bin(0.7, 0.5));        // over an empty bin
+            Assert.Null(readout.Bin(0.2, 5));          // above the first bin's count
+            Assert.Null(readout.Bin(1.6, 1));          // past the last edge
+        }
+
+        [Fact]
+        public void A_histogram_is_drawn_as_bars_each_as_wide_as_its_bin()
+        {
+            ScottPlot.Plot plot = new();
+            PlotRenderer.Draw(plot, Written(PlotKind.Histogram, 2, 0, 3, 1, [0, 2, 3, 1, 2]), "counts", ScottPlot.Colors.Black, compact: false);
+            ScottPlot.Plottables.BarPlot bars = Assert.Single(plot.GetPlottables().OfType<ScottPlot.Plottables.BarPlot>());
+            Assert.Equal([(1.0, 2.0, 1.0), (2.5, 1.0, 2.0)], bars.Bars.Select(b => (b.Position, b.Size, b.Value)));
+        }
+
+        [Fact]
         public void On_a_heatmap_the_row_column_and_value_under_the_mouse_are_given()
         {
             // [1 2 3; 4 5 6], written column by column.
