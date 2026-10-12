@@ -77,6 +77,27 @@ namespace JSynth.Tests.Runs
         }
 
         [Fact]
+        public async Task A_vector_becomes_bars_at_its_x_values_or_its_indices()
+        {
+            if (await RunAsync("""
+                _jsynth_plot("bars.jsplot", "bar", [3, -1, 2])
+                _jsynth_plot("placed.jsplot", "bar", [5.0, 7.0], [1990, 2000])
+                """) is null)
+            {
+                return;
+            }
+
+            PlotData bars = PlotData.Read(PathOf("bars.jsplot"));
+            Assert.Equal(PlotKind.Bar, bars.Kind);
+            Assert.Equal(new double[] { 1.0, 2.0, 3.0 }, bars.X);
+            Assert.Equal(new double[] { 3.0, -1.0, 2.0 }, bars.Y);
+
+            PlotData placed = PlotData.Read(PathOf("placed.jsplot"));
+            Assert.Equal(new double[] { 1990.0, 2000.0 }, placed.X);
+            Assert.Equal(new double[] { 5.0, 7.0 }, placed.Y);
+        }
+
+        [Fact]
         public async Task Matrices_become_heatmaps_averaged_down_when_big()
         {
             if (await RunAsync("""
@@ -124,7 +145,7 @@ namespace JSynth.Tests.Runs
         public async Task Plotting_the_wrong_shape_is_an_error_saying_why()
         {
             if (await RunAsync("""
-                for (kind, y, x) in (("line", [1 2; 3 4], nothing), ("heatmap", [1.0, 2.0], nothing), ("line", [1.0, 2.0], [1.0]))
+                for (kind, y, x) in (("line", [1 2; 3 4], nothing), ("heatmap", [1.0, 2.0], nothing), ("line", [1.0, 2.0], [1.0]), ("bar", [1 2; 3 4], nothing))
                     try
                         _jsynth_plot("wrong.jsplot", kind, y, x)
                         println(stderr, "no error")
@@ -138,6 +159,7 @@ namespace JSynth.Tests.Runs
             }
 
             Assert.Contains("a line plot needs a vector", errors);
+            Assert.Contains("a bar plot needs a vector", errors);
             Assert.Contains("a heatmap needs a matrix", errors);
             Assert.Contains("1 x values for 2 y values", errors);
             Assert.DoesNotContain("no error", errors);

@@ -185,7 +185,8 @@ namespace JSynth.Tests.Runs
                 Assert.Contains(PlotData.Prelude.TrimEnd(), run);
                 Assert.Contains($"global plot1 = _jsynth_plot(raw\"{Path.Combine(folder, $"{plot.ID}.jsplot")}\", \"scatter\", B1, v1)", run);
                 Assert.Contains($"_jsynth_skip(\"{lonely.ID}\", \"Wire values in to plot them.\")", run);
-                Assert.Contains("# Plotted by JSynth. With Plots.jl: using Plots; plot(v1, B1)", plain);
+                // With Plots.jl's function for the kind: scatter for a scatter plot.
+                Assert.Contains("# Plotted by JSynth. With Plots.jl: using Plots; scatter(v1, B1)", plain);
             });
         }
 

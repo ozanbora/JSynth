@@ -240,8 +240,17 @@ namespace JSynth.Model
         {
             string Wired(Parameter parameter) => ValueOf(variables, inputs.First(c => c.ParameterID == parameter.ID));
 
+            // Plots.jl has a function for each kind; Auto and Line are its plot.
+            string function = plot.Kind switch
+            {
+                "Scatter" => "scatter",
+                "Bar" => "bar",
+                "Heatmap" => "heatmap",
+                "Spy" => "spy",
+                _ => "plot",
+            };
             string y = Wired(plot.Y);
-            string call = plot.X.IsWired ? $"plot({Wired(plot.X)}, {y})" : $"plot({y})";
+            string call = plot.X.IsWired ? $"{function}({Wired(plot.X)}, {y})" : $"{function}({y})";
             return $"# Plotted by JSynth. With Plots.jl: using Plots; {call}";
         }
 

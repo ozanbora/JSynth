@@ -7,7 +7,7 @@ namespace JSynth.Controls;
 
 /// <summary>
 /// What a plot shows where the mouse points: the coordinates, and the data there: the nearest point of a
-/// line or scatter plot, the value of a heatmap cell, whether a sparse matrix stores an entry.
+/// line or scatter plot, the bar under it, the value of a heatmap cell, whether a sparse matrix stores an entry.
 /// </summary>
 public sealed class PlotReadout
 {
@@ -36,6 +36,9 @@ public sealed class PlotReadout
         {
             case PlotKind.Line or PlotKind.Scatter when Nearest(x, y, xSpan, ySpan) is int i:
                 return ($"x {Number(x)}   y {Number(y)}      point {i + 1}: ({Number(_data.X[i])}, {Number(_data.Y[i])})", (_data.X[i], _data.Y[i]));
+
+            case PlotKind.Bar when Bar(x, y) is int b:
+                return ($"x {Number(x)}   y {Number(y)}      bar {b + 1}: x {Number(_data.X[b])}, value {Number(_data.Y[b])}", (_data.X[b], _data.Y[b]));
 
             case PlotKind.Heatmap when Cell(x, y) is (long row, long column):
             {
@@ -77,6 +80,24 @@ public sealed class PlotReadout
         }
 
         return best;
+    }
+
+    /// <summary>
+    /// The index of the bar under (<paramref name="x"/>, <paramref name="y"/>): across its width, between 0 and its
+    /// top; null over none.
+    /// </summary>
+    public int? Bar(double x, double y)
+    {
+        double half = PlotRenderer.BarWidth(_data.X) / 2;
+        for (int i = 0; i < _data.X.Length; i++)
+        {
+            if (Math.Abs(x - _data.X[i]) <= half && y >= Math.Min(0, _data.Y[i]) && y <= Math.Max(0, _data.Y[i]))
+            {
+                return i;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

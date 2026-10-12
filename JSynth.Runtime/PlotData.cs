@@ -26,10 +26,15 @@ namespace JSynth.Runtime
         /// Where a matrix has values that aren't zero, as dots: the usual picture of a sparse matrix.
         /// </summary>
         Spy = 4,
+
+        /// <summary>
+        /// A vector as bars, one a value, at its x values or its indices.
+        /// </summary>
+        Bar = 5,
     }
 
     /// <summary>
-    /// The numbers of a plot, as a script wrote them (see <see cref="Prelude"/>). Line and scatter plots have
+    /// The numbers of a plot, as a script wrote them (see <see cref="Prelude"/>). Line, scatter and bar plots have
     /// <see cref="X"/> and <see cref="Y"/>; a heatmap has <see cref="Values"/>; a spy plot has the row and
     /// column of each dot in <see cref="Y"/> and <see cref="X"/>.
     /// </summary>
@@ -40,7 +45,7 @@ namespace JSynth.Runtime
         /// <summary>
         /// Julia code defining <c>_jsynth_plot(path, kind, y, x)</c>: writes a plot's numbers to <c>path</c>
         /// and returns the path. <c>kind</c> is "auto" (line for a vector, spy for a sparse matrix, heatmap for
-        /// another matrix), "line", "scatter", "heatmap" or "spy"; <c>x</c> is nothing or a vector.
+        /// another matrix), "line", "scatter", "bar", "heatmap" or "spy"; <c>x</c> is nothing or a vector.
         /// Heatmaps are averaged down to at most 1000 cells a side, spy plots to 200,000 dots.
         /// </summary>
         public static string Prelude { get; } = """
@@ -49,12 +54,12 @@ namespace JSynth.Runtime
                 if kind == "auto"
                     kind = y isa AbstractVector ? "line" : issparse ? "spy" : "heatmap"
                 end
-                if kind in ("line", "scatter")
+                if kind in ("line", "scatter", "bar")
                     y isa AbstractVector || throw(ArgumentError("a $kind plot needs a vector, not a $(typeof(y))"))
                     ys = Float64.(collect(y))
                     xs = x === nothing ? collect(1.0:length(ys)) : Float64.(collect(x))
                     length(xs) == length(ys) || throw(DimensionMismatch("$(length(xs)) x values for $(length(ys)) y values"))
-                    header, data = (kind == "line" ? 1 : 2, length(ys), 0), (xs, ys)
+                    header, data = (Dict("line" => 1, "scatter" => 2, "bar" => 5)[kind], length(ys), 0), (xs, ys)
                 elseif kind == "heatmap"
                     y isa AbstractMatrix || throw(ArgumentError("a heatmap needs a matrix, not a $(typeof(y))"))
                     values = _jsynth_shrink(y, 1000)
@@ -96,12 +101,12 @@ namespace JSynth.Runtime
         public PlotKind Kind { get; }
 
         /// <summary>
-        /// Line and scatter: the x values. Spy: the column of each dot.
+        /// Line, scatter and bar: the x values. Spy: the column of each dot.
         /// </summary>
         public double[] X { get; }
 
         /// <summary>
-        /// Line and scatter: the y values. Spy: the row of each dot.
+        /// Line, scatter and bar: the y values. Spy: the row of each dot.
         /// </summary>
         public double[] Y { get; }
 

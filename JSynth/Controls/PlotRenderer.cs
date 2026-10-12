@@ -47,6 +47,17 @@ public static class PlotRenderer
                 points.MarkerSize = MarkerSize(data.X.Length, compact);
                 break;
 
+            case PlotKind.Bar:
+                ScottPlot.Plottables.BarPlot bars = plot.Add.Bars(data.X, data.Y);
+                double width = BarWidth(data.X);
+                foreach (ScottPlot.Bar bar in bars.Bars)
+                {
+                    bar.Size = width;
+                    bar.LineWidth = 0;
+                }
+
+                break;
+
             case PlotKind.Heatmap:
                 ScottPlot.Plottables.Heatmap heatmap = plot.Add.Heatmap(data.Values!);
                 heatmap.Colormap = new ScottPlot.Colormaps.Viridis();
@@ -85,6 +96,17 @@ public static class PlotRenderer
         {
             plot.Axes.Rules.Add(new ScottPlot.AxisRules.SquareZoomOut(plot.Axes.Bottom, plot.Axes.Left));
         }
+    }
+
+    /// <summary>
+    /// How wide each bar is: 80% of the closest two bars' distance, so none overlap and a gap shows between them, even
+    /// with uneven x values; 0.8 for a single bar.
+    /// </summary>
+    public static double BarWidth(double[] x)
+    {
+        double[] sorted = [.. x.Where(double.IsFinite).Order()];
+        double closest = sorted.Zip(sorted.Skip(1), (a, b) => b - a).Where(d => d > 0).DefaultIfEmpty(1).Min();
+        return closest * 0.8;
     }
 
     /// <summary>
