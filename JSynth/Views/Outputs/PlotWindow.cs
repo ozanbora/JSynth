@@ -12,7 +12,7 @@ using System.ComponentModel;
 namespace JSynth.Views.Outputs;
 
 /// <summary>
-/// A plot in a window of its own: bigger, with a colour bar for heatmaps, and zoom (wheel) and pan (drag).
+/// A plot in a window of its own: bigger, with a colour bar for heatmaps and contour lines, and zoom (wheel) and pan (drag).
 /// A crosshair follows the mouse, and the bar below says where it points: the coordinates, and the data
 /// point, heatmap value or matrix entry there. It follows the node: a new run redraws it.
 /// </summary>
@@ -88,12 +88,12 @@ public sealed class PlotWindow : Window
         if (e.PropertyName == nameof(Model.PlotNode.Plot) && PlotRenderer.Update(_chart.Plot, _drawn, _model.Plot))
         {
             _drawn = _model.Plot;
-            _describe = new PlotReadout(_model.Plot!);
+            _describe = new PlotReadout(_model.Plot!, _model.Levels);
             _chart.Refresh();
         }
 
         // A cleared plot (the design changed) keeps the last one here until the next run.
-        else if ((e.PropertyName == nameof(Model.PlotNode.Plot) && _model.Plot is not null) || e.PropertyName == nameof(Model.PlotNode.Title))
+        else if ((e.PropertyName == nameof(Model.PlotNode.Plot) && _model.Plot is not null) || e.PropertyName is nameof(Model.PlotNode.Title) or nameof(Model.PlotNode.Levels))
         {
             Redraw();
         }
@@ -102,19 +102,19 @@ public sealed class PlotWindow : Window
     private void Redraw()
     {
         // A matrix drawn again at the same size (live, in a stream) keeps where it was zoomed and panned to.
-        bool sameMatrix = _drawn is { Kind: PlotKind.Heatmap or PlotKind.Spy } last && _model.Plot is PlotData now
+        bool sameMatrix = _drawn is { Kind: PlotKind.Heatmap or PlotKind.Contour or PlotKind.Spy } last && _model.Plot is PlotData now
             && now.Kind == last.Kind && now.Rows == last.Rows && now.Columns == last.Columns;
         AxisLimits limits = _chart.Plot.Axes.GetLimits();
 
         ScottPlot.Color foreground = PlotNode.ForegroundColor(this);
-        PlotRenderer.Draw(_chart.Plot, _model.Plot, _model.Title, foreground, compact: false);
+        PlotRenderer.Draw(_chart.Plot, _model.Plot, _model.Title, foreground, compact: false, _model.Levels);
         if (sameMatrix)
         {
             _chart.Plot.Axes.SetLimits(limits);
         }
 
         _drawn = _model.Plot;
-        _describe = _model.Plot is null ? null : new PlotReadout(_model.Plot);
+        _describe = _model.Plot is null ? null : new PlotReadout(_model.Plot, _model.Levels);
 
         // Added last, so they are drawn over the data.
         _crosshair = _chart.Plot.Add.Crosshair(0, 0);

@@ -65,7 +65,7 @@ public partial class PlotNode : Node
             _drawn = _model?.Plot;
             Chart.Refresh();
         }
-        else if (e.PropertyName is nameof(Model.PlotNode.Plot) or nameof(Model.PlotNode.Title))
+        else if (e.PropertyName is nameof(Model.PlotNode.Plot) or nameof(Model.PlotNode.Title) or nameof(Model.PlotNode.Levels))
         {
             Redraw();
         }
@@ -73,7 +73,7 @@ public partial class PlotNode : Node
 
     private void Redraw()
     {
-        PlotRenderer.Draw(Chart.Plot, _model?.Plot, _model?.Title ?? string.Empty, ForegroundColor(this), compact: true);
+        PlotRenderer.Draw(Chart.Plot, _model?.Plot, _model?.Title ?? string.Empty, ForegroundColor(this), compact: true, _model?.Levels ?? 0);
         _drawn = _model?.Plot;
         Chart.Refresh();
     }

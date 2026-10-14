@@ -117,6 +117,22 @@ namespace JSynth.Tests.Files
         }
 
         [Fact]
+        public void Contour_lines_are_saved_with_their_levels()
+        {
+            Run(viewModel =>
+            {
+                MainViewModel.Nodes.Add(new PlotNode { Kind = PlotNode.Contour, Levels = 7 });
+                viewModel.SaveDesign(PathOf("contour.jsynth"));
+
+                viewModel.NewDesign();
+                viewModel.OpenDesign(PathOf("contour.jsynth"));
+
+                PlotNode plot = Assert.Single(MainViewModel.Nodes.OfType<PlotNode>());
+                Assert.Equal((PlotNode.Contour, 7L), (plot.Kind, plot.Levels));
+            });
+        }
+
+        [Fact]
         public void Saving_names_the_design_and_clears_the_unsaved_mark()
         {
             Run(viewModel =>

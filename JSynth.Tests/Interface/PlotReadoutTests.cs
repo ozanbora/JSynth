@@ -147,6 +147,56 @@ namespace JSynth.Tests.Interface
         }
 
         [Fact]
+        public void On_contour_lines_the_value_under_the_mouse_is_given_with_the_nearest_level()
+        {
+            // A peak of 1 in the middle of zeros: auto levels 0.1 to 0.9.
+            PlotData peak = Written(PlotKind.Contour, 3, 3, 3, 3, [0, 0, 0, 0, 1, 0, 0, 0, 0]);
+
+            Assert.Equal(("row 2, column 2: 1   nearest level 0.9", null), new PlotReadout(peak).Describe(2.1, 1.8, 3, 3));
+            Assert.Equal(("row 1, column 3: 0   nearest level 0.5", null), new PlotReadout(peak, levels: 1).Describe(3, 1, 3, 3));
+            Assert.Equal(("x 4   y 1", null), new PlotReadout(peak).Describe(4, 1, 3, 3));
+
+            // One value only: no levels to name.
+            PlotData flat = Written(PlotKind.Contour, 1, 2, 1, 2, [7, 7]);
+            Assert.Equal(("row 1, column 2: 7", null), new PlotReadout(flat).Describe(2, 1, 2, 1));
+        }
+
+        [Fact]
+        public void Contour_lines_are_drawn_a_level_each_in_its_colour_with_a_colour_bar_in_the_window()
+        {
+            PlotData peak = Written(PlotKind.Contour, 3, 3, 3, 3, [0, 0, 0, 0, 1, 0, 0, 0, 0]);
+            ScottPlot.Plot plot = new();
+
+            PlotRenderer.Draw(plot, peak, "peak", ScottPlot.Colors.Black, compact: false);
+            ScottPlot.Plottables.Scatter[] levels = [.. plot.GetPlottables().OfType<ScottPlot.Plottables.Scatter>()];
+            Assert.Equal(9, levels.Length);
+            Assert.Equal(9, levels.Select(l => l.Color).Distinct().Count());
+            Assert.Single(plot.Axes.GetPanels().OfType<ScottPlot.Panels.ColorBar>());
+
+            // The ring around the peak at row 2, column 2, as the heatmap's cells are numbered.
+            ScottPlot.AxisLimits ring = levels[4].GetAxisLimits();
+            Assert.Equal((1.5, 2.5), (Math.Round(ring.Left, 9), Math.Round(ring.Right, 9)));
+
+            // Fewer levels, in the node: no colour bar.
+            PlotRenderer.Draw(plot, peak, "peak", ScottPlot.Colors.Black, compact: true, levels: 3);
+            Assert.Equal(3, plot.GetPlottables().OfType<ScottPlot.Plottables.Scatter>().Count());
+            Assert.Empty(plot.Axes.GetPanels().OfType<ScottPlot.Panels.ColorBar>());
+        }
+
+        [Fact]
+        public void Contour_lines_of_a_matrix_with_one_value_say_there_are_none()
+        {
+            ScottPlot.Plot plot = new();
+
+            PlotRenderer.Draw(plot, Written(PlotKind.Contour, 2, 2, 2, 2, [7, 7, 7, 7]), "flat", ScottPlot.Colors.Black, compact: false);
+
+            Assert.Empty(plot.GetPlottables().OfType<ScottPlot.Plottables.Scatter>());
+            ScottPlot.Plottables.Annotation note = Assert.Single(plot.GetPlottables().OfType<ScottPlot.Plottables.Annotation>());
+            Assert.Equal("No contour lines: every value is 7.", note.Text);
+            _ = plot.GetImage(400, 300);
+        }
+
+        [Fact]
         public void On_a_sparse_matrix_a_stored_entry_is_marked()
         {
             // Dots at (row 1, column 2) and (row 3, column 3): X holds columns, Y rows.

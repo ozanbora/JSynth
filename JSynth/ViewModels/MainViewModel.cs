@@ -271,10 +271,12 @@ public partial class MainViewModel : ReactiveObject
             return;
         }
 
-        // Moving or recolouring a node, changing a frame, or a number's limits (only checks on what's typed; a value they
-        // move changes on its own) changes the design, but not what it computes: keep the results.
+        // Moving or recolouring a node, changing a frame, a number's limits (only checks on what's typed; a value they
+        // move changes on its own) or a plot's contour levels (the app draws those) changes the design, but not what
+        // it computes: keep the results.
         if (e.PropertyName is nameof(Node.Row) or nameof(Node.Column) or nameof(Node.Color) || sender is FrameNode || Node.PanelProperties.Contains(e.PropertyName)
-            || (e.PropertyName is "Min" or "Max" && sender is Float or Integer or UnsignedInteger))
+            || (e.PropertyName is "Min" or "Max" && sender is Float or Integer or UnsignedInteger)
+            || (e.PropertyName is nameof(PlotNode.Levels) && sender is PlotNode))
         {
             History.ScheduleCommit();
             return;
