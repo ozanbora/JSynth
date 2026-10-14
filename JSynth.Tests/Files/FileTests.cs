@@ -101,6 +101,22 @@ namespace JSynth.Tests.Files
         }
 
         [Fact]
+        public void A_histogram_is_saved_with_its_bins()
+        {
+            Run(viewModel =>
+            {
+                MainViewModel.Nodes.Add(new PlotNode { Kind = PlotNode.Histogram, Bins = 30 });
+                viewModel.SaveDesign(PathOf("histogram.jsynth"));
+
+                viewModel.NewDesign();
+                viewModel.OpenDesign(PathOf("histogram.jsynth"));
+
+                PlotNode plot = Assert.Single(MainViewModel.Nodes.OfType<PlotNode>());
+                Assert.Equal((PlotNode.Histogram, 30L), (plot.Kind, plot.Bins));
+            });
+        }
+
+        [Fact]
         public void Saving_names_the_design_and_clears_the_unsaved_mark()
         {
             Run(viewModel =>

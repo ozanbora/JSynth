@@ -157,11 +157,17 @@ namespace JSynth.ViewModels
                 """,
                 ("x", "Vector{Float64}"), ("y", "Vector{Float64}"));
 
+            Function distance = Define("distance", "Vector{Float64}", 16, Stage2,
+                "sqrt.(x .^ 2 .+ y .^ 2)  # from the corner: inside the circle up to 1",
+                ("x", "Vector{Float64}"), ("y", "Vector{Float64}"));
+
             DisplayNode showEstimate = Shown(9, Stage3);
             PlotNode cloud = new() { Kind = "Scatter", Title = "Random points", Row = 24, Column = Stage2 };
+            PlotNode spread = new() { Kind = PlotNode.Histogram, Title = "Distances from the corner", Row = 24, Column = Stage3 + 4 };
 
-            return Design([samples, x, y, estimate, showEstimate, cloud],
+            return Design([samples, x, y, estimate, distance, showEstimate, cloud, spread],
                 (y, cloud, "y"), (x, cloud, "x"),
+                (x, distance, 0), (y, distance, 1), (distance, spread, "y"),
                 (estimate, showEstimate, 0),
                 (samples, x, "n"), (samples, y, "n"), (x, estimate, 0), (y, estimate, 1));
         }

@@ -205,7 +205,8 @@ namespace JSynth.Tests.Files
                 foreach (PlotNode plot in design.Nodes.OfType<PlotNode>())
                 {
                     PlotData data = PlotData.Read(reports.Single(r => r.Id == plot.ID).Text);
-                    Assert.Equal(PlottedValues(name), data.Y.Length);
+                    // A histogram has its counts: as many values as it counted.
+                    Assert.Equal(PlottedValues(name), data.Kind == PlotKind.Histogram ? data.Rows : data.Y.Length);
                 }
             }
             finally

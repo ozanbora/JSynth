@@ -31,25 +31,33 @@ namespace JSynth.Runtime
         /// A vector as bars, one a value, at its x values or its indices.
         /// </summary>
         Bar = 5,
+
+        /// <summary>
+        /// A vector's values counted into bins: the bins' edges and counts.
+        /// </summary>
+        Histogram = 6,
     }
 
     /// <summary>
     /// The numbers of a plot, as a script wrote them (see <see cref="Prelude"/>). Line, scatter and bar plots have
     /// <see cref="X"/> and <see cref="Y"/>; a heatmap has <see cref="Values"/>; a spy plot has the row and
-    /// column of each dot in <see cref="Y"/> and <see cref="X"/>.
+    /// column of each dot in <see cref="Y"/> and <see cref="X"/>; a histogram has its bins' edges in <see cref="X"/>,
+    /// one more than its counts in <see cref="Y"/>.
     /// </summary>
     public sealed class PlotData
     {
         private static readonly byte[] Magic = Encoding.ASCII.GetBytes("JSPLOT01");
 
         /// <summary>
-        /// Julia code defining <c>_jsynth_plot(path, kind, y, x)</c>: writes a plot's numbers to <c>path</c>
+        /// Julia code defining <c>_jsynth_plot(path, kind, y, x; bins)</c>: writes a plot's numbers to <c>path</c>
         /// and returns the path. <c>kind</c> is "auto" (line for a vector, spy for a sparse matrix, heatmap for
-        /// another matrix), "line", "scatter", "bar", "heatmap" or "spy"; <c>x</c> is nothing or a vector.
-        /// Heatmaps are averaged down to at most 1000 cells a side, spy plots to 200,000 dots.
+        /// another matrix), "line", "scatter", "bar", "histogram", "heatmap" or "spy"; <c>x</c> is nothing or a
+        /// vector. A histogram counts y's finite values into <c>bins</c> equal bins from the smallest to the
+        /// largest, or √n of them (at most 200) for 0; only the counts are written. Heatmaps are averaged down
+        /// to at most 1000 cells a side, spy plots to 200,000 dots.
         /// </summary>
         public static string Prelude { get; } = """
-            function _jsynth_plot(path, kind, y, x = nothing)
+            function _jsynth_plot(path, kind, y, x = nothing; bins = 0)
                 issparse = typeof(y).name.name in (:SparseMatrixCSC, :SparseVector)
                 if kind == "auto"
                     kind = y isa AbstractVector ? "line" : issparse ? "spy" : "heatmap"
@@ -60,6 +68,11 @@ namespace JSynth.Runtime
                     xs = x === nothing ? collect(1.0:length(ys)) : Float64.(collect(x))
                     length(xs) == length(ys) || throw(DimensionMismatch("$(length(xs)) x values for $(length(ys)) y values"))
                     header, data = (Dict("line" => 1, "scatter" => 2, "bar" => 5)[kind], length(ys), 0), (xs, ys)
+                elseif kind == "histogram"
+                    y isa AbstractVector || throw(ArgumentError("a histogram needs a vector, not a $(typeof(y))"))
+                    x === nothing || throw(ArgumentError("a histogram counts the values of y: it takes no x values"))
+                    edges, counts = _jsynth_bins(filter(isfinite, Float64.(collect(y))), bins)
+                    header, data = (6, length(counts), 0), (edges, counts)
                 elseif kind == "heatmap"
                     y isa AbstractMatrix || throw(ArgumentError("a heatmap needs a matrix, not a $(typeof(y))"))
                     values = _jsynth_shrink(y, 1000)
@@ -85,6 +98,17 @@ namespace JSynth.Runtime
                 end
                 path
             end
+            function _jsynth_bins(samples, bins)
+                isempty(samples) && return [0.0, 1.0], [0.0]
+                lo, hi = extrema(samples)
+                lo == hi && return [lo - 0.5, lo + 0.5], [Float64(length(samples))]
+                n = bins > 0 ? Int(bins) : clamp(ceil(Int, sqrt(length(samples))), 1, 200)
+                counts = zeros(n)
+                for v in samples
+                    counts[min(n, floor(Int, (v - lo) / (hi - lo) * n) + 1)] += 1
+                end
+                collect(range(lo, hi; length = n + 1)), counts
+            end
             function _jsynth_shrink(A, limit)
                 r, c = size(A)
                 f = max(1, cld(max(r, c), limit))
@@ -101,12 +125,12 @@ namespace JSynth.Runtime
         public PlotKind Kind { get; }
 
         /// <summary>
-        /// Line, scatter and bar: the x values. Spy: the column of each dot.
+        /// Line, scatter and bar: the x values. Spy: the column of each dot. Histogram: the bins' edges.
         /// </summary>
         public double[] X { get; }
 
         /// <summary>
-        /// Line, scatter and bar: the y values. Spy: the row of each dot.
+        /// Line, scatter and bar: the y values. Spy: the row of each dot. Histogram: the bins' counts.
         /// </summary>
         public double[] Y { get; }
 
@@ -169,6 +193,10 @@ namespace JSynth.Runtime
 
                     return new PlotData(PlotKind.Heatmap, [], [], values, rows, columns);
                 }
+
+                case PlotKind.Histogram:
+                    Expect(numbers, (2 * a) + 1);
+                    return new PlotData(PlotKind.Histogram, numbers[..(int)(a + 1)].ToArray(), numbers[(int)(a + 1)..].ToArray(), null, rows, columns);
 
                 default:
                     Expect(numbers, 2 * a);
