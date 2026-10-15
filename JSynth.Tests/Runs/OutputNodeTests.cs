@@ -256,6 +256,22 @@ namespace JSynth.Tests.Runs
         }
 
         [Fact]
+        public void A_surface_is_written_for_the_app_to_draw_and_named_as_Plots_jl_draws_it()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MatrixNode y = new();
+                PlotNode plot = new() { Kind = PlotNode.Surface };
+                MainViewModel.Nodes.AddRange([y, plot]);
+                Assert.Null(MainViewModel.Connect(y, plot, plot.Y));
+
+                Assert.Matches(@"""surface"", \w+\)", ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true).Text);
+                Assert.Matches(@"using Plots; surface\(\w+\)", MainViewModel.ExportScript());
+            });
+        }
+
+        [Fact]
         public void A_plot_takes_any_values_but_only_a_vector_for_x()
         {
             PlotNode plot = new();

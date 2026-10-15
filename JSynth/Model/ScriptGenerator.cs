@@ -248,6 +248,7 @@ namespace JSynth.Model
                 PlotNode.Histogram => "histogram",
                 "Heatmap" => "heatmap",
                 PlotNode.Contour => "contour",
+                PlotNode.Surface => "surface",
                 "Spy" => "spy",
                 _ => "plot",
             };

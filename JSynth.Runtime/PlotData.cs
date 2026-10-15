@@ -41,11 +41,16 @@ namespace JSynth.Runtime
         /// A matrix as lines of equal value, written as a heatmap's values are; the app draws the lines.
         /// </summary>
         Contour = 7,
+
+        /// <summary>
+        /// A matrix as a 3D surface, heights over a grid, written as a heatmap's values are but smaller.
+        /// </summary>
+        Surface = 8,
     }
 
     /// <summary>
     /// The numbers of a plot, as a script wrote them (see <see cref="Prelude"/>). Line, scatter and bar plots have
-    /// <see cref="X"/> and <see cref="Y"/>; a heatmap and contour lines have <see cref="Values"/>; a spy plot has the row and
+    /// <see cref="X"/> and <see cref="Y"/>; a heatmap, contour lines and a surface have <see cref="Values"/>; a spy plot has the row and
     /// column of each dot in <see cref="Y"/> and <see cref="X"/>; a histogram has its bins' edges in <see cref="X"/>,
     /// one more than its counts in <see cref="Y"/>.
     /// </summary>
@@ -56,10 +61,10 @@ namespace JSynth.Runtime
         /// <summary>
         /// Julia code defining <c>_jsynth_plot(path, kind, y, x; bins)</c>: writes a plot's numbers to <c>path</c>
         /// and returns the path. <c>kind</c> is "auto" (line for a vector, spy for a sparse matrix, heatmap for
-        /// another matrix), "line", "scatter", "bar", "histogram", "heatmap", "contour" or "spy"; <c>x</c> is nothing or a
+        /// another matrix), "line", "scatter", "bar", "histogram", "heatmap", "contour", "surface" or "spy"; <c>x</c> is nothing or a
         /// vector. A histogram counts y's finite values into <c>bins</c> equal bins from the smallest to the
         /// largest, or √n of them (at most 200) for 0; only the counts are written. Heatmaps and contours are averaged down
-        /// to at most 1000 cells a side, spy plots to 200,000 dots.
+        /// to at most 1000 cells a side, surfaces to 200, spy plots to 200,000 dots.
         /// </summary>
         public static string Prelude { get; } = """
             function _jsynth_plot(path, kind, y, x = nothing; bins = 0)
@@ -82,6 +87,11 @@ namespace JSynth.Runtime
                     y isa AbstractMatrix || throw(ArgumentError("a $(kind == "heatmap" ? kind : "contour plot") needs a matrix, not a $(typeof(y))"))
                     values = _jsynth_shrink(y, 1000)
                     header, data = (kind == "heatmap" ? 3 : 7, size(values, 1), size(values, 2)), (vec(values),)
+                elseif kind == "surface"
+                    y isa AbstractMatrix || throw(ArgumentError("a surface needs a matrix, not a $(typeof(y))"))
+                    min(size(y)...) >= 2 || throw(ArgumentError("a surface needs at least 2 rows and 2 columns, not $(size(y, 1)) × $(size(y, 2))"))
+                    values = _jsynth_shrink(y, 200)
+                    header, data = (8, size(values, 1), size(values, 2)), (vec(values),)
                 elseif kind == "spy"
                     y isa AbstractMatrix || throw(ArgumentError("a spy plot needs a matrix, not a $(typeof(y))"))
                     rows, cols = if issparse
@@ -140,7 +150,7 @@ namespace JSynth.Runtime
         public double[] Y { get; }
 
         /// <summary>
-        /// Heatmap and contour: the (possibly averaged down) values, [row, column].
+        /// Heatmap, contour and surface: the (possibly averaged down) values, [row, column].
         /// </summary>
         public double[,]? Values { get; }
 
@@ -182,7 +192,7 @@ namespace JSynth.Runtime
             ReadOnlySpan<double> numbers = MemoryMarshal.Cast<byte, double>(data);
             switch ((PlotKind)kind)
             {
-                case PlotKind.Heatmap or PlotKind.Contour:
+                case PlotKind.Heatmap or PlotKind.Contour or PlotKind.Surface:
                 {
                     Expect(numbers, a * b);
                     double[,] values = new double[a, b];

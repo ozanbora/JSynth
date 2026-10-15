@@ -73,7 +73,14 @@ public partial class PlotNode : Node
 
     private void Redraw()
     {
-        PlotRenderer.Draw(Chart.Plot, _model?.Plot, _model?.Title ?? string.Empty, ForegroundColor(this), compact: true, _model?.Levels ?? 0);
+        Runtime.PlotData? plot = _model?.Plot;
+        string title = _model?.Title ?? string.Empty;
+        bool surface = plot?.Kind == Runtime.PlotKind.Surface;
+        Chart.IsVisible = plot is not null && !surface;
+        Surface.IsVisible = surface;
+        Surface.Show(surface ? plot : null, title);
+
+        PlotRenderer.Draw(Chart.Plot, surface ? null : plot, title, ForegroundColor(this), compact: true, _model?.Levels ?? 0);
         _drawn = _model?.Plot;
         Chart.Refresh();
     }
