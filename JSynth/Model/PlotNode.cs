@@ -10,7 +10,7 @@ namespace JSynth.Model
 {
     /// <summary>
     /// Plots a value: a vector as a line, points or bars (against x values if wired) or its values counted in a
-    /// histogram, a matrix as a heatmap, as contour lines or,
+    /// histogram, a matrix as a heatmap, as contour lines, as a 3D surface or,
     /// sparse, as dots where its values are. The numbers come back from the run (see <see cref="PlotData"/>).
     /// </summary>
     public class PlotNode : Node
@@ -20,6 +20,8 @@ namespace JSynth.Model
         public const string Histogram = "Histogram";
 
         public const string Contour = "Contour";
+
+        public const string Surface = "Surface";
 
         /// <summary>
         /// The most bins a histogram may have.
@@ -31,7 +33,7 @@ namespace JSynth.Model
         /// </summary>
         public const long MaxLevels = 100;
 
-        public static IReadOnlyList<string> Kinds { get; } = [Auto, "Line", "Scatter", "Bar", Histogram, "Heatmap", Contour, "Spy"];
+        public static IReadOnlyList<string> Kinds { get; } = [Auto, "Line", "Scatter", "Bar", Histogram, "Heatmap", Contour, Surface, "Spy"];
 
         private static readonly string[] ShownProperties = [nameof(Plot), nameof(Message), nameof(IsHistogram), nameof(IsContour)];
 

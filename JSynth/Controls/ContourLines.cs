@@ -155,7 +155,7 @@ public static class ContourLines
     /// <summary>
     /// A round step at least <paramref name="rough"/>: 1, 2 or 5 times a power of ten.
     /// </summary>
-    private static double RoundStep(double rough)
+    internal static double RoundStep(double rough)
     {
         double power = Math.Pow(10, Math.Floor(Math.Log10(rough)));
         double fraction = rough / power;

@@ -177,6 +177,28 @@ namespace JSynth.Tests.Runs
         }
 
         [Fact]
+        public async Task Surfaces_take_a_matrix_written_as_a_heatmaps_is_but_smaller()
+        {
+            if (await RunAsync("""
+                _jsynth_plot("surface.jsplot", "surface", [1.0 2.0 3.0; 4.0 5.0 6.0])
+                _jsynth_plot("big.jsplot", "surface", [i + j for i in 1:500, j in 1:20])
+                """) is null)
+            {
+                return;
+            }
+
+            PlotData surface = PlotData.Read(PathOf("surface.jsplot"));
+            Assert.Equal(PlotKind.Surface, surface.Kind);
+            Assert.Equal(new double[,] { { 1, 2, 3 }, { 4, 5, 6 } }, surface.Values);
+            Assert.Equal((2L, 3L), (surface.Rows, surface.Columns));
+
+            // Averaged down to 200 a side at most: blocks of 3 for 500 rows.
+            PlotData big = PlotData.Read(PathOf("big.jsplot"));
+            Assert.Equal((167, 7), (big.Values!.GetLength(0), big.Values.GetLength(1)));
+            Assert.Equal((500L, 20L), (big.Rows, big.Columns));
+        }
+
+        [Fact]
         public async Task Sparse_matrices_become_dots_where_their_values_are()
         {
             if (await RunAsync("""
@@ -202,7 +224,7 @@ namespace JSynth.Tests.Runs
         public async Task Plotting_the_wrong_shape_is_an_error_saying_why()
         {
             if (await RunAsync("""
-                for (kind, y, x) in (("line", [1 2; 3 4], nothing), ("heatmap", [1.0, 2.0], nothing), ("line", [1.0, 2.0], [1.0]), ("bar", [1 2; 3 4], nothing), ("histogram", [1 2; 3 4], nothing), ("histogram", [1.0, 2.0], [1.0, 2.0]), ("contour", [1.0, 2.0], nothing))
+                for (kind, y, x) in (("line", [1 2; 3 4], nothing), ("heatmap", [1.0, 2.0], nothing), ("line", [1.0, 2.0], [1.0]), ("bar", [1 2; 3 4], nothing), ("histogram", [1 2; 3 4], nothing), ("histogram", [1.0, 2.0], [1.0, 2.0]), ("contour", [1.0, 2.0], nothing), ("surface", [1.0, 2.0], nothing), ("surface", [1.0 2.0 3.0], nothing))
                     try
                         _jsynth_plot("wrong.jsplot", kind, y, x)
                         println(stderr, "no error")
@@ -221,6 +243,8 @@ namespace JSynth.Tests.Runs
             Assert.Contains("a histogram counts the values of y: it takes no x values", errors);
             Assert.Contains("a heatmap needs a matrix", errors);
             Assert.Contains("a contour plot needs a matrix", errors);
+            Assert.Contains("a surface needs a matrix", errors);
+            Assert.Contains("a surface needs at least 2 rows and 2 columns, not 1 × 3", errors);
             Assert.Contains("1 x values for 2 y values", errors);
             Assert.DoesNotContain("no error", errors);
         }

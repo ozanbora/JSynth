@@ -113,9 +113,15 @@
               ClipToBounds="True"
               >
         <Panel>
+          <!-- ScottPlot draws most plots; a surface draws itself. Which shows is set as the plot is drawn. -->
           <scottPlot:AvaPlot x:Name="Chart"
-                             IsVisible="{Binding Path=Plot, Converter={x:Static ObjectConverters.IsNotNull}}"
+                             IsVisible="False"
                              />
+          <jsControls:SurfaceView x:Name="Surface"
+                                  Compact="True"
+                                  IsHitTestVisible="False"
+                                  IsVisible="False"
+                                  />
           <TextBlock Margin="8 6"
                      FontFamily="{StaticResource CodeFont}"
                      FontSize="11"

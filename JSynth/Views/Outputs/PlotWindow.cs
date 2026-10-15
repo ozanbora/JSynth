@@ -12,7 +12,8 @@ using System.ComponentModel;
 namespace JSynth.Views.Outputs;
 
 /// <summary>
-/// A plot in a window of its own: bigger, with a colour bar for heatmaps and contour lines, and zoom (wheel) and pan (drag).
+/// A plot in a window of its own: bigger, with a colour bar for heatmaps and contour lines, and zoom (wheel) and pan (drag);
+/// a surface turns as it is dragged.
 /// A crosshair follows the mouse, and the bar below says where it points: the coordinates, and the data
 /// point, heatmap value or matrix entry there. It follows the node: a new run redraws it.
 /// </summary>
@@ -20,6 +21,7 @@ public sealed class PlotWindow : Window
 {
     private readonly Model.PlotNode _model;
     private readonly AvaPlot _chart = new();
+    private readonly SurfaceView _surface = new() { IsVisible = false };
     private readonly SelectableTextBlock _readout = new()
     {
         FontFamily = new FontFamily("Cascadia Mono,Consolas,Menlo,monospace"),
@@ -45,10 +47,11 @@ public sealed class PlotWindow : Window
         _ = bar.Bind(Border.BackgroundProperty, bar.GetResourceObservable("StatusBarBackgroundBrush"));
         _ = bar.Bind(Border.BorderBrushProperty, bar.GetResourceObservable("StatusBarBorderBrush"));
         DockPanel.SetDock(bar, Dock.Bottom);
-        Content = new DockPanel { Children = { bar, _chart } };
+        Content = new DockPanel { Children = { bar, new Panel { Children = { _chart, _surface } } } };
 
         _chart.PointerMoved += Chart_PointerMoved;
         _chart.PointerExited += (_, _) => Point(null);
+        _surface.Pointing += (_, text) => _readout.Text = text ?? PlotReadout.SurfaceHint;
         _model.PropertyChanged += ModelChanged;
     }
 
@@ -60,6 +63,8 @@ public sealed class PlotWindow : Window
     internal ScottPlot.Plottables.Crosshair? Crosshair => _crosshair;
 
     internal Plot Chart => _chart.Plot;
+
+    internal SurfaceView Surface => _surface;
 
     /// <summary>
     /// Draws once the window has its theme: its colours are only known then.
@@ -106,15 +111,21 @@ public sealed class PlotWindow : Window
             && now.Kind == last.Kind && now.Rows == last.Rows && now.Columns == last.Columns;
         AxisLimits limits = _chart.Plot.Axes.GetLimits();
 
+        // A surface draws itself, keeping the view it was turned to.
+        bool surface = _model.Plot?.Kind == PlotKind.Surface;
+        _chart.IsVisible = !surface;
+        _surface.IsVisible = surface;
+        _surface.Show(surface ? _model.Plot : null, _model.Title);
+
         ScottPlot.Color foreground = PlotNode.ForegroundColor(this);
-        PlotRenderer.Draw(_chart.Plot, _model.Plot, _model.Title, foreground, compact: false, _model.Levels);
+        PlotRenderer.Draw(_chart.Plot, surface ? null : _model.Plot, _model.Title, foreground, compact: false, _model.Levels);
         if (sameMatrix)
         {
             _chart.Plot.Axes.SetLimits(limits);
         }
 
         _drawn = _model.Plot;
-        _describe = _model.Plot is null ? null : new PlotReadout(_model.Plot, _model.Levels);
+        _describe = _model.Plot is null || surface ? null : new PlotReadout(_model.Plot, _model.Levels);
 
         // Added last, so they are drawn over the data.
         _crosshair = _chart.Plot.Add.Crosshair(0, 0);
@@ -127,6 +138,11 @@ public sealed class PlotWindow : Window
         _point.IsVisible = false;
 
         Point(null);
+        if (surface)
+        {
+            _readout.Text = PlotReadout.SurfaceHint;
+        }
+
         _chart.Refresh();
     }
 

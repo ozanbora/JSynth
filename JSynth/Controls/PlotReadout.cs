@@ -18,6 +18,11 @@ public sealed class PlotReadout
     /// </summary>
     public const string Hint = "Point at the plot to see the coordinates. Wheel: zoom, drag: pan, right-click: more.";
 
+    /// <summary>
+    /// Shown below a surface while the mouse isn't on it.
+    /// </summary>
+    public const string SurfaceHint = "Point at the surface to see its values. Drag: turn, wheel: zoom, double-click: back to the start.";
+
     private readonly PlotData _data;
     private readonly double[] _levels = [];
     private HashSet<(long Row, long Column)>? _stored;
