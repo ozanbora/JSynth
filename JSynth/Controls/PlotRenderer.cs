@@ -1,5 +1,6 @@
 using JSynth.Runtime;
 using ScottPlot;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace JSynth.Controls;
@@ -14,7 +15,8 @@ public static class PlotRenderer
     /// </summary>
     /// <param name="foreground">Colour of text, axes and lines: readable on the background.</param>
     /// <param name="compact">Small labels, for a plot inside a node.</param>
-    public static void Draw(Plot plot, PlotData? data, string title, Color foreground, bool compact)
+    /// <param name="levels">Contour lines: how many levels, 0 for about 10 round ones (see <see cref="ContourLines.Levels"/>).</param>
+    public static void Draw(Plot plot, PlotData? data, string title, Color foreground, bool compact, long levels = 0)
     {
         plot.Clear();
 
@@ -88,6 +90,10 @@ public static class PlotRenderer
 
                 break;
 
+            case PlotKind.Contour:
+                Contours(plot, data, levels, foreground, compact);
+                break;
+
             case PlotKind.Spy:
                 ScottPlot.Plottables.Scatter dots = plot.Add.ScatterPoints(data.X, data.Y);
                 dots.MarkerSize = MarkerSize(data.X.Length, compact) - 1;
@@ -97,14 +103,14 @@ public static class PlotRenderer
         plot.Axes.AutoScale();
 
         // Matrices read from the top, like the matrix itself: row 1 at the top, over its full size.
-        if (data.Kind is PlotKind.Heatmap or PlotKind.Spy)
+        if (data.Kind is PlotKind.Heatmap or PlotKind.Contour or PlotKind.Spy)
         {
             plot.Axes.SetLimits(0.5, data.Columns + 0.5, data.Rows + 0.5, 0.5);
         }
 
         // A square matrix, an image most likely (a radar screen, say), keeps square cells, zoomed out to show
         // all of it: circles stay round.
-        if (data.Kind == PlotKind.Heatmap && data.Rows == data.Columns)
+        if (data.Kind is PlotKind.Heatmap or PlotKind.Contour && data.Rows == data.Columns)
         {
             plot.Axes.Rules.Add(new ScottPlot.AxisRules.SquareZoomOut(plot.Axes.Bottom, plot.Axes.Left));
         }
@@ -139,6 +145,73 @@ public static class PlotRenderer
         heatmap.Intensities = after;
         heatmap.Update();
         return true;
+    }
+
+    /// <summary>
+    /// Text shown on contour plots of a matrix with one value only (or none): there are no lines.
+    /// </summary>
+    public static string FlatContours(double min) => double.IsNaN(min)
+        ? "No contour lines: the matrix has no finite values."
+        : $"No contour lines: every value is {PlotReadout.Number(min)}.";
+
+    /// <summary>
+    /// The lines of each level, in its colour from the heatmap's colour map; on a matrix as a heatmap's cells are
+    /// (rows and columns numbered from 1, even when averaged down), with the colour bar in the larger window.
+    /// </summary>
+    private static void Contours(Plot plot, PlotData data, long count, Color foreground, bool compact)
+    {
+        double[,] values = data.Values!;
+        (double min, double max) = ContourLines.Range(values);
+        double[] levels = ContourLines.Levels(min, max, (int)count);
+        if (levels.Length == 0)
+        {
+            ScottPlot.Plottables.Annotation note = plot.Add.Annotation(FlatContours(min), Alignment.MiddleCenter);
+            note.LabelFontColor = foreground;
+            note.LabelFontSize = compact ? 10 : 14;
+            note.LabelBackgroundColor = Colors.Transparent;
+            note.LabelBorderColor = Colors.Transparent;
+            note.LabelShadowColor = Colors.Transparent;
+            return;
+        }
+
+        double columnScale = (double)data.Columns / values.GetLength(1), rowScale = (double)data.Rows / values.GetLength(0);
+        ScottPlot.Colormaps.Viridis colormap = new();
+        foreach (double level in levels)
+        {
+            // All of a level's lines in one plottable, NaN between them: a straight path leaves a gap there.
+            List<double> xs = [], ys = [];
+            foreach (List<(double Column, double Row)> line in ContourLines.Lines(values, level))
+            {
+                foreach ((double column, double row) in line)
+                {
+                    xs.Add(((column + 0.5) * columnScale) + 0.5);
+                    ys.Add(((row + 0.5) * rowScale) + 0.5);
+                }
+
+                xs.Add(double.NaN);
+                ys.Add(double.NaN);
+            }
+
+            if (xs.Count > 0)
+            {
+                ScottPlot.Plottables.Scatter lines = plot.Add.ScatterLine(xs.ToArray(), ys.ToArray(), colormap.GetColor((level - min) / (max - min)));
+                lines.LineWidth = compact ? 1.2f : 1.8f;            }
+        }
+
+        if (!compact)
+        {
+            _ = plot.Add.ColorBar(new Scale(colormap, min, max));
+        }
+    }
+
+    /// <summary>
+    /// What the colour bar of contour lines shows: the colour map from the smallest value to the largest.
+    /// </summary>
+    private sealed class Scale(IColormap colormap, double min, double max) : IHasColorAxis
+    {
+        public IColormap Colormap => colormap;
+
+        public Range GetRange() => new(min, max);
     }
 
     /// <summary>

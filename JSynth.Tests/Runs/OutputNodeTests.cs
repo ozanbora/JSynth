@@ -221,6 +221,41 @@ namespace JSynth.Tests.Runs
         }
 
         [Fact]
+        public void Contour_levels_are_drawn_by_the_app_so_changing_them_keeps_the_plot()
+        {
+            Ui.Run(() =>
+            {
+                MainViewModel.LoadStartingDesign();
+                MatrixNode y = new();
+                PlotNode plot = new() { Kind = PlotNode.Contour };
+                MainViewModel.Nodes.AddRange([y, plot]);
+                Assert.Null(MainViewModel.Connect(y, plot, plot.Y));
+
+                // The run writes the matrix only; the script names Plots.jl's contour, with the levels when set.
+                Assert.Matches(@"""contour"", \w+\)", ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true).Text);
+                Assert.Matches(@"using Plots; contour\(\w+\)", MainViewModel.ExportScript());
+                plot.Levels = 5;
+                Assert.Matches(@"""contour"", \w+\)", ScriptGenerator.Generate(MainViewModel.Nodes, MainViewModel.Connections, instrumented: true).Text);
+                Assert.Matches(@"using Plots; contour\(\w+; levels = 5\)", MainViewModel.ExportScript());
+
+                // New levels keep the results; a new matrix doesn't.
+                plot.Result = new Report(plot.ID, ReportStatus.Ok, "String", "plot");
+                Assert.True(plot.HasResult);
+                plot.Levels = 8;
+                Assert.True(plot.HasResult);
+                y.Text = "[1.0 2.0; 3.0 4.0]";
+                Assert.False(plot.HasResult);
+
+                plot.Levels = -1;
+                Assert.Equal(0, plot.Levels);
+                plot.Levels = 1000;
+                Assert.Equal(PlotNode.MaxLevels, plot.Levels);
+                plot.Kind = "Heatmap";
+                Assert.False(plot.IsContour);
+            });
+        }
+
+        [Fact]
         public void A_plot_takes_any_values_but_only_a_vector_for_x()
         {
             PlotNode plot = new();

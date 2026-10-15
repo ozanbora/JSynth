@@ -36,11 +36,16 @@ namespace JSynth.Runtime
         /// A vector's values counted into bins: the bins' edges and counts.
         /// </summary>
         Histogram = 6,
+
+        /// <summary>
+        /// A matrix as lines of equal value, written as a heatmap's values are; the app draws the lines.
+        /// </summary>
+        Contour = 7,
     }
 
     /// <summary>
     /// The numbers of a plot, as a script wrote them (see <see cref="Prelude"/>). Line, scatter and bar plots have
-    /// <see cref="X"/> and <see cref="Y"/>; a heatmap has <see cref="Values"/>; a spy plot has the row and
+    /// <see cref="X"/> and <see cref="Y"/>; a heatmap and contour lines have <see cref="Values"/>; a spy plot has the row and
     /// column of each dot in <see cref="Y"/> and <see cref="X"/>; a histogram has its bins' edges in <see cref="X"/>,
     /// one more than its counts in <see cref="Y"/>.
     /// </summary>
@@ -51,9 +56,9 @@ namespace JSynth.Runtime
         /// <summary>
         /// Julia code defining <c>_jsynth_plot(path, kind, y, x; bins)</c>: writes a plot's numbers to <c>path</c>
         /// and returns the path. <c>kind</c> is "auto" (line for a vector, spy for a sparse matrix, heatmap for
-        /// another matrix), "line", "scatter", "bar", "histogram", "heatmap" or "spy"; <c>x</c> is nothing or a
+        /// another matrix), "line", "scatter", "bar", "histogram", "heatmap", "contour" or "spy"; <c>x</c> is nothing or a
         /// vector. A histogram counts y's finite values into <c>bins</c> equal bins from the smallest to the
-        /// largest, or √n of them (at most 200) for 0; only the counts are written. Heatmaps are averaged down
+        /// largest, or √n of them (at most 200) for 0; only the counts are written. Heatmaps and contours are averaged down
         /// to at most 1000 cells a side, spy plots to 200,000 dots.
         /// </summary>
         public static string Prelude { get; } = """
@@ -73,10 +78,10 @@ namespace JSynth.Runtime
                     x === nothing || throw(ArgumentError("a histogram counts the values of y: it takes no x values"))
                     edges, counts = _jsynth_bins(filter(isfinite, Float64.(collect(y))), bins)
                     header, data = (6, length(counts), 0), (edges, counts)
-                elseif kind == "heatmap"
-                    y isa AbstractMatrix || throw(ArgumentError("a heatmap needs a matrix, not a $(typeof(y))"))
+                elseif kind in ("heatmap", "contour")
+                    y isa AbstractMatrix || throw(ArgumentError("a $(kind == "heatmap" ? kind : "contour plot") needs a matrix, not a $(typeof(y))"))
                     values = _jsynth_shrink(y, 1000)
-                    header, data = (3, size(values, 1), size(values, 2)), (vec(values),)
+                    header, data = (kind == "heatmap" ? 3 : 7, size(values, 1), size(values, 2)), (vec(values),)
                 elseif kind == "spy"
                     y isa AbstractMatrix || throw(ArgumentError("a spy plot needs a matrix, not a $(typeof(y))"))
                     rows, cols = if issparse
@@ -135,7 +140,7 @@ namespace JSynth.Runtime
         public double[] Y { get; }
 
         /// <summary>
-        /// Heatmap: the (possibly averaged down) values, [row, column].
+        /// Heatmap and contour: the (possibly averaged down) values, [row, column].
         /// </summary>
         public double[,]? Values { get; }
 
@@ -177,7 +182,7 @@ namespace JSynth.Runtime
             ReadOnlySpan<double> numbers = MemoryMarshal.Cast<byte, double>(data);
             switch ((PlotKind)kind)
             {
-                case PlotKind.Heatmap:
+                case PlotKind.Heatmap or PlotKind.Contour:
                 {
                     Expect(numbers, a * b);
                     double[,] values = new double[a, b];
@@ -191,7 +196,7 @@ namespace JSynth.Runtime
                         }
                     }
 
-                    return new PlotData(PlotKind.Heatmap, [], [], values, rows, columns);
+                    return new PlotData((PlotKind)kind, [], [], values, rows, columns);
                 }
 
                 case PlotKind.Histogram:

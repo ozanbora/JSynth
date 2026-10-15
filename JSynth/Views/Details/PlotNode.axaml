@@ -24,7 +24,7 @@
     <jsConverters:DecimalToLongConverter x:Key="DecimalConverter"/>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="auto,auto,auto,auto"
+  <Grid RowDefinitions="auto,auto,auto,auto,auto"
         ColumnDefinitions="auto,*"
         >
 
@@ -41,7 +41,7 @@
                 SelectedValue="{Binding Path=Kind}"
                 ItemsSource="{x:Static jsModel:PlotNode.Kinds}"
                 VerticalAlignment="Center"
-                ToolTip.Tip="Auto: a line for a vector, dots for a sparse matrix, a heatmap for another matrix. Histogram: a vector's values counted into bins."
+                ToolTip.Tip="Auto: a line for a vector, dots for a sparse matrix, a heatmap for another matrix. Histogram: a vector's values counted into bins. Contour: a matrix as lines of equal value."
                 />
 
       <Label Content="Color" VerticalAlignment="Center"/>
@@ -87,13 +87,36 @@
       <TextBlock VerticalAlignment="Center" Margin="6 0 0 0" Text="(0: auto, √n up to 200)"/>
     </StackPanel>
 
-    <TextBlock Grid.Row="3"
+    <Label Grid.Row="3"
+           Grid.Column="0"
+           VerticalAlignment="Center"
+           Content="Levels"
+           IsVisible="{Binding Path=IsContour}"
+           />
+    <StackPanel Grid.Row="3"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                IsVisible="{Binding Path=IsContour}"
+                >
+      <NumericUpDown Width="130"
+                     Minimum="0"
+                     Maximum="100"
+                     Increment="1"
+                     ClipValueToMinMax="True"
+                     FormatString="0"
+                     Value="{Binding Path=Levels, Converter={StaticResource DecimalConverter}}"
+                     ToolTip.Tip="How many levels to draw lines at, evenly spaced between the smallest value and the largest."
+                     />
+      <TextBlock VerticalAlignment="Center" Margin="6 0 0 0" Text="(0: auto, about 10 round values)"/>
+    </StackPanel>
+
+    <TextBlock Grid.Row="4"
                Grid.Column="1"
                Margin="0 6 0 0"
                FontSize="12"
                Opacity="0.7"
                TextWrapping="Wrap"
-               Text="Wire a vector into y for a line, points or bars, against x if you wire one in (otherwise 1, 2, 3, …), or to count its values in a histogram; a matrix for a heatmap, or dots where a sparse matrix has values. Big matrices are averaged down to 1000 × 1000 for the heatmap."
+               Text="Wire a vector into y for a line, points or bars, against x if you wire one in (otherwise 1, 2, 3, …), or to count its values in a histogram; a matrix for a heatmap or contour lines, or dots where a sparse matrix has values. Big matrices are averaged down to 1000 × 1000 for the heatmap and contours."
                />
   </Grid>
 

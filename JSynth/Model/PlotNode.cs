@@ -10,7 +10,7 @@ namespace JSynth.Model
 {
     /// <summary>
     /// Plots a value: a vector as a line, points or bars (against x values if wired) or its values counted in a
-    /// histogram, a matrix as a heatmap or,
+    /// histogram, a matrix as a heatmap, as contour lines or,
     /// sparse, as dots where its values are. The numbers come back from the run (see <see cref="PlotData"/>).
     /// </summary>
     public class PlotNode : Node
@@ -19,18 +19,26 @@ namespace JSynth.Model
 
         public const string Histogram = "Histogram";
 
+        public const string Contour = "Contour";
+
         /// <summary>
         /// The most bins a histogram may have.
         /// </summary>
         public const long MaxBins = 10_000;
 
-        public static IReadOnlyList<string> Kinds { get; } = [Auto, "Line", "Scatter", "Bar", Histogram, "Heatmap", "Spy"];
+        /// <summary>
+        /// The most contour levels.
+        /// </summary>
+        public const long MaxLevels = 100;
 
-        private static readonly string[] ShownProperties = [nameof(Plot), nameof(Message), nameof(IsHistogram)];
+        public static IReadOnlyList<string> Kinds { get; } = [Auto, "Line", "Scatter", "Bar", Histogram, "Heatmap", Contour, "Spy"];
+
+        private static readonly string[] ShownProperties = [nameof(Plot), nameof(Message), nameof(IsHistogram), nameof(IsContour)];
 
         private string _kind = Auto;
         private string _title = string.Empty;
         private long _bins;
+        private long _levels;
         private PlotData? _plot;
 
         /// <summary>
@@ -55,11 +63,14 @@ namespace JSynth.Model
                 {
                     _ = this.RaiseAndSetIfChanged(ref _kind, value);
                     this.RaisePropertyChanged(nameof(IsHistogram));
+                    this.RaisePropertyChanged(nameof(IsContour));
                 }
             }
         }
 
         public bool IsHistogram => Kind == Histogram;
+
+        public bool IsContour => Kind == Contour;
 
         /// <summary>
         /// How many equal bins a histogram counts the values into; 0 to choose: √n, at most 200.
@@ -69,6 +80,17 @@ namespace JSynth.Model
         {
             get => _bins;
             set => this.RaiseAndSetIfChanged(ref _bins, Math.Clamp(value, 0, MaxBins));
+        }
+
+        /// <summary>
+        /// How many contour lines' levels, evenly spaced between the smallest value and the largest; 0 for about 10
+        /// round ones. The app draws the lines, so changing it redraws them without running again.
+        /// </summary>
+        [JsonProperty]
+        public long Levels
+        {
+            get => _levels;
+            set => this.RaiseAndSetIfChanged(ref _levels, Math.Clamp(value, 0, MaxLevels));
         }
 
         /// <summary>

@@ -2,12 +2,14 @@ using JSynth.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace JSynth.Controls;
 
 /// <summary>
 /// What a plot shows where the mouse points: the coordinates, and the data there: the nearest point of a
-/// line or scatter plot, the bar or histogram bin under it, the value of a heatmap cell, whether a sparse matrix stores an entry.
+/// line or scatter plot, the bar or histogram bin under it, the value of a heatmap or contour plot's cell (and the
+/// nearest contour level), whether a sparse matrix stores an entry.
 /// </summary>
 public sealed class PlotReadout
 {
@@ -17,11 +19,18 @@ public sealed class PlotReadout
     public const string Hint = "Point at the plot to see the coordinates. Wheel: zoom, drag: pan, right-click: more.";
 
     private readonly PlotData _data;
+    private readonly double[] _levels = [];
     private HashSet<(long Row, long Column)>? _stored;
 
-    public PlotReadout(PlotData data)
+    /// <param name="levels">Contour lines: how many levels, as drawn (see <see cref="ContourLines.Levels"/>).</param>
+    public PlotReadout(PlotData data, long levels = 0)
     {
         _data = data;
+        if (data is { Kind: PlotKind.Contour, Values: double[,] values })
+        {
+            (double min, double max) = ContourLines.Range(values);
+            _levels = ContourLines.Levels(min, max, (int)levels);
+        }
     }
 
     /// <summary>
@@ -43,13 +52,14 @@ public sealed class PlotReadout
             case PlotKind.Histogram when Bin(x, y) is int b:
                 return ($"x {Number(x)}   y {Number(y)}      {Number(_data.X[b])} – {Number(_data.X[b + 1])}: {Number(_data.Y[b])}", ((_data.X[b] + _data.X[b + 1]) / 2, _data.Y[b]));
 
-            case PlotKind.Heatmap when Cell(x, y) is (long row, long column):
+            case PlotKind.Heatmap or PlotKind.Contour when Cell(x, y) is (long row, long column):
             {
                 double[,] values = _data.Values!;
                 int shownRows = values.GetLength(0), shownColumns = values.GetLength(1);
                 double value = values[(int)((row - 1) * shownRows / _data.Rows), (int)((column - 1) * shownColumns / _data.Columns)];
                 bool averaged = shownRows < _data.Rows || shownColumns < _data.Columns;
-                return ($"row {row}, column {column}: {(averaged ? "≈ " : string.Empty)}{Number(value)}{(averaged ? "   (an average: the matrix is shown averaged down)" : string.Empty)}", null);
+                string level = _data.Kind == PlotKind.Contour && NearestLevel(value) is double nearest ? $"   nearest level {Number(nearest)}" : string.Empty;
+                return ($"row {row}, column {column}: {(averaged ? "≈ " : string.Empty)}{Number(value)}{level}{(averaged ? "   (an average: the matrix is shown averaged down)" : string.Empty)}", null);
             }
 
             case PlotKind.Spy when Cell(x, y) is (long row, long column):
@@ -130,6 +140,14 @@ public sealed class PlotReadout
     {
         long row = (long)Math.Round(y), column = (long)Math.Round(x);
         return row >= 1 && row <= _data.Rows && column >= 1 && column <= _data.Columns ? (row, column) : null;
+    }
+
+    /// <summary>
+    /// The contour level nearest to <paramref name="value"/>; null without levels or for a value that isn't finite.
+    /// </summary>
+    public double? NearestLevel(double value)
+    {
+        return _levels.Length == 0 || !double.IsFinite(value) ? null : _levels.MinBy(l => Math.Abs(l - value));
     }
 
     /// <summary>
